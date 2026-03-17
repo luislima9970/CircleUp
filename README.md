@@ -37,11 +37,13 @@ Thank you!
 * Vasco Castanheira vasco.castanheira@gmail.com
 ---
 ## Business Modelling
+<!-- 
+Business modeling in software development involves defining the product's vision, understanding market needs, aligning features with user expectations, and setting the groundwork for strategic planning and execution. -->
 
-Business modeling in software development involves defining the product's vision, understanding market needs, aligning features with user expectations, and setting the groundwork for strategic planning and execution.
 
-### Product Vision
+### **Product Vision**
 
+To empower individuals to achieve their goals through a high-commitment social system where where shared passions are transformed into achievements through collective motivation.
 <!-- 
 Start by defining a clear and concise product vision for your app, to help members of the team, contributors, and users into focusing their often disparate views into a concise, visual, and short textual form. 
 
@@ -60,8 +62,29 @@ To learn more about how to write a good product vision, please read:
 * [20 Inspiring Vision Statement Examples (2019 Updated), by lifehack.org](https://www.lifehack.org/articles/work/20-sample-vision-statement-for-the-new-startup.html)
 -->
 
+### **Features and Assumptions**
 
-### Features and Assumptions
+**High-Level Features**
+
+- **Thematic Circles:** Ability to join specialized groups based on specific interests or habits (e.g., Fitness, Sustainability, Photography, etc).
+
+- **The Power of 10 (Slot System):** A hard limit of 10 active group memberships per user to ensure focus and high-quality engagement.
+
+- **Proof-of-Action Submissions:** An interface for users to upload photo evidence of completed tasks.
+
+- **Community Validation Engine:** A peer-review system where group members vote to approve or reject a task submission based on the photo provided.
+
+- **Gamified Leaderboards:** A ranking within each Circle based on validated task completion and accumulated points.
+
+- **Social Identity (Profiles):** Public-facing profiles showcasing a user’s current Circles, friends, etc.
+
+**Assumptions and Dependencies**
+- **User Integrity:** We assume the community-driven validation (voting) is enough to detect "fakes" and that users will act as honest moderators for their peers.
+
+- **Storage Requirements:** The app assumes access to reliable cloud storage (e.g., Firebase) to handle a high volume of "Proof" images or the leaderboar's and user's information.
+
+- **Smartphone Hardware:** We assume users have access to a functional camera and a stable internet connection for real-time photo uploads and task completion.
+
 <!-- 
 Indicate an  initial/tentative list of high-level features - high-level capabilities or desired services of the system that are necessary to deliver benefits to the users.
  - Feature XPTO - a few words to briefly describe the feature
