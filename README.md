@@ -136,7 +136,9 @@ Example:
   <img src="https://github.com/FEUP-LEIC-ES-2022-23/templates/blob/main/images/DomainModel.png"/>
 </p>
 -->
-<img width="1456" height="1471" alt="Domain Model" src="https://github.com/user-attachments/assets/ec119afc-d42f-49c7-9086-2c416e3a4052" />
+
+<img width="1633" height="1315" alt="Domain Model" src="https://github.com/user-attachments/assets/38581e15-66f1-414e-83c9-b781abac8d9a" />
+
 
 
 
