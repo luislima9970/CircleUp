@@ -15,4 +15,8 @@ class UserService {
     //     .update({'points': FieldValue.increment(amount)});
     _points += amount;
   }
+
+  static void reset() {
+    _points = 0;
+  }
 }

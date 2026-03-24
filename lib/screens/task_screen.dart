@@ -64,6 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Text('Your Points', style: TextStyle(fontSize: 14, color: Colors.grey)),
                 Text(
                   '$totalPoints pts',
+                  key: const Key('totalPointsText'),
                   style: const TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.bold,

@@ -1,127 +1,146 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:your_app_name/main.dart' as app;  // substitui pelo nome da tua app
+import 'package:projesof/services/user_service.dart';
+import 'package:projesof/main.dart' as app;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  group('Acceptance Tests - Task App', () {
+  group('Acceptance Tests - CircleUP', () {
 
-    testWidgets('AC1: App abre e mostra o título CircleUP', (tester) async {
+    setUp(() {
+      UserService.reset();
+    });
+
+    testWidgets('AC1: App opens and shows the logo in the AppBar', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
-      expect(find.text('CircleUP'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
     });
 
-    testWidgets('AC2: App mostra a lista de tasks', (tester) async {
+    testWidgets('AC2: App shows a list of 5 tasks', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
-      // Verifica que existe pelo menos uma task
-      expect(find.byType(Card), findsWidgets);
+      expect(find.byType(Card), findsNWidgets(5));
     });
 
-    testWidgets('AC3: Tasks mostram os pontos', (tester) async {
+    testWidgets('AC3: Each task shows its point value', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
-      // Verifica que os chips de pontos existem
-      expect(find.byType(Chip), findsWidgets);
-      expect(find.textContaining('pts'), findsWidgets);
+      expect(find.text('+10 pts'), findsOneWidget);
+      expect(find.text('+15 pts'), findsOneWidget);
+      expect(find.text('+20 pts'), findsOneWidget);
+      expect(find.text('+25 pts'), findsOneWidget);
+      expect(find.text('+30 pts'), findsOneWidget);
     });
 
-    testWidgets('AC4: Pontos iniciais são 0', (tester) async {
+    testWidgets('AC4: Each task shows the correct title', (tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+
+      expect(find.text('🏃 Do exercise for 10 minutes'), findsOneWidget);
+      expect(find.text('📖 Read for 15 minutes'),        findsOneWidget);
+      expect(find.text('💧 Drink 2L of water'),          findsOneWidget);
+      expect(find.text('🧹 Clean your room'),            findsOneWidget);
+      expect(find.text('🎯 Study for 1 hour'),           findsOneWidget);
+    });
+
+    testWidgets('AC5: Initial points are 0', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
       expect(find.text('0 pts'), findsOneWidget);
+      expect(find.text('Your Points'), findsOneWidget);
     });
 
-    testWidgets('AC5: Completar uma task adiciona pontos', (tester) async {
+    testWidgets('AC6: All tasks start unchecked', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
-      // Lê os pontos antes
-      final pointsBefore = _getPoints(tester);
-
-      // Toca na primeira task
-      await tester.tap(find.byType(Card).first);
-      await tester.pumpAndSettle();
-
-      // Lê os pontos depois
-      final pointsAfter = _getPoints(tester);
-
-      expect(pointsAfter, greaterThan(pointsBefore));
-    });
-
-    testWidgets('AC6: Task fica marcada como completa ao ser tocada', (tester) async {
-      app.main();
-      await tester.pumpAndSettle();
-
-      // Verifica ícone antes (unchecked)
-      expect(find.byIcon(Icons.radio_button_unchecked), findsWidgets);
-
-      // Toca na primeira task
-      await tester.tap(find.byType(Card).first);
-      await tester.pump(); // pump sem settle para apanhar o estado intermédio
-
-      // Verifica que apareceu pelo menos um check
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-    });
-
-    testWidgets('AC7: Task volta ao estado inicial após 1.5 segundos', (tester) async {
-      app.main();
-      await tester.pumpAndSettle();
-
-      // Toca na primeira task
-      await tester.tap(find.byType(Card).first);
-      await tester.pump();
-
-      // Está marcada
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-
-      // Avança o tempo 1.5 segundos
-      await tester.pump(const Duration(milliseconds: 1500));
-      await tester.pumpAndSettle();
-
-      // Voltou ao estado inicial
+      expect(find.byIcon(Icons.radio_button_unchecked), findsNWidgets(5));
       expect(find.byIcon(Icons.check_circle), findsNothing);
     });
 
-    testWidgets('AC8: Completar várias tasks acumula os pontos', (tester) async {
+    testWidgets('AC7: Completing a task marks it with a check icon', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
-      // Completa a primeira task e espera reset
       await tester.tap(find.byType(Card).first);
-      await tester.pump(const Duration(milliseconds: 1500));
       await tester.pumpAndSettle();
 
-      final pointsAfterFirst = _getPoints(tester);
-
-      // Completa a segunda task e espera reset
-      await tester.tap(find.byType(Card).at(1));
-      await tester.pump(const Duration(milliseconds: 1500));
-      await tester.pumpAndSettle();
-
-      final pointsAfterSecond = _getPoints(tester);
-
-      expect(pointsAfterSecond, greaterThan(pointsAfterFirst));
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(find.byIcon(Icons.radio_button_unchecked), findsNWidgets(4));
     });
 
+    testWidgets('AC8: Completing a task adds the correct points', (tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+
+      // First task gives 10 pts
+      await tester.tap(find.byType(Card).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('10 pts'), findsOneWidget);
+    });
+
+    testWidgets('AC9: Completed task title has strikethrough', (tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(Card).first);
+      await tester.pumpAndSettle();
+
+      final text = tester.widget<Text>(
+        find.text('🏃 Do exercise for 10 minutes')
+      );
+      expect(text.style?.decoration, TextDecoration.lineThrough);
+    });
+
+    testWidgets('AC10: Completed task cannot be completed again', (tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+
+      // Complete the task once
+      await tester.tap(find.byType(Card).first);
+      await tester.pumpAndSettle();
+      expect(find.text('10 pts'), findsOneWidget);
+
+      // Tap again — points should NOT increase
+      await tester.tap(find.byType(Card).first);
+      await tester.pumpAndSettle();
+      expect(find.text('10 pts'), findsOneWidget);
+    });
+
+    testWidgets('AC11: Completing multiple tasks accumulates points', (tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+
+      // Task 1 = 10 pts
+      await tester.tap(find.byType(Card).at(0));
+      await tester.pumpAndSettle();
+
+      // Task 2 = 15 pts → total 25
+      await tester.tap(find.byType(Card).at(1));
+      await tester.pumpAndSettle();
+
+      expect(find.text('25 pts'), findsOneWidget);
+    });
+
+    testWidgets('AC12: Completing all tasks gives 100 total points', (tester) async {
+      app.main();
+      await tester.pumpAndSettle();
+
+      for (int i = 0; i < 5; i++) {
+        await tester.tap(find.byType(Card).at(i));
+        await tester.pumpAndSettle();
+      }
+
+      // 10 + 15 + 20 + 25 + 30 = 100
+      expect(find.text('100 pts'), findsOneWidget);
+    });
   });
-}
-
-// Helper para extrair o valor de pontos do ecrã
-int _getPoints(WidgetTester tester) {
-  final finder = find.textContaining(' pts');
-  // Filtra apenas o banner grande (exclui os Chips das tasks)
-  final widgets = tester.widgetList<Text>(finder).where((t) =>
-    t.style?.fontSize != null && t.style!.fontSize! > 20
-  ).toList();
-
-  if (widgets.isEmpty) return 0;
-  return int.tryParse(widgets.first.data!.replaceAll(' pts', '')) ?? 0;
 }
