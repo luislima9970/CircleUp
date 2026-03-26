@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Image.asset('assets/Logo.png', height: 90,),
-        backgroundColor: const Color.fromARGB(255, 147, 184, 253),
+        backgroundColor: const Color.fromARGB(255, 175, 253, 147),
       ),
       body: Column(
         children: [

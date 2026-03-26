@@ -13,21 +13,21 @@ void main() {
       UserService.reset();
     });
 
-    testWidgets('AC1: App opens and shows the logo in the AppBar', (tester) async {
+    testWidgets('Test1: App opens and shows the logo in the AppBar', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
       expect(find.byType(Image), findsOneWidget);
     });
 
-    testWidgets('AC2: App shows a list of 5 tasks', (tester) async {
+    testWidgets('Test2: App shows a list of 5 tasks', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
       expect(find.byType(Card), findsNWidgets(5));
     });
 
-    testWidgets('AC3: Each task shows its point value', (tester) async {
+    testWidgets('Test3: Each task shows its point value', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -38,7 +38,7 @@ void main() {
       expect(find.text('+30 pts'), findsOneWidget);
     });
 
-    testWidgets('AC4: Each task shows the correct title', (tester) async {
+    testWidgets('Test4: Each task shows the correct title', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -49,7 +49,7 @@ void main() {
       expect(find.text('🎯 Study for 1 hour'),           findsOneWidget);
     });
 
-    testWidgets('AC5: Initial points are 0', (tester) async {
+    testWidgets('Test5: Initial points are 0', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -57,7 +57,7 @@ void main() {
       expect(find.text('Your Points'), findsOneWidget);
     });
 
-    testWidgets('AC6: All tasks start unchecked', (tester) async {
+    testWidgets('Test6: All tasks start unchecked', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -65,7 +65,7 @@ void main() {
       expect(find.byIcon(Icons.check_circle), findsNothing);
     });
 
-    testWidgets('AC7: Completing a task marks it with a check icon', (tester) async {
+    testWidgets('Test7: Completing a task marks it with a check icon', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -76,7 +76,7 @@ void main() {
       expect(find.byIcon(Icons.radio_button_unchecked), findsNWidgets(4));
     });
 
-    testWidgets('AC8: Completing a task adds the correct points', (tester) async {
+    testWidgets('Test8: Completing a task adds the correct points', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -87,7 +87,7 @@ void main() {
       expect(find.text('10 pts'), findsOneWidget);
     });
 
-    testWidgets('AC9: Completed task title has strikethrough', (tester) async {
+    testWidgets('Test9: Completed task title has strikethrough', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -100,7 +100,7 @@ void main() {
       expect(text.style?.decoration, TextDecoration.lineThrough);
     });
 
-    testWidgets('AC10: Completed task cannot be completed again', (tester) async {
+    testWidgets('Test10: Completed task cannot be completed again', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -115,7 +115,7 @@ void main() {
       expect(find.text('10 pts'), findsOneWidget);
     });
 
-    testWidgets('AC11: Completing multiple tasks accumulates points', (tester) async {
+    testWidgets('Test11: Completing multiple tasks accumulates points', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
@@ -130,7 +130,7 @@ void main() {
       expect(find.text('25 pts'), findsOneWidget);
     });
 
-    testWidgets('AC12: Completing all tasks gives 100 total points', (tester) async {
+    testWidgets('Test12: Completing all tasks gives 100 total points', (tester) async {
       app.main();
       await tester.pumpAndSettle();
 
