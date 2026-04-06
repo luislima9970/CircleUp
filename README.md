@@ -153,29 +153,33 @@ To document the architecture requires describing the decomposition of the system
 In this section you should start by briefly describing the components of the project and their interrelations. You should describe how you solved typical problems you may have encountered, pointing to well-known architectural and design patterns, if applicable.
 -->
 
-
 ### Logical architecture
-<!--
-The purpose of this subsection is to document the high-level logical structure of the code (Logical View), using a UML diagram with logical packages, without the worry of allocating to components, processes or machines.
 
-It can be beneficial to present the system in a horizontal decomposition, defining layers and implementation concepts, such as the user interface, business logic and concepts.
+The system is organised into three layers: **Screens** (UI), **Services** (business logic), and **Models** (data structures bridging Firestore documents and the app). Screens use Services; Services communicate with Firebase and use Models. No screen accesses data directly.
 
-Example of _UML package diagram_ showing a _logical view_ of the Eletronic Ticketing System (to be accompanied by a short description of each package):
+- **Screens:** Home, Group, Challenge, Vote, Profile  
+- **Services:** User, Group, Submission, Scoring  
+- **Models:** User, Group, Challenge, Submission, Vote, Theme  
 
-![LogicalView](https://user-images.githubusercontent.com/9655877/160585416-b1278ad7-18d7-463c-b8c6-afa4f7ac7639.png)
--->
+<img width="1469" height="834" alt="package" src="https://github.com/user-attachments/assets/45250416-f43e-48cd-90b9-251d602e43da" />
+
 
 
 ### Physical architecture
-<!--
-The goal of this subsection is to document the high-level physical structure of the software system (machines, connections, software components installed, and their dependencies) using UML deployment diagrams (Deployment View) or component diagrams (Implementation View), separate or integrated, showing the physical structure of the system.
 
-It should describe also the technologies considered and justify the selections made. Examples of technologies relevant for ESOF are, for example, frameworks for mobile applications (such as Flutter).
+The app runs as a Flutter application on the user's smartphone. There is no custom server — all backend is provided by Firebase on Google Cloud. The Flutter app communicates with Firebase exclusively through the bundled Firebase SDK over HTTPS.
 
-Example of _UML deployment diagram_ showing a _deployment view_ of the Eletronic Ticketing System (please notice that, instead of software components, one should represent their physical/executable manifestations for deployment, called artifacts in UML; the diagram should be accompanied by a short description of each node and artifact):
+| Node | Role |
+|---|---|
+| Flutter App | Client, runs on device |
+| Firebase Auth | Authentication & session tokens |
+| Cloud Firestore | Main database (users, groups, challenges, submissions, votes) |
+| Cloud Storage | Stores photo proof uploads |
+| Cloud Functions | Triggered on vote events; updates scores and sends notifications |
+| FCM | Delivers push notifications to device |
 
-![DeploymentView](https://user-images.githubusercontent.com/9655877/160592491-20e85af9-0758-4e1e-a704-0db1be3ee65d.png)
--->
+<img width="756" height="686" alt="deploymentº" src="https://github.com/user-attachments/assets/264de3bc-255f-4505-a56a-acd68292b7c4" />
+
 
 
 ### Functional prototype
