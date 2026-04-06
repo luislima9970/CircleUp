@@ -3,7 +3,9 @@ import '../models/task.dart';
 import '../services/user_service.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final String userName;
+
+  const HomeScreen({super.key, required this.userName});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -29,7 +31,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadPoints() async {
-    final points = await _userService.loadPoints();
+    final points = await _userService.loadPoints(widget.userName);
+
+    if (!mounted) return;
+
     setState(() => totalPoints = points);
   }
 
@@ -41,27 +46,42 @@ class _HomeScreenState extends State<HomeScreen> {
       totalPoints += task.points;
     });
 
-    await _userService.addPoints(task.points);
-
+    await _userService.addPoints(widget.userName, task.points);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Image.asset('assets/Logo.png', height: 90,),
+        title: Image.asset(
+          'assets/Logo.png',
+          height: 90,
+        ),
         backgroundColor: const Color.fromARGB(255, 147, 184, 253),
       ),
       body: Column(
         children: [
-          // Banner de pontos
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
             color: Colors.deepPurple.shade50,
             child: Column(
               children: [
-                const Text('Your Points', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                Text(
+                  'Welcome, ${widget.userName}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Your Points',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
                 Text(
                   '$totalPoints pts',
                   style: const TextStyle(
@@ -73,25 +93,29 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          // Lista de tasks
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: tasks.length,
               itemBuilder: (context, index) {
                 final task = tasks[index];
+
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
                     leading: Icon(
-                      task.completed ? Icons.check_circle : Icons.radio_button_unchecked,
+                      task.completed
+                          ? Icons.check_circle
+                          : Icons.radio_button_unchecked,
                       color: task.completed ? Colors.green : Colors.grey,
                       size: 32,
                     ),
                     title: Text(
                       task.title,
                       style: TextStyle(
-                        decoration: task.completed ? TextDecoration.lineThrough : null,
+                        decoration: task.completed
+                            ? TextDecoration.lineThrough
+                            : null,
                         color: task.completed ? Colors.grey : Colors.black,
                       ),
                     ),

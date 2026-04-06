@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "548615521640",
+    "project_id": "t3-prototype-circleup",
+    "storage_bucket": "t3-prototype-circleup.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:548615521640:android:a884a5c43111ab2ef042dd",
+        "android_client_info": {
+          "package_name": "com.example.projesof"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDalofeySsJ8pv-SIWZLd8dXZ5eyW-s8HA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,18 +1,35 @@
-class UserService {
-  // Simula a base de dados em memória
-  static int _points = 0;
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-  Future<int> loadPoints() async {
-    // TODO: substituir por Firestore
-    // final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-    // return doc.data()?['points'] ?? 0;
-    return _points;
+class UserService {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+
+  String _userIdFromName(String name) {
+    return name.trim().toLowerCase().replaceAll(' ', '_');
   }
 
-  Future<void> addPoints(int amount) async {
-    // TODO: substituir por Firestore
-    // await FirebaseFirestore.instance.collection('users').doc(userId)
-    //     .update({'points': FieldValue.increment(amount)});
-    _points += amount;
+  Future<int> loadPoints(String name) async {
+    final userId = _userIdFromName(name);
+    final docRef = _db.collection('users').doc(userId);
+    final doc = await docRef.get();
+
+    if (doc.exists) {
+      return (doc.data()?['points'] ?? 0) as int;
+    }
+
+    await docRef.set({
+      'name': name.trim(),
+      'points': 0,
+    });
+
+    return 0;
+  }
+
+  Future<void> addPoints(String name, int amount) async {
+    final userId = _userIdFromName(name);
+
+    await _db.collection('users').doc(userId).set({
+      'name': name.trim(),
+      'points': FieldValue.increment(amount),
+    }, SetOptions(merge: true));
   }
 }
