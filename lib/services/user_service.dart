@@ -17,6 +17,7 @@ class UserService implements IUserService{
     return (data?['points'] as num?)?.toInt() ?? 0;
   }
 
+  @override
   Future<void> addPoints(String userName, int amount) async {
     final ref = _db.collection('users').doc(_docId(userName));
 
@@ -26,6 +27,7 @@ class UserService implements IUserService{
     }, SetOptions(merge: true));
   }
 
+  @override
   Stream<int> watchPoints(String userName) {
     return _db
         .collection('users')
