@@ -227,7 +227,7 @@ You can find below information and references related with the project managemen
 
 - **Prototype Implementation Bugs**
 
-There is no current bug in the prototype, however, when implementing firebase, we had to make changes to `user_service.dart`, and actually creating an interface and a mock for this class, because we do not want the integration tests to use firebase itself. If we did not make this changes, the test would not run correctly.
+> There is no current bug in the prototype, however, when implementing firebase, we had to make changes to `user_service.dart`, and actually creating an interface and a mock for this class, because we do not want the integration tests to use firebase itself. If we did not make this changes, the test would not run correctly.
 
 ### Sprint 1
 
