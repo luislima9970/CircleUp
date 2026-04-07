@@ -128,6 +128,23 @@ At the end, it is good to add a rough indication of the value of the user story 
 
 ### Domain model
 
+<img width="1633" height="1315" alt="Domain Model" src="https://github.com/user-attachments/assets/38581e15-66f1-414e-83c9-b781abac8d9a" />
+
+
+**User:** Represents a platform participant with authentication and scoring data. A user has credentials (username, email, password) and accumulates total points. A user can author submissions, validate others’ submissions, and belong to a groups.
+
+**Group:** Represents a collection of users organized under a common identity. A group has a name, description, and theme. It owns multiple tasks and has an associated leaderboard. Users may belong to at most 10 groups.
+
+**Task:** Defines a challenge or activity within a group. Each task has a title, objective, and a reward (points). Tasks belong to exactly one group and can have multiple submissions from users.
+
+**Submission:** Represents a user’s attempt to complete a task. It includes proof (e.g., image), a timestamp, and a status (pending, approved, rejected). Each submission is authored by one user and belongs to one task. It can receive multiple validation votes.
+
+**ValidationVote:** Represents a validation decision on a submission. A vote is either valid or invalid. It is cast by a user (validator) on a submission, with the constraint that the validator cannot be the submission’s author.
+
+**Leaderboard:** Represents the ranking system for a group. Each group has exactly one leaderboard, which aggregates ranking entries for users based on their performance.
+
+**LeaderboardEntry:** Represents an individual ranking record within a leaderboard. It stores a user’s position and points. Each entry is associated with one leaderboard and corresponds to a user.
+
 <!-- 
 To better understand the context of the software system, it is useful to have a simple UML class diagram with all and only the key concepts (names, attributes) and relationships involved of the problem domain addressed by your app. 
 Also provide a short textual description of each concept (domain class). 
@@ -208,6 +225,9 @@ You can find below information and references related with the project managemen
 
 ### Sprint 0
 
+## Prototype Implementation Bugs
+
+There is no current bug in the prototype, however, when implementing firebase, we had to make changes to `user_service.dart`, and actually creating an interface and a mock for this class, because we do not want the integration tests to use firebase itself. If we did not make this changes, the test would not run correctly.
 
 ### Sprint 1
 
