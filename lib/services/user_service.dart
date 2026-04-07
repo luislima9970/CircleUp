@@ -32,4 +32,8 @@ class UserService {
         .snapshots()
         .map((doc) => (doc.data()?['points'] as num?)?.toInt() ?? 0);
   }
+
+  static void reset() {
+    _points = 0;
+  }
 }
