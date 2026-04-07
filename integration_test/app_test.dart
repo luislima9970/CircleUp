@@ -19,7 +19,6 @@ void main() {
 
       expect(find.byType(Image), findsOneWidget);
     });
-
     testWidgets('Test2: App shows a list of 5 tasks', (tester) async {
       app.main();
       await tester.pumpAndSettle();
