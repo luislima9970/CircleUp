@@ -229,6 +229,71 @@ You can find below information and references related with the project managemen
 
 > There is no current bug in the prototype, however, when implementing firebase, we had to make changes to `user_service.dart`, and actually creating an interface and a mock for this class, because we do not want the integration tests to use firebase itself. If we did not make this changes, the test would not run correctly.
 
+- **Survey Analysis — CircleUP**
+
+  - **Overview**
+
+     This survey was conducted to better understand the potential acceptance of the **CircleUP** app and identify the features users value most. The questionnaire explored participants’ motivations, concerns, habits, and preferences regarding challenge-based mobile applications.
+
+    The results provide useful guidance for defining the priorities of the app and understanding which features should be emphasized in an initial version.
+
+
+  - **Personal Information**
+
+    The survey mainly reached a younger audience, although a few older participants were also represented. Most respondents were **19 years old**, while the remaining valid ages were **20, 50, and 52**. This suggests that the concept may appeal to more than one age group, even if its strongest relevance is among young adults.
+
+    Participants mostly heard about the app through **direct and familiar channels**, especially university and personal connections. For those who selected **Other**, the written answers were **Family** and **My daughter**, reinforcing the importance of informal networks.
+
+  - **Questions**
+
+    The app concept was generally **well received**. Most participants said they would use an app where friends complete challenges together, showing that the social aspect of the experience is attractive.
+
+    **Competition** emerged as the strongest motivational factor, standing out above points, streaks, and rewards. In addition, **proof submission** was seen as highly important, showing that users value fairness and credibility when completing challenges.
+
+    Opinions on **voting by friends** were more balanced, suggesting that this feature may require careful design to avoid concerns about unfairness. **Streaks** also received mixed reactions, which suggests they may work better as a secondary feature rather than as a core element.
+
+    When asked about the most important feature for a first version, **easy submission** stood out clearly. The main risks identified were **boring challenges**, **unfair voting**, and **too much complexity**.
+
+
+  - **User Habits / Preferences**
+
+    Most respondents do not use similar apps very often, which means CircleUP should offer a **simple and engaging experience** in order to become part of their routines.
+
+    What would keep users coming back most was **new challenges**, followed by **group interaction** and **rewards**. Ease of use was also rated as highly important, reinforcing that the app should feel intuitive and low-effort to use.
+
+    Some caution also appeared regarding **proof sharing**. Many participants were unsure about sharing photos or screenshots, which highlights the importance of **privacy** and **control over shared content**. Other possible barriers included **lack of interesting challenges**, **unfair validation**, and **too much effort required**.
+
+  - **App Topics**
+
+    Users showed a clear preference for a **flexible experience**. Most respondents preferred having **both individual and group-based challenges**, instead of only one format.
+
+    The **leaderboard** was seen as a strong motivational feature, reinforcing the importance of competition in the app. In contrast, **reminders and notifications** received more balanced opinions, suggesting that they should be optional or customizable rather than central to the experience.
+
+    **Progress tracking** was also positively valued, showing that users appreciate being able to monitor their development over time. When asked about the focus of the app, most participants preferred a combination of **fitness and sustainability**, pointing to a broader and more versatile concept.
+
+  - **Final Questions**
+
+    The open-ended answers were limited, but they still supported the main trends identified throughout the survey.
+
+    One respondent suggested **profile personalization**, which could help increase identity and engagement within the app. Another highlighted the **leaderboard** as an important feature for encouraging user participation.
+
+    These answers reinforce the value of **personalization**, **motivation**, and **social interaction** within the CircleUP experience.
+
+  - **Conclusion**
+
+    Overall, the survey shows that the **CircleUP** concept was positively received. Users seem especially interested in the app’s **social and competitive elements**, particularly features such as leaderboards, group interaction, and challenge-based participation.
+
+    For an initial version of the app, the main priorities should be:
+
+    - **Easy challenge submission**
+    - **Interesting and varied challenges**
+    - **A fair validation system**
+    - **Simple and intuitive usability**
+
+    At the same time, concerns such as **privacy**, **unfair voting**, and **excessive complexity** should be carefully addressed to support long-term engagement.
+
+    By focusing on **usability**, **motivation**, and **flexibility**, CircleUP can offer a more engaging and sustainable user experience.
+
 ### Sprint 1
 
 ### Sprint 2
