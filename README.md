@@ -97,6 +97,16 @@ Optionally, indicate an initial/tentative list of assumptions that you are doing
 ## Requirements
 
 ### User Stories
+
+The **_CircleUp_** backlog is structured into four core functional areas designed to facilitate a seamless transition from individual intent to community-verified action:
+
+- **Identity & Access Management:** Users can create and manage unique accounts, log in securely, and maintain a personal profile that aggregates their total points and active group memberships.
+
+- **Social Connectivity:** This includes the ability to search for other users by username and view peer profiles, allowing users to inspect the "proof of action" gallery and achievements of their friends and competitors.
+
+- **Circle Management & Navigation:** A centralized Home Dashboard provides a snapshot of daily priorities, while the Group Creation/Join feature allows users to form or enter themed "Circles" (limited to 10) to start localized and private competitions.
+
+- **The Accountability Loop:** This includes the Group Detail Page for tracking collective progress, and the Task Submission & Validation system, where users upload photo evidence of completed goals for peer review and point allocation.
 <!-- 
 In this section you should describe all kinds of requirements for your module: functional and non-functional requirements.
 
