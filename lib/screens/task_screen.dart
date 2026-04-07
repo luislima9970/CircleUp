@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
 import '../models/task.dart';
-import '../services/user_service.dart';
+import '../services/user_service_interface.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userName;
+  final IUserService userService;
 
-  const HomeScreen({super.key, required this.userName});
+  const HomeScreen({
+    super.key,
+    required this.userName,
+    required this.userService,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
+
 class _HomeScreenState extends State<HomeScreen> {
-  final UserService _userService = UserService();
+  late final IUserService _userService;
+
+  @override
+  void initState() {
+    super.initState();
+    _userService = widget.userService;
+  }
 
   final List<Task> tasks = [
     Task(id: 't1', title: '🏃 Do exercise for 10 minutes', points: 10),

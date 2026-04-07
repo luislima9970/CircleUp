@@ -1,33 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:projesof/services/user_service.dart';
-import 'package:projesof/main.dart' as app;
+import 'package:projesof/screens/task_screen.dart';
+import 'package:projesof/mocks/fake_user_service.dart';
 
 void main() {
+  
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Acceptance Tests - CircleUP', () {
 
-    setUp(() {
-      UserService.reset();
-    });
-
     testWidgets('Test1: App opens and shows the logo in the AppBar', (tester) async {
-      app.main();
+      final fakeService = FakeUserService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            userName: 'TestUser',
+            userService: fakeService,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(Image), findsOneWidget);
     });
+
     testWidgets('Test2: App shows a list of 5 tasks', (tester) async {
-      app.main();
+      final fakeService = FakeUserService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            userName: 'TestUser',
+            userService: fakeService,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(Card), findsNWidgets(5));
     });
 
     testWidgets('Test3: Each task shows its point value', (tester) async {
-      app.main();
+      final fakeService = FakeUserService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            userName: 'TestUser',
+            userService: fakeService,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('+10 pts'), findsOneWidget);
@@ -38,7 +63,16 @@ void main() {
     });
 
     testWidgets('Test4: Each task shows the correct title', (tester) async {
-      app.main();
+      final fakeService = FakeUserService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            userName: 'TestUser',
+            userService: fakeService,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('🏃 Do exercise for 10 minutes'), findsOneWidget);
@@ -49,7 +83,16 @@ void main() {
     });
 
     testWidgets('Test5: Initial points are 0', (tester) async {
-      app.main();
+      final fakeService = FakeUserService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            userName: 'TestUser',
+            userService: fakeService,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('0 pts'), findsOneWidget);
@@ -57,7 +100,16 @@ void main() {
     });
 
     testWidgets('Test6: All tasks start unchecked', (tester) async {
-      app.main();
+      final fakeService = FakeUserService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            userName: 'TestUser',
+            userService: fakeService,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.radio_button_unchecked), findsNWidgets(5));
@@ -65,7 +117,16 @@ void main() {
     });
 
     testWidgets('Test7: Completing a task marks it with a check icon', (tester) async {
-      app.main();
+      final fakeService = FakeUserService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            userName: 'TestUser',
+            userService: fakeService,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.byType(Card).first);
@@ -76,10 +137,18 @@ void main() {
     });
 
     testWidgets('Test8: Completing a task adds the correct points', (tester) async {
-      app.main();
+      final fakeService = FakeUserService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            userName: 'TestUser',
+            userService: fakeService,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
-      // First task gives 10 pts
       await tester.tap(find.byType(Card).first);
       await tester.pumpAndSettle();
 
@@ -87,7 +156,16 @@ void main() {
     });
 
     testWidgets('Test9: Completed task title has strikethrough', (tester) async {
-      app.main();
+      final fakeService = FakeUserService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            userName: 'TestUser',
+            userService: fakeService,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.byType(Card).first);
@@ -100,29 +178,43 @@ void main() {
     });
 
     testWidgets('Test10: Completed task cannot be completed again', (tester) async {
-      app.main();
+      final fakeService = FakeUserService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            userName: 'TestUser',
+            userService: fakeService,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
-      // Complete the task once
       await tester.tap(find.byType(Card).first);
       await tester.pumpAndSettle();
       expect(find.text('10 pts'), findsOneWidget);
 
-      // Tap again — points should NOT increase
       await tester.tap(find.byType(Card).first);
       await tester.pumpAndSettle();
       expect(find.text('10 pts'), findsOneWidget);
     });
 
     testWidgets('Test11: Completing multiple tasks accumulates points', (tester) async {
-      app.main();
+      final fakeService = FakeUserService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            userName: 'TestUser',
+            userService: fakeService,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
-      // Task 1 = 10 pts
       await tester.tap(find.byType(Card).at(0));
       await tester.pumpAndSettle();
 
-      // Task 2 = 15 pts → total 25
       await tester.tap(find.byType(Card).at(1));
       await tester.pumpAndSettle();
 
@@ -130,7 +222,16 @@ void main() {
     });
 
     testWidgets('Test12: Completing all tasks gives 100 total points', (tester) async {
-      app.main();
+      final fakeService = FakeUserService();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: HomeScreen(
+            userName: 'TestUser',
+            userService: fakeService,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       for (int i = 0; i < 5; i++) {
@@ -138,7 +239,6 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      // 10 + 15 + 20 + 25 + 30 = 100
       expect(find.text('100 pts'), findsOneWidget);
     });
   });

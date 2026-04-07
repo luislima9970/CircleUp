@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'user_service_interface.dart';
 
-class UserService {
+class UserService implements IUserService{
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   String _docId(String userName) {
@@ -32,8 +33,5 @@ class UserService {
         .snapshots()
         .map((doc) => (doc.data()?['points'] as num?)?.toInt() ?? 0);
   }
-
-  static void reset() {
-    _points = 0;
-  }
+  
 }

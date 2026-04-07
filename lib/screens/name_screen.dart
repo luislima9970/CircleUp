@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
+import '../services/user_service.dart';
+import 'task_screen.dart';
 
 class NameScreen extends StatefulWidget {
   const NameScreen({super.key});
@@ -19,7 +20,10 @@ class _NameScreenState extends State<NameScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => HomeScreen(userName: name),
+        builder: (_) => HomeScreen(
+          userName: name,
+          userService: UserService(),
+        ),
       ),
     );
   }
