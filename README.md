@@ -43,7 +43,7 @@ Business modeling in software development involves defining the product's vision
 
 ### **Product Vision**
 
-To empower individuals to achieve their goals through a high-commitment social system where where shared passions are transformed into achievements through collective motivation.
+To empower people to reach their goals by turning individual habits into a friendly and sustainable competition.
 <!-- 
 Start by defining a clear and concise product vision for your app, to help members of the team, contributors, and users into focusing their often disparate views into a concise, visual, and short textual form. 
 
