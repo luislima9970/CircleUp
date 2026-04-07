@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:projesof/screens/task_screen.dart';
 import 'package:projesof/mocks/fake_user_service.dart';
 
 void main() {
-  
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   group('Acceptance Tests - CircleUP', () {
 
     testWidgets('Test1: App opens and shows the logo in the AppBar', (tester) async {
