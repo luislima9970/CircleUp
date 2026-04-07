@@ -3,33 +3,33 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class UserService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  String _userIdFromName(String name) {
-    return name.trim().toLowerCase().replaceAll(' ', '_');
+  String _docId(String userName) {
+    return userName.trim().toLowerCase();
   }
 
-  Future<int> loadPoints(String name) async {
-    final userId = _userIdFromName(name);
-    final docRef = _db.collection('users').doc(userId);
-    final doc = await docRef.get();
+  Future<int> loadPoints(String userName) async {
+    final doc = await _db.collection('users').doc(_docId(userName)).get();
 
-    if (doc.exists) {
-      return (doc.data()?['points'] ?? 0) as int;
-    }
+    if (!doc.exists) return 0;
 
-    await docRef.set({
-      'name': name.trim(),
-      'points': 0,
-    });
-
-    return 0;
+    final data = doc.data();
+    return (data?['points'] as num?)?.toInt() ?? 0;
   }
 
-  Future<void> addPoints(String name, int amount) async {
-    final userId = _userIdFromName(name);
+  Future<void> addPoints(String userName, int amount) async {
+    final ref = _db.collection('users').doc(_docId(userName));
 
-    await _db.collection('users').doc(userId).set({
-      'name': name.trim(),
+    await ref.set({
+      'displayName': userName.trim(),
       'points': FieldValue.increment(amount),
     }, SetOptions(merge: true));
+  }
+
+  Stream<int> watchPoints(String userName) {
+    return _db
+        .collection('users')
+        .doc(_docId(userName))
+        .snapshots()
+        .map((doc) => (doc.data()?['points'] as num?)?.toInt() ?? 0);
   }
 }
