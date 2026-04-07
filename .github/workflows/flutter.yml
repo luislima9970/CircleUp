@@ -2,9 +2,9 @@ name: Flutter
 
 on:
   push:
-    branches: [ "git-actions" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "git-actions" ]
+    branches: [ "master" ]
 
 jobs:
    flutter_test:
