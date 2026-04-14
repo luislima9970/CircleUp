@@ -157,13 +157,15 @@ Example:
 
 
 ## Architecture and Design
-The system is organised into three layers: **Screens** (UI), **Services** (business logic), and **Models** (data structures bridging Firestore documents and the app). Screens use Services; Services communicate with Firebase and use Models. No screen accesses data directly.
+<!--
+The architecture of a software system encompasses the set of key decisions about its organization. 
 
-- **Screens:** Home, Group, Challenge, Vote, Profile  
-- **Services:** User, Group, Submission, Scoring  
-- **Models:** User, Group, Challenge, Submission, Vote, Theme  
+A well written architecture document is brief and reduces the amount of time it takes new programmers to a project to understand the code to feel able to make modifications and enhancements.
 
-<img width="1469" height="834" alt="package" src="https://github.com/user-attachments/assets/45250416-f43e-48cd-90b9-251d602e43da" />
+To document the architecture requires describing the decomposition of the system in their parts (high-level components) and the key behaviors and collaborations between them. 
+
+In this section you should start by briefly describing the components of the project and their interrelations. You should describe how you solved typical problems you may have encountered, pointing to well-known architectural and design patterns, if applicable.
+-->
 
 
 ### Logical architecture
