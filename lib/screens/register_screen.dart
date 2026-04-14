@@ -118,9 +118,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Full Name (Username) label + field
+                      // UserNamelabel + field
                       const Text(
-                        'Full Name',
+                        'Username',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -130,7 +130,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       TextFormField(
                         controller: _usernameController,
                         decoration: _inputDecoration(
-                          'Enter your full name',
+                          'Enter your username',
                           Icons.badge_outlined,
                         ),
                         validator: (value) {

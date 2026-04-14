@@ -24,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
-      // TODO: connect to Firebase Auth
+      // TODO: connect to Firebase Authentication
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Logged in successfully!')));
