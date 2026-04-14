@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projesof/screens/login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -173,7 +174,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       const Text('Already have an account? ', style: TextStyle(color: Colors.grey)),
                       GestureDetector(
-                        onTap: () => Navigator.pop(context),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        ),
                         child: const Text(
                           'Sign in',
                           style: TextStyle(
