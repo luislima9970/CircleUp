@@ -223,50 +223,6 @@ class HomepageScreen extends StatelessWidget {
   }
 }
 
-class _InfoBubble extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _InfoBubble({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF8BCF9B).withValues(alpha: 0.18),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, size: 18, color: const Color(0xFF4A7A52)),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: Color(0xFF3F5447),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _TaskCard extends StatelessWidget {
   final String title;
   final String subtitle;
