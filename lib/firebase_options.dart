@@ -85,5 +85,4 @@ class DefaultFirebaseOptions {
     storageBucket: 't3-prototype-circleup.firebasestorage.app',
     measurementId: 'G-M5WDGDNL1K',
   );
-
 }
