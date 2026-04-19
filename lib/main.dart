@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:projesof/screens/homepage_screen.dart';
 import 'firebase_options.dart';
 // import 'screens/name_screen.dart';
-import 'screens/register_screen.dart';
+import 'screens/homepage_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +24,7 @@ class MyApp extends StatelessWidget {
       title: 'CircleUP',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: Colors.deepPurple),
-      home: const RegisterScreen(),
+      home: const HomepageScreen(),
     );
   }
 }
