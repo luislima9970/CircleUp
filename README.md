@@ -318,6 +318,11 @@ You can find below information and references related with the project managemen
 
   After implementing this fix, the user registration functionality worked correctly, allowing users to create accounts and store their data in Firebase Auth and Firestore.
 
+
+  - **Homepage**
+
+  Currently, the only implemented funcionality in the homepage is the `Create Group` button. The other UI elements are just mocks that don't do anything. They are there to show how the UI is going to look like and their functionality will be implemented in future sprints.
+
 ### Sprint 2
 
 ### Sprint 2
