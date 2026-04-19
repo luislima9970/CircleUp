@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:projesof/screens/homepage_screen.dart';
 import 'firebase_options.dart';
 // import 'screens/name_screen.dart';
-import 'screens/homepage_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
