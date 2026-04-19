@@ -298,6 +298,28 @@ You can find below information and references related with the project managemen
 
 ### Sprint 1
 
+- **Firebase Integration Issues**
+
+  During the implementation of user registration in the `register_screen.dart`, we encountered a Firebase Authentication error when attempting to create a new user account. The error message was: `[firebase_auth/unknown] An internal error has occurred. [ CONFIGURATION_NOT_FOUND ]`.
+
+  This error is related to reCAPTCHA configuration in Firebase. Firebase requires a SHA-1 certificate fingerprint for Android apps to enable authentication features like email/password sign-up. Without the correct SHA-1, Firebase cannot verify the app's authenticity, leading to the CONFIGURATION_NOT_FOUND error.
+
+  This issue needed to be solved by the one who created the Firebase Database since no ohter element had the permissions to do it.
+
+  **Root Cause:**
+  - The debug keystore SHA-1 was not added to the Firebase project settings.
+  - Firebase uses this SHA-1 to configure reCAPTCHA and other security features for Android apps.
+
+  **Solution:**
+  - Retrieved the SHA-1 from the Android debug keystore using the command: `keytool -list -v -alias androiddebugkey -keystore ~/.android/debug.keystore -storepass android`.
+  - Added the SHA-1 fingerprint to the Firebase Console under Project Settings > General > Your apps > Android app > Certificates.
+  - Downloaded the updated `google-services.json` and replaced the existing file in `android/app/`.
+  - Ran `flutter clean`, `flutter pub get`, and `flutter run` to rebuild the app with the new configuration.
+
+  After implementing this fix, the user registration functionality worked correctly, allowing users to create accounts and store their data in Firebase Auth and Firestore.
+
+### Sprint 2
+
 ### Sprint 2
 
 ### Sprint 3
