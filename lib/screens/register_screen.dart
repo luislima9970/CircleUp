@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projesof/screens/login_screen.dart';
+import 'package:projesof/services/auth_service.dart';
+import 'package:projesof/services/user_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,6 +21,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
 
+  final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
+
   @override
   void dispose() {
     _usernameController.dispose();
@@ -27,12 +33,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  void _submit() {
+  void _submit() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: connect to Firebase
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account created successfully!')),
-      );
+      try {
+        // Criar conta no Firebase Auth
+        UserCredential userCredential = await _authService.signUp(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+
+        // Adicionar dados do usuário ao Firestore
+        await _userService.createUser(
+          uid: userCredential.user!.uid,
+          username: _usernameController.text.trim(),
+          email: _emailController.text.trim(),
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Account created successfully!')),
+          );
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const LoginScreen(),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error creating account: $e')),
+          );
+        }
+      }
     }
   }
 
