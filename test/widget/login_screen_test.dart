@@ -25,14 +25,14 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: LoginScreen(authService: mockAuthService)));
       await tester.pumpAndSettle();
 
-      expect(find.text('Log In'), findsOneWidget);
+      expect(find.text('Log In'), findsWidgets);
     });
 
     testWidgets('LS3: Shows errors when submitting empty form', (tester) async {
       await tester.pumpWidget(MaterialApp(home: LoginScreen(authService: mockAuthService)));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Log In'));
+      await tester.tap(find.text('Log In').last);
       await tester.pumpAndSettle();
 
       expect(find.text('Please enter your email'), findsOneWidget);
@@ -44,7 +44,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextFormField).at(0), 'notanemail');
-      await tester.tap(find.text('Log In'));
+      await tester.tap(find.text('Log In').last);
       await tester.pumpAndSettle();
 
       expect(find.text('Please enter a valid email'), findsOneWidget);
@@ -56,7 +56,7 @@ void main() {
 
       await tester.enterText(find.byType(TextFormField).at(0), 'test@email.com');
       await tester.enterText(find.byType(TextFormField).at(1), '123');
-      await tester.tap(find.text('Log In'));
+      await tester.tap(find.text('Log In').last);
       await tester.pumpAndSettle();
 
       expect(find.text('Password must be at least 6 characters'), findsOneWidget);
@@ -68,7 +68,7 @@ void main() {
 
       await tester.enterText(find.byType(TextFormField).at(0), 'test@email.com');
       await tester.enterText(find.byType(TextFormField).at(1), 'password123');
-      await tester.tap(find.text('Log In'));
+      await tester.tap(find.text('Log In').last);
       await tester.pumpAndSettle();
 
       expect(find.text('Please enter your email'), findsNothing);

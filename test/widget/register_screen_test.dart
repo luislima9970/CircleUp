@@ -44,6 +44,7 @@ void main() {
       )));
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text('Create Account').last);
       await tester.tap(find.text('Create Account').last);
       await tester.pumpAndSettle();
 
@@ -60,6 +61,7 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextFormField).at(0), 'ab');
+      await tester.ensureVisible(find.text('Create Account').last);
       await tester.tap(find.text('Create Account').last);
       await tester.pumpAndSettle();
 
@@ -74,6 +76,7 @@ void main() {
 
       await tester.enterText(find.byType(TextFormField).at(0), 'alice');
       await tester.enterText(find.byType(TextFormField).at(1), 'notanemail');
+      await tester.ensureVisible(find.text('Create Account').last);
       await tester.tap(find.text('Create Account').last);
       await tester.pumpAndSettle();
 
@@ -89,6 +92,7 @@ void main() {
       await tester.enterText(find.byType(TextFormField).at(0), 'alice');
       await tester.enterText(find.byType(TextFormField).at(1), 'alice@email.com');
       await tester.enterText(find.byType(TextFormField).at(2), '123');
+      await tester.ensureVisible(find.text('Create Account').last);
       await tester.tap(find.text('Create Account').last);
       await tester.pumpAndSettle();
 
@@ -105,6 +109,7 @@ void main() {
       await tester.enterText(find.byType(TextFormField).at(1), 'alice@email.com');
       await tester.enterText(find.byType(TextFormField).at(2), 'password123');
       await tester.enterText(find.byType(TextFormField).at(3), 'different456');
+      await tester.ensureVisible(find.text('Create Account').last);
       await tester.tap(find.text('Create Account').last);
       await tester.pumpAndSettle();
 
