@@ -5,13 +5,25 @@ import 'package:projesof/services/auth_service.dart';
 import 'package:projesof/services/user_service.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final AuthService? authService;
+  final UserService? userService;
+  const RegisterScreen({super.key, this.authService, this.userService});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  late final AuthService _authService;
+  late final UserService _userService;
+
+  @override
+  void initState() {
+    super.initState();
+    _authService = widget.authService ?? AuthService();
+    _userService = widget.userService ?? UserService();
+  }
+
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -20,9 +32,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
-
-  final AuthService _authService = AuthService();
-  final UserService _userService = UserService();
 
   @override
   void dispose() {

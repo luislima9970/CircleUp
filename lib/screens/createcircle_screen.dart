@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'homepage_screen.dart';
 
-class CreateCirclePage extends StatefulWidget {
-  const CreateCirclePage({super.key});
+class CreateCircleScreen extends StatefulWidget {
+  const CreateCircleScreen({super.key});
 
   @override
-  State<CreateCirclePage> createState() => _CreateCirclePageState();
+  State<CreateCircleScreen> createState() => _CreateCircleScreenState();
 }
 
-class _CreateCirclePageState extends State<CreateCirclePage> {
+class _CreateCircleScreenState extends State<CreateCircleScreen> {
   final _circleNameController = TextEditingController(text: 'Eco Battle');
   String _selectedTheme = 'Sustainability';
 
