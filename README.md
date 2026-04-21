@@ -298,7 +298,9 @@ You can find below information and references related with the project managemen
 
 ### Sprint 1
 
-- **Firebase Integration Issues**
+- **Bugs**
+
+  **Firebase Integration Issues**
 
   During the implementation of user registration in the `register_screen.dart`, we encountered a Firebase Authentication error when attempting to create a new user account. The error message was: `[firebase_auth/unknown] An internal error has occurred. [ CONFIGURATION_NOT_FOUND ]`.
 
@@ -333,8 +335,12 @@ You can find below information and references related with the project managemen
     - **Puzzles:** The database was fully implemented, but only the user and authentication features are currently in use. Therefore, even with testing, we cannot yet confirm that everything is fully functional.  
     - **List of a few improvements to implement in the next Sprint:** Possibly allow login with a username instead of requiring an email. When a user signs up, they should be redirected directly to the Homepage and logged in automatically.
 ### Sprint 2
-
-### Sprint 2
+- **Sprint planning and retrospectives:**  
+  * **Plans:** 
+    - In this sprint is espected to implement the core mechanism of the app.
+    
+      ![alt text](image.png)
+    
 
 ### Sprint 3
 
