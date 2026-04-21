@@ -219,7 +219,7 @@ class HomepageScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 14),
                       const _TaskCard(
-                        title: 'Use reusable bottle',
+                        title: 'Use reusable bottle', //This is temporary, just for good looks
                         subtitle: 'Eco Warriors',
                         status: '2 items',
                         icon: Icons.water_drop,
