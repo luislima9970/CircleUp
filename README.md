@@ -326,6 +326,11 @@ You can find below information and references related with the project managemen
 - **Sprint planning and retrospectives:** 
   * Plans: all our plans were completed.
   ![alt text](<Captura de ecrã de 2026-04-21 16-32-35.png>)
+ * retrospectives: meeting notes in a document in the repository, addressing the following questions:
+        * Did well: The workflow was smooth and effective everything was done on time and without unresolved bugs.
+        * Do differently: The main aspect t change is to make each task more modular and each person should only make their only assigned task, in sprint 1 there were people who did soe parts which didn't belong to their tasks.
+        * Puzzles: The database was fully implemented but only user and authentication are in use, so even with the testing we can't assert that everything is fully functional.
+        * list of a few improvements to implement next Sprint: Possibly logging in with username instead of requiring email. When a user signs up it should redirect directly to the Homepage log in automatically  
 ### Sprint 2
 
 ### Sprint 2
