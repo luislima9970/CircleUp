@@ -323,6 +323,9 @@ You can find below information and references related with the project managemen
 
   Currently, the only implemented funcionality in the homepage is the `Create Group` button. The other UI elements are just mocks that don't do anything. They are there to show how the UI is going to look like and their functionality will be implemented in future sprints.
 
+- **Sprint planning and retrospectives:** 
+  * Plans: all our plans were completed.
+  ![alt text](<Captura de ecrã de 2026-04-21 16-32-35.png>)
 ### Sprint 2
 
 ### Sprint 2
