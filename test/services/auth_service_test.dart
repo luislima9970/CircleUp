@@ -24,7 +24,6 @@ void main() {
     });
 
     test('AS2: signIn returns UserCredential for existing user', () async {
-      // MockFirebaseAuth aceita qualquer credencial por defeito
       final result = await authService.signIn(
         email: 'test@email.com',
         password: 'password123',
@@ -33,7 +32,6 @@ void main() {
     });
 
     test('AS3: getCurrentUser returns null when not signed in', () {
-      // Mock começa sem user autenticado
       expect(authService.getCurrentUser(), isNull);
     });
 

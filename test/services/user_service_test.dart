@@ -7,7 +7,6 @@ void main() {
   late UserService userService;
 
   setUp(() {
-    // Cada teste começa com uma base de dados limpa
     fakeFirestore = FakeFirebaseFirestore();
     userService = UserService(firestore: fakeFirestore);
   });
