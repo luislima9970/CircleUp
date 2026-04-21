@@ -119,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Sign in to continue your journey',
+                      'Log In to continue your journey',
                       style: TextStyle(
                         fontSize: 15,
                         color: Color(0xFF7A8A94),
@@ -245,7 +245,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   child: const Center(
                                     child: Text(
-                                      'Sign in',
+                                      'Log In',
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -261,10 +261,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text(
-                                  "Don't have an account? ",
-                                  style: TextStyle(
-                                    color: Color(0xFF7A8A94),
+                                Flexible(
+                                  child: Text(
+                                    "Don't have an account? ",
+                                    style: const TextStyle(
+                                      color: Color(0xFF7A8A94),
+                                    ),
+                                    softWrap: true,
                                   ),
                                 ),
                                 GestureDetector(
@@ -275,7 +278,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                   child: const Text(
-                                    'Sign up',
+                                    'Sign Up',
                                     style: TextStyle(
                                       color: Color(0xFF2A8CFF),
                                       fontWeight: FontWeight.bold,
@@ -283,7 +286,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               ],
-                            ),
+                            )
                           ],
                         ),
                       ),

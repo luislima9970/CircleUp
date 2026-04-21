@@ -9,7 +9,7 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: CreateCircleScreen()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Create Your Circle'), findsOneWidget);
+      expect(find.text('Create Circle'), findsOneWidget);
     });
 
     testWidgets('CC2: Renders Circle Name field with default value', (tester) async {

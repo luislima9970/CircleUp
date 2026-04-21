@@ -25,8 +25,8 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: HomepageScreen()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Create Group'), findsOneWidget);
-      expect(find.text('Join Group'), findsOneWidget);
+      expect(find.text('Create Circle'), findsOneWidget);
+      expect(find.text('Join Circle'), findsOneWidget);
     });
 
     testWidgets('HS4: Renders Pending Tasks section', (tester) async {
@@ -50,10 +50,10 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: HomepageScreen()));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Create Group'));
+      await tester.tap(find.text('Create Circle'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Create Your Circle'), findsOneWidget);
+      expect(find.text('Create Circle'), findsOneWidget);
     });
 
   });
