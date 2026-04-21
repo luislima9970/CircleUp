@@ -327,7 +327,7 @@ You can find below information and references related with the project managemen
 
 - **Sprint planning and retrospectives:**  
   * **Plans:** All planned tasks were completed.  
-  ![alt text](<Captura de ecrã de 2026-04-21 16-32-35.png>)  
+  ![alt text](assets/Plan-Sprint1.png)  
 
   * **Retrospectives:** Meeting notes were recorded in a document in the repository, addressing the following questions:  
     - **Did well:** The workflow was smooth and effective. Everything was completed on time and without unresolved bugs.  
@@ -339,7 +339,7 @@ You can find below information and references related with the project managemen
   * **Plans:** 
     - In this sprint is espected to implement the core mechanism of the app.
     
-      ![alt text](image.png)
+      ![alt text](assets/Plan-Sprint2.png)
     
 
 ### Sprint 3
