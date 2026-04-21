@@ -141,7 +141,7 @@ class HomepageScreen extends StatelessWidget {
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) =>
-                                          CreateCircleScreen(),
+                                      const CreateCircleScreen(),
                                     ),
                                   );
                                 },
@@ -219,7 +219,7 @@ class HomepageScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 14),
                       const _TaskCard(
-                        title: 'Use reusable bottle', //This is temporary, just for good looks
+                        title: 'Use reusable bottle',
                         subtitle: 'Eco Warriors',
                         status: '2 items',
                         icon: Icons.water_drop,
@@ -234,10 +234,23 @@ class HomepageScreen extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: 0,
         selectedItemColor: const Color(0xFF2A8CFF),
         unselectedItemColor: const Color(0xFF95A39A),
         showUnselectedLabels: true,
+        selectedFontSize: 12,
+        unselectedFontSize: 12,
+        onTap: (index) {
+          if (index == 1) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const CreateCircleScreen(),
+              ),
+            );
+          }
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_filled),
