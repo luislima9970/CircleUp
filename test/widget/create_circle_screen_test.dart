@@ -17,7 +17,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Circle Name'), findsOneWidget);
-      expect(find.text('Eco Battle'), findsWidgets); // ← findsWidgets em vez de findsOneWidget
+      expect(find.text('Eco Battle'), findsWidgets);
     });
 
     testWidgets('CC3: Renders Theme dropdown with default Sustainability', (tester) async {
