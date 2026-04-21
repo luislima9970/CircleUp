@@ -133,5 +133,13 @@ void main() {
       expect(find.text('Please enter a username'), findsNothing);
     });
 
+    testWidgets('RS9: Log In link is visible', (tester) async {
+      await tester.pumpWidget(MaterialApp(home: RegisterScreen(
+        authService: mockAuthService, userService: mockUserService,
+      )));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Log In'), findsOneWidget);
+    });
   });
 }

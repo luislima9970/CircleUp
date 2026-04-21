@@ -80,7 +80,7 @@ void main() {
       await tester.pumpWidget(MaterialApp(home: LoginScreen(authService: mockAuthService)));
       await tester.pumpAndSettle();
 
-      expect(find.text('Sign up'), findsOneWidget);
+      expect(find.text('Sign Up'), findsOneWidget);
     });
 
   });
