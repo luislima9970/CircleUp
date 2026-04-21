@@ -323,6 +323,15 @@ You can find below information and references related with the project managemen
 
   Currently, the only implemented funcionality in the homepage is the `Create Group` button. The other UI elements are just mocks that don't do anything. They are there to show how the UI is going to look like and their functionality will be implemented in future sprints.
 
+- **Sprint planning and retrospectives:**  
+  * **Plans:** All planned tasks were completed.  
+  ![alt text](<Captura de ecrã de 2026-04-21 16-32-35.png>)  
+
+  * **Retrospectives:** Meeting notes were recorded in a document in the repository, addressing the following questions:  
+    - **Did well:** The workflow was smooth and effective. Everything was completed on time and without unresolved bugs.  
+    - **Do differently:** The main aspect to change is to make each task more modular, and each person should only work on their assigned task. In Sprint 1, some people worked on parts that did not belong to their tasks.  
+    - **Puzzles:** The database was fully implemented, but only the user and authentication features are currently in use. Therefore, even with testing, we cannot yet confirm that everything is fully functional.  
+    - **List of a few improvements to implement in the next Sprint:** Possibly allow login with a username instead of requiring an email. When a user signs up, they should be redirected directly to the Homepage and logged in automatically.
 ### Sprint 2
 
 ### Sprint 2
