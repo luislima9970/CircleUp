@@ -1,238 +1,149 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'createcircle_screen.dart';
 
 class HomepageScreen extends StatelessWidget {
   const HomepageScreen({super.key});
 
+  void _openCreateCircle(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CreateCircleScreen(),
+      ),
+    );
+  }
+
+  void _showJoinCircleMessage(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Join Circle will be available soon.'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       body: Container(
+        width: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
               Color(0xFFEAF4FF),
               Color(0xFFF8FCFF),
+              Color(0xFFEFFAF3),
             ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
         ),
         child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Stack(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              const Positioned(
+                top: -90,
+                right: -70,
+                child: _BackgroundCircle(
+                  size: 210,
+                  color: Color(0x332A8CFF),
+                ),
+              ),
+              const Positioned(
+                bottom: -100,
+                left: -80,
+                child: _BackgroundCircle(
+                  size: 230,
+                  color: Color(0x3343D17A),
+                ),
+              ),
+
+              SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 22, 24, 100),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Homepage',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w800,
-                            color: Color(0xFF1C2A33),
+                    const _HomeHeader(),
+
+                    const SizedBox(height: 26),
+
+                    _EmptyProgressCard(
+                      onCreateCircle: () => _openCreateCircle(context),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _QuickActionCard(
+                            icon: Icons.add_rounded,
+                            title: 'Create',
+                            subtitle: 'Start a circle',
+                            onTap: () => _openCreateCircle(context),
                           ),
                         ),
-                        SizedBox(height: 6),
-                        Text(
-                          'Stay on top of your circles',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Color(0xFF7A8A94),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: _QuickActionCard(
+                            icon: Icons.group_add_outlined,
+                            title: 'Join',
+                            subtitle: 'Enter a circle',
+                            onTap: () => _showJoinCircleMessage(context),
                           ),
                         ),
                       ],
                     ),
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x11000000),
-                            blurRadius: 16,
-                            offset: Offset(0, 6),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.person,
-                        color: Color(0xFF2A8CFF),
-                      ),
+
+                    const SizedBox(height: 30),
+
+                    const _SectionHeader(
+                      title: 'Your Circles',
+                      action: '',
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    _EmptyStateCard(
+                      icon: Icons.groups_outlined,
+                      title: 'No circles yet',
+                      subtitle:
+                      'Create or join a circle to start seeing your groups here.',
+                      buttonText: 'Create Circle',
+                      onPressed: () => _openCreateCircle(context),
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    const _SectionHeader(
+                      title: 'Pending Tasks',
+                      action: '',
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    _EmptyStateCard(
+                      icon: Icons.checklist_rtl,
+                      title: 'No pending tasks',
+                      subtitle:
+                      currentUser == null
+                          ? 'Log in to see your tasks.'
+                          : 'Tasks from your circles will appear here.',
+                      buttonText: null,
+                      onPressed: null,
                     ),
                   ],
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text(
-                            'Your Circles',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1C2A33),
-                            ),
-                          ),
-                          Text(
-                            'See all',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF2A8CFF),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x11000000),
-                              blurRadius: 20,
-                              offset: Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Create a new circle or join one',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF1C2A33),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Start a new circle and invite friends to join your challenge.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF7A8A94),
-                              ),
-                            ),
-                            const SizedBox(height: 22),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 52,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                      const CreateCircleScreen(),
-                                    ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  elevation: 0,
-                                ),
-                                child: Ink(
-                                  decoration: const BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Color(0xFF2A8CFF),
-                                        Color(0xFF43D17A),
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.all(
-                                      Radius.circular(16),
-                                    ),
-                                  ),
-                                  child: const Center(
-                                    child: Text(
-                                      'Create Circle',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 52,
-                              child: OutlinedButton(
-                                onPressed: () {},
-                                style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(
-                                    color: Color(0xFF2A8CFF),
-                                    width: 1.5,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'Join Circle',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF2A8CFF),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      const Text(
-                        'Pending Tasks',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1C2A33),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      const _TaskCard(
-                        title: 'Use reusable bottle',
-                        subtitle: 'Eco Warriors',
-                        status: '2 items',
-                        icon: Icons.water_drop,
-                      ),
-                      const SizedBox(height: 80),
-                    ],
-                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
+
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: 0,
@@ -243,12 +154,7 @@ class HomepageScreen extends StatelessWidget {
         unselectedFontSize: 12,
         onTap: (index) {
           if (index == 1) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const CreateCircleScreen(),
-              ),
-            );
+            _openCreateCircle(context);
           }
         },
         items: const [
@@ -274,93 +180,475 @@ class HomepageScreen extends StatelessWidget {
   }
 }
 
-class _TaskCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final String status;
-  final IconData icon;
+class _HomeHeader extends StatefulWidget {
+  const _HomeHeader();
 
-  const _TaskCard({
-    required this.title,
-    required this.subtitle,
-    required this.status,
-    required this.icon,
+  @override
+  State<_HomeHeader> createState() => _HomeHeaderState();
+}
+
+class _HomeHeaderState extends State<_HomeHeader> {
+  late final Future<String> _usernameFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _usernameFuture = _getUsername();
+  }
+
+  Future<String> _getUsername() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        return '';
+      }
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!doc.exists) {
+        return '';
+      }
+
+      final data = doc.data();
+
+      if (data == null) {
+        return '';
+      }
+
+      final username = data['username'];
+
+      if (username == null || username.toString().trim().isEmpty) {
+        return '';
+      }
+
+      return username.toString().trim();
+    } catch (e) {
+      debugPrint('Error loading username: $e');
+      return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String>(
+      future: _usernameFuture,
+      builder: (context, snapshot) {
+        final username = snapshot.data ?? '';
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    username.isEmpty ? 'Hello 👋' : 'Hello, $username 👋',
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1C2A33),
+                      height: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Ready for today’s challenges?',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF7A8A94),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x14000000),
+                    blurRadius: 18,
+                    offset: Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.person_rounded,
+                color: Color(0xFF2A8CFF),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _EmptyProgressCard extends StatelessWidget {
+  final VoidCallback onCreateCircle;
+
+  const _EmptyProgressCard({
+    required this.onCreateCircle,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF2A8CFF),
+            Color(0xFF43D17A),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 14,
-            offset: Offset(0, 6),
+            color: Color(0x242A8CFF),
+            blurRadius: 26,
+            offset: Offset(0, 14),
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEAF4FF),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF2A8CFF),
-              size: 28,
+          const Row(
+            children: [
+              Icon(
+                Icons.local_fire_department_rounded,
+                color: Colors.white,
+                size: 30,
+              ),
+              SizedBox(width: 10),
+              Text(
+                'Today’s Progress',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 21,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          const Text(
+            'Your progress will appear here once you have circles and tasks.',
+            style: TextStyle(
+              color: Color(0xEFFFFFFF),
+              fontSize: 14,
+              height: 1.4,
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1C2A33),
-                  ),
+
+          const SizedBox(height: 20),
+
+          SizedBox(
+            height: 44,
+            child: OutlinedButton(
+              onPressed: onCreateCircle,
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(
+                  color: Colors.white,
+                  width: 1.4,
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF7A8A94),
-                  ),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              vertical: 8,
-              horizontal: 12,
-            ),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFE7C2),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Text(
-              status,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF8A5A12),
+              ),
+              child: const Text(
+                'Create your first circle',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: const Color(0xFFE5EEF5),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0D000000),
+                blurRadius: 16,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF4FF),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Icon(
+                  icon,
+                  color: const Color(0xFF2A8CFF),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1C2A33),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF7A8A94),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final String action;
+
+  const _SectionHeader({
+    required this.title,
+    required this.action,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 21,
+            fontWeight: FontWeight.w800,
+            color: Color(0xFF1C2A33),
+          ),
+        ),
+        if (action.isNotEmpty)
+          Text(
+            action,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF2A8CFF),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _EmptyStateCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String? buttonText;
+  final VoidCallback? onPressed;
+
+  const _EmptyStateCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.buttonText,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: const Color(0xFFE5EEF5),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF4FF),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              icon,
+              color: const Color(0xFF2A8CFF),
+              size: 30,
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1C2A33),
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.4,
+              color: Color(0xFF7A8A94),
+            ),
+          ),
+
+          if (buttonText != null && onPressed != null) ...[
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: onPressed,
+                style: ElevatedButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
+                child: Ink(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(0xFF2A8CFF),
+                        Color(0xFF43D17A),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.all(
+                      Radius.circular(16),
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      buttonText!,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _BackgroundCircle extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _BackgroundCircle({
+    required this.size,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
       ),
     );
   }
