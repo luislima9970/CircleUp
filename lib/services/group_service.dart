@@ -149,4 +149,25 @@ class GroupService {
       'streak': streak,
     });
   }
+
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> getGroupsForUser(
+      String uid,
+      ) async {
+    final groupsSnapshot = await _firestore.collection('groups').get();
+
+    final List<QueryDocumentSnapshot<Map<String, dynamic>>> userGroups = [];
+
+    for (final groupDoc in groupsSnapshot.docs) {
+      final memberDoc = await groupDoc.reference
+          .collection('members')
+          .doc(uid)
+          .get();
+
+      if (memberDoc.exists) {
+        userGroups.add(groupDoc);
+      }
+    }
+
+    return userGroups;
+  }
 }
