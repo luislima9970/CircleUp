@@ -310,7 +310,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ),
                                   child: const Center(
                                     child: Text(
-                                      'Create account',
+                                      'Create Account',
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -326,10 +326,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Text(
-                                  'Already have an account? ',
-                                  style: TextStyle(
-                                    color: Color(0xFF7A8A94),
+                                Flexible(
+                                  child: Text(
+                                    'Already have an account? ',
+                                    style: const TextStyle(
+                                      color: Color(0xFF7A8A94),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 GestureDetector(
@@ -340,7 +343,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     ),
                                   ),
                                   child: const Text(
-                                    'Sign in',
+                                    'Log In',
                                     style: TextStyle(
                                       color: Color(0xFF2A8CFF),
                                       fontWeight: FontWeight.bold,
@@ -348,7 +351,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   ),
                                 ),
                               ],
-                            ),
+                            )
                           ],
                         ),
                       ),

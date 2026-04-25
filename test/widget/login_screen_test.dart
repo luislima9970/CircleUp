@@ -76,12 +76,11 @@ void main() {
       expect(find.text('Please enter a valid email'), findsNothing);
     });
 
-    testWidgets('LS7: Sign up link is visible', (tester) async {
+    testWidgets('LS7: Sign Up link is visible', (tester) async {
       await tester.pumpWidget(MaterialApp(home: LoginScreen(authService: mockAuthService)));
       await tester.pumpAndSettle();
 
-      expect(find.text('Sign up'), findsOneWidget);
+      expect(find.text('Sign Up'), findsOneWidget);
     });
-
   });
 }
