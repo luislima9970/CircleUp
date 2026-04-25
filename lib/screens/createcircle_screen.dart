@@ -173,33 +173,36 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
       _isLoading = true;
     });
 
-    String? createdGroupId;
-
     try {
       final userDoc = await _userService.getUserById(user.uid);
       final userData = userDoc.data();
 
-      final username = userData?['username']?.toString().trim();
-      final photoUrl = userData?['photoUrl']?.toString();
+      String username = userData?['username']?.toString().trim() ?? '';
 
-      if (username == null || username.isEmpty) {
-        throw Exception('Username not found for current user.');
+      if (username.isEmpty && user.displayName != null) {
+        username = user.displayName!.trim();
       }
 
-      createdGroupId = await _groupService.createGroup(
+      if (username.isEmpty && user.email != null) {
+        username = user.email!.split('@').first;
+      }
+
+      if (username.isEmpty) {
+        username = 'User';
+      }
+
+      final photoUrl = userData?['photoUrl']?.toString();
+
+      final createdGroupId = await _groupService.createGroupWithOwner(
         name: _circleNameController.text.trim(),
         description: _descriptionController.text.trim(),
         theme: _selectedTheme,
         createdBy: user.uid,
-      );
-
-      await _groupService.addMemberToGroup(
-        groupId: createdGroupId,
-        uid: user.uid,
         username: username,
         photoUrl: photoUrl,
-        role: 'owner',
       );
+
+      debugPrint('Circle created with id: $createdGroupId');
 
       if (!mounted) return;
 
@@ -218,11 +221,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
         _groupsFuture = _loadUserGroups();
       });
     } catch (e) {
-      if (createdGroupId != null) {
-        try {
-          await _groupService.deleteGroup(createdGroupId);
-        } catch (_) {}
-      }
+      debugPrint('Error creating circle: $e');
 
       if (!mounted) return;
 
@@ -264,6 +263,10 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
           if (index == 1) {
             if (_showCreateForm) {
               _closeCreateForm();
+            } else {
+              setState(() {
+                _groupsFuture = _loadUserGroups();
+              });
             }
             return;
           }

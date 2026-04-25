@@ -3,7 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class GroupService {
   final FirebaseFirestore _firestore;
 
-   GroupService({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
+  GroupService({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   Future<String> createGroup({
     required String name,
@@ -20,6 +21,40 @@ class GroupService {
       'createdBy': createdBy,
       'createdAt': Timestamp.now(),
     });
+
+    return groupRef.id;
+  }
+
+  Future<String> createGroupWithOwner({
+    required String name,
+    required String description,
+    required String theme,
+    required String createdBy,
+    required String username,
+    String? photoUrl,
+  }) async {
+    final groupRef = _firestore.collection('groups').doc();
+
+    final batch = _firestore.batch();
+
+    batch.set(groupRef, {
+      'name': name,
+      'description': description,
+      'theme': theme,
+      'createdBy': createdBy,
+      'createdAt': Timestamp.now(),
+    });
+
+    batch.set(groupRef.collection('members').doc(createdBy), {
+      'username': username,
+      'photoUrl': photoUrl,
+      'points': 0,
+      'streak': 0,
+      'role': 'owner',
+      'joinedAt': Timestamp.now(),
+    });
+
+    await batch.commit();
 
     return groupRef.id;
   }
