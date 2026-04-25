@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projesof/services/group_service.dart';
 
 import 'createcircle_screen.dart';
+import 'group_page.dart';
 
 class HomepageScreen extends StatelessWidget {
   const HomepageScreen({super.key});
 
-  void _openCreateCircle(BuildContext context) {
-    Navigator.push(
+  void _openCirclesPage(BuildContext context) {
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (_) => const CreateCircleScreen(),
@@ -16,21 +18,29 @@ class HomepageScreen extends StatelessWidget {
     );
   }
 
-  void _showJoinCircleMessage(BuildContext context) {
+  void _showTasksMessage(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Join Circle will be available soon.'),
+        content: Text('Tasks page will be available soon.'),
+      ),
+    );
+  }
+
+  void _showProfileMessage(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Profile page will be available soon.'),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
-
     return Scaffold(
+      backgroundColor: const Color(0xFFEFFAF3),
       body: Container(
         width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -61,8 +71,8 @@ class HomepageScreen extends StatelessWidget {
                   color: Color(0x3343D17A),
                 ),
               ),
-
               SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(24, 22, 24, 100),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,70 +81,31 @@ class HomepageScreen extends StatelessWidget {
 
                     const SizedBox(height: 26),
 
-                    _EmptyProgressCard(
-                      onCreateCircle: () => _openCreateCircle(context),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _QuickActionCard(
-                            icon: Icons.add_rounded,
-                            title: 'Create',
-                            subtitle: 'Start a circle',
-                            onTap: () => _openCreateCircle(context),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: _QuickActionCard(
-                            icon: Icons.group_add_outlined,
-                            title: 'Join',
-                            subtitle: 'Enter a circle',
-                            onTap: () => _showJoinCircleMessage(context),
-                          ),
-                        ),
-                      ],
-                    ),
+                    const _ProgressPlaceholderCard(),
 
                     const SizedBox(height: 30),
 
                     const _SectionHeader(
-                      title: 'Your Circles',
-                      action: '',
+                      title: 'Your Groups',
                     ),
 
                     const SizedBox(height: 14),
 
-                    _EmptyStateCard(
-                      icon: Icons.groups_outlined,
-                      title: 'No circles yet',
-                      subtitle:
-                      'Create or join a circle to start seeing your groups here.',
-                      buttonText: 'Create Circle',
-                      onPressed: () => _openCreateCircle(context),
-                    ),
+                    const _UserGroupsList(),
 
                     const SizedBox(height: 30),
 
                     const _SectionHeader(
                       title: 'Pending Tasks',
-                      action: '',
                     ),
 
                     const SizedBox(height: 14),
 
-                    _EmptyStateCard(
+                    const _EmptyStateCard(
                       icon: Icons.checklist_rtl,
                       title: 'No pending tasks',
                       subtitle:
-                      currentUser == null
-                          ? 'Log in to see your tasks.'
-                          : 'Tasks from your circles will appear here.',
-                      buttonText: null,
-                      onPressed: null,
+                      'Tasks from your groups will appear here once they are connected.',
                     ),
                   ],
                 ),
@@ -143,8 +114,8 @@ class HomepageScreen extends StatelessWidget {
           ),
         ),
       ),
-
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.white,
         type: BottomNavigationBarType.fixed,
         currentIndex: 0,
         selectedItemColor: const Color(0xFF2A8CFF),
@@ -153,8 +124,20 @@ class HomepageScreen extends StatelessWidget {
         selectedFontSize: 12,
         unselectedFontSize: 12,
         onTap: (index) {
+          if (index == 0) {
+            return;
+          }
+
           if (index == 1) {
-            _openCreateCircle(context);
+            _openCirclesPage(context);
+          }
+
+          if (index == 2) {
+            _showTasksMessage(context);
+          }
+
+          if (index == 3) {
+            _showProfileMessage(context);
           }
         },
         items: const [
@@ -209,23 +192,19 @@ class _HomeHeaderState extends State<_HomeHeader> {
           .doc(user.uid)
           .get();
 
-      if (!doc.exists) {
-        return '';
-      }
-
       final data = doc.data();
 
       if (data == null) {
         return '';
       }
 
-      final username = data['username'];
+      final username = data['username']?.toString().trim();
 
-      if (username == null || username.toString().trim().isEmpty) {
+      if (username == null || username.isEmpty) {
         return '';
       }
 
-      return username.toString().trim();
+      return username;
     } catch (e) {
       debugPrint('Error loading username: $e');
       return '';
@@ -248,6 +227,8 @@ class _HomeHeaderState extends State<_HomeHeader> {
                 children: [
                   Text(
                     username.isEmpty ? 'Hello 👋' : 'Hello, $username 👋',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w800,
@@ -266,7 +247,7 @@ class _HomeHeaderState extends State<_HomeHeader> {
                 ],
               ),
             ),
-
+            const SizedBox(width: 14),
             Container(
               width: 52,
               height: 52,
@@ -293,16 +274,13 @@ class _HomeHeaderState extends State<_HomeHeader> {
   }
 }
 
-class _EmptyProgressCard extends StatelessWidget {
-  final VoidCallback onCreateCircle;
-
-  const _EmptyProgressCard({
-    required this.onCreateCircle,
-  });
+class _ProgressPlaceholderCard extends StatelessWidget {
+  const _ProgressPlaceholderCard();
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -322,10 +300,10 @@ class _EmptyProgressCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.local_fire_department_rounded,
@@ -343,40 +321,13 @@ class _EmptyProgressCard extends StatelessWidget {
               ),
             ],
           ),
-
-          const SizedBox(height: 12),
-
-          const Text(
-            'Your progress will appear here once you have circles and tasks.',
+          SizedBox(height: 12),
+          Text(
+            'Your progress will appear here once you have groups and tasks.',
             style: TextStyle(
               color: Color(0xEFFFFFFF),
               fontSize: 14,
               height: 1.4,
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          SizedBox(
-            height: 44,
-            child: OutlinedButton(
-              onPressed: onCreateCircle,
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(
-                  color: Colors.white,
-                  width: 1.4,
-                ),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: const Text(
-                'Create your first circle',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
             ),
           ),
         ],
@@ -385,31 +336,146 @@ class _EmptyProgressCard extends StatelessWidget {
   }
 }
 
-class _QuickActionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
+class _UserGroupsList extends StatefulWidget {
+  const _UserGroupsList();
 
-  const _QuickActionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
+  @override
+  State<_UserGroupsList> createState() => _UserGroupsListState();
+}
+
+class _UserGroupsListState extends State<_UserGroupsList> {
+  final GroupService _groupService = GroupService();
+
+  late final Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+  _groupsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _groupsFuture = _loadUserGroups();
+  }
+
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+  _loadUserGroups() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return [];
+    }
+
+    return _groupService.getGroupsForUser(user.uid);
+  }
 
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
+      future: _groupsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _LoadingCard();
+        }
+
+        if (snapshot.hasError) {
+          return const _EmptyStateCard(
+            icon: Icons.error_outline_rounded,
+            title: 'Could not load groups',
+            subtitle: 'There was a problem loading your groups.',
+          );
+        }
+
+        final groups = snapshot.data ?? [];
+
+        if (groups.isEmpty) {
+          return const _EmptyStateCard(
+            icon: Icons.groups_outlined,
+            title: 'No groups yet',
+            subtitle: 'Your groups will appear here after you create or join one.',
+          );
+        }
+
+        return Column(
+          children: [
+            for (int i = 0; i < groups.length; i++) ...[
+              _GroupCard(groupDoc: groups[i]),
+              if (i != groups.length - 1) const SizedBox(height: 12),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _GroupCard extends StatelessWidget {
+  final QueryDocumentSnapshot<Map<String, dynamic>> groupDoc;
+
+  const _GroupCard({
+    required this.groupDoc,
+  });
+
+  IconData _themeIcon(String theme) {
+    if (theme == 'Fitness') {
+      return Icons.fitness_center_rounded;
+    }
+
+    if (theme == 'Wellness') {
+      return Icons.self_improvement_rounded;
+    }
+
+    if (theme == 'Sustainability') {
+      return Icons.eco_rounded;
+    }
+
+    return Icons.groups_rounded;
+  }
+
+  Color _themeColor(String theme) {
+    if (theme == 'Fitness') {
+      return const Color(0xFF2A8CFF);
+    }
+
+    if (theme == 'Wellness') {
+      return const Color(0xFFFFB84D);
+    }
+
+    if (theme == 'Sustainability') {
+      return const Color(0xFF43D17A);
+    }
+
+    return const Color(0xFF2A8CFF);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = groupDoc.data();
+
+    final name = data['name']?.toString() ?? 'Unnamed group';
+    final theme = data['theme']?.toString() ?? '';
+    final description = data['description']?.toString() ?? '';
+
+    final color = _themeColor(theme);
+    final icon = _themeIcon(theme);
+
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
+      color: Colors.white.withValues(alpha: 0.94),
+      borderRadius: BorderRadius.circular(24),
       child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => GroupPageScreen(
+                groupId: groupDoc.id,
+              ),
+            ),
+          );
+        },
         child: Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: const Color(0xFFE5EEF5),
             ),
@@ -424,46 +490,64 @@ class _QuickActionCard extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF4FF),
-                  borderRadius: BorderRadius.circular(15),
+                  color: color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(18),
                 ),
                 child: Icon(
                   icon,
-                  color: const Color(0xFF2A8CFF),
+                  color: color,
+                  size: 28,
                 ),
               ),
-
-              const SizedBox(width: 12),
-
+              const SizedBox(width: 15),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 17,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF1C2A33),
                       ),
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF7A8A94),
+                    if (theme.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        theme,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF7A8A94),
+                        ),
                       ),
-                    ),
+                    ],
+                    if (description.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF7A8A94),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
+              ),
+              const SizedBox(width: 10),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF95A39A),
               ),
             ],
           ),
@@ -475,36 +559,20 @@ class _QuickActionCard extends StatelessWidget {
 
 class _SectionHeader extends StatelessWidget {
   final String title;
-  final String action;
 
   const _SectionHeader({
     required this.title,
-    required this.action,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 21,
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF1C2A33),
-          ),
-        ),
-        if (action.isNotEmpty)
-          Text(
-            action,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Color(0xFF2A8CFF),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-      ],
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 21,
+        fontWeight: FontWeight.w800,
+        color: Color(0xFF1C2A33),
+      ),
     );
   }
 }
@@ -513,24 +581,20 @@ class _EmptyStateCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final String? buttonText;
-  final VoidCallback? onPressed;
 
   const _EmptyStateCard({
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.buttonText,
-    required this.onPressed,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(26),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.white.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(26),
         border: Border.all(
           color: const Color(0xFFE5EEF5),
@@ -546,33 +610,29 @@ class _EmptyStateCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 58,
-            height: 58,
+            width: 62,
+            height: 62,
             decoration: BoxDecoration(
               color: const Color(0xFFEAF4FF),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(22),
             ),
             child: Icon(
               icon,
               color: const Color(0xFF2A8CFF),
-              size: 30,
+              size: 32,
             ),
           ),
-
-          const SizedBox(height: 14),
-
+          const SizedBox(height: 16),
           Text(
             title,
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
               color: Color(0xFF1C2A33),
             ),
           ),
-
           const SizedBox(height: 8),
-
           Text(
             subtitle,
             textAlign: TextAlign.center,
@@ -582,51 +642,38 @@ class _EmptyStateCard extends StatelessWidget {
               color: Color(0xFF7A8A94),
             ),
           ),
-
-          if (buttonText != null && onPressed != null) ...[
-            const SizedBox(height: 18),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: onPressed,
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                child: Ink(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Color(0xFF2A8CFF),
-                        Color(0xFF43D17A),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.all(
-                      Radius.circular(16),
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      buttonText!,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
         ],
+      ),
+    );
+  }
+}
+
+class _LoadingCard extends StatelessWidget {
+  const _LoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(26),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: const Color(0xFFE5EEF5),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF2A8CFF),
+        ),
       ),
     );
   }
