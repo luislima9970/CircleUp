@@ -9,3 +9,9 @@
 - Added a homepage.
 
 - Added a button and page to create a group.
+
+## Sprint 2
+
+- Added a welcome screen.
+
+- Added a group page.
