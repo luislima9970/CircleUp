@@ -226,7 +226,7 @@ class _HomeHeaderState extends State<_HomeHeader> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    username.isEmpty ? 'Hello 👋' : 'Hello, $username 👋',
+                    username.isEmpty ? 'Hello' : 'Hello, $username',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
