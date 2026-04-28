@@ -351,10 +351,6 @@ You can find below information and references related with the project managemen
 
     The Circles page shows the groups where the current user is a member. If the user is not in any Circle yet, the page shows an empty state encouraging them to create or join a Circle.
 
-- **Create Circle Page**
-
-    The Create Circle screen allows a logged-in user to create a new Circle by choosing a name, description, and theme. The Circle is stored in Firestore, and the creator is automatically added to the Circle members subcollection as the owner.
-
 - **Group Page**
 
     The Group Page works as the dashboard for a specific Circle. It displays the Circle name, theme, description, number of members, tasks and pending validations.
