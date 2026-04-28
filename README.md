@@ -343,19 +343,19 @@ You can find below information and references related with the project managemen
     
       ![alt text](assets/Plan-Sprint2.png)
 
-**Welcome Page**
+- **Welcome Page**
 
 The Welcome Page is the first screen shown when opening the app. It presents the CircleUP identity and gives the user two clear options: log in or create an account. Its main goal is to provide a simple and branded entry point before authentication.
 
-**Circles Page**
+- **Circles Page**
 
 The Circles page shows the groups where the current user is a member. If the user is not in any Circle yet, the page shows an empty state encouraging them to create or join a Circle.
 
-**Create Circle Page**
+- **Create Circle Page**
 
 The Create Circle screen allows a logged-in user to create a new Circle by choosing a name, description, and theme. The Circle is stored in Firestore, and the creator is automatically added to the Circle members subcollection as the owner.
 
-**Group Page**
+- **Group Page**
 
 The Group Page works as the dashboard for a specific Circle. It displays the Circle name, theme, description, number of members, tasks and pending validations.
 
