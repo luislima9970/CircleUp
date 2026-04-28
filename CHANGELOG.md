@@ -9,3 +9,7 @@
 - Added a homepage.
 
 - Added a button and page to create a group.
+
+- Added a welcome screen.
+
+- Added a group page.

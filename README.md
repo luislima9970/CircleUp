@@ -334,13 +334,16 @@ You can find below information and references related with the project managemen
     - **Do differently:** The main aspect to change is to make each task more modular, and each person should only work on their assigned task. In Sprint 1, some people worked on parts that did not belong to their tasks.  
     - **Puzzles:** The database was fully implemented, but only the user and authentication features are currently in use. Therefore, even with testing, we cannot yet confirm that everything is fully functional.  
     - **List of a few improvements to implement in the next Sprint:** Possibly allow login with a username instead of requiring an email. When a user signs up, they should be redirected directly to the Homepage and logged in automatically.
+
 ### Sprint 2
+
 - **Sprint planning and retrospectives:**  
   * **Plans:** 
     - In this sprint is espected to implement the core mechanism of the app.
     
       ![alt text](assets/Plan-Sprint2.png)
     
+
 
 ### Sprint 3
 
