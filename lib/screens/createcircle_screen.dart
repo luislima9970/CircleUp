@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projesof/screens/tasks_screen.dart';
 
 import 'package:projesof/services/group_service.dart';
 import 'package:projesof/services/user_service.dart';
@@ -84,10 +85,12 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
     );
   }
 
-  void _showTasksMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Tasks page will be available soon.'),
+  void _openTasksPage(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TasksPageScreen(userId: user!.uid),
       ),
     );
   }
@@ -272,7 +275,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
           }
 
           if (index == 2) {
-            _showTasksMessage();
+            _openTasksPage(context);
           }
 
           if (index == 3) {

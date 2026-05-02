@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:projesof/screens/tasks_screen.dart';
 
 class GroupPageScreen extends StatefulWidget {
   final String groupId;
@@ -19,6 +21,16 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
   void _showComingSoon(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
+    );
+  }
+
+  void _openTasksPage(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TasksPageScreen(userId: user!.uid),
+      ),
     );
   }
 
@@ -211,7 +223,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
           }
 
           if (index == 2) {
-            _showComingSoon('Tasks page will be available soon.');
+            _openTasksPage(context);
           }
 
           if (index == 3) {

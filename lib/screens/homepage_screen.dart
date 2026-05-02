@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projesof/screens/tasks_screen.dart';
 import 'package:projesof/services/group_service.dart';
 
 import 'createcircle_screen.dart';
@@ -10,7 +11,7 @@ class HomepageScreen extends StatelessWidget {
   const HomepageScreen({super.key});
 
   void _openCirclesPage(BuildContext context) {
-    Navigator.pushReplacement(
+    Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => const CreateCircleScreen(),
@@ -18,10 +19,12 @@ class HomepageScreen extends StatelessWidget {
     );
   }
 
-  void _showTasksMessage(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Tasks page will be available soon.'),
+  void _openTasksPage(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TasksPageScreen(userId: user!.uid),
       ),
     );
   }
@@ -133,7 +136,7 @@ class HomepageScreen extends StatelessWidget {
           }
 
           if (index == 2) {
-            _showTasksMessage(context);
+            _openTasksPage(context);
           }
 
           if (index == 3) {
