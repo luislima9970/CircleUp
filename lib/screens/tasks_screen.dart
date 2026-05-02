@@ -1,12 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:projesof/services/task_service.dart';
 import 'package:projesof/screens/createcircle_screen.dart';
-
-void cr(String gid) async {
-  TaskService ts = TaskService();
-  var id = ts.createTask(groupId: gid, title: "title", objective: "do this", reward: 5, createdBy: "me");
-}
 
 class TasksPageScreen extends StatefulWidget {
   final String userId;
