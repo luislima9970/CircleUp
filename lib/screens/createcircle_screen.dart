@@ -8,6 +8,7 @@ import 'package:projesof/services/user_service.dart';
 
 import 'homepage_screen.dart';
 import 'group_page.dart';
+import 'joincircle_screen.dart';
 
 class CreateCircleScreen extends StatefulWidget {
   final bool startInCreateMode;
@@ -81,6 +82,15 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Join Circle will be available soon.'),
+      ),
+    );
+  }
+
+  void _openJoinPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => JoinGroupScreen(),
       ),
     );
   }
@@ -339,7 +349,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
               if (groups.isEmpty) {
                 return _NoGroupsCard(
                   onCreate: _openCreateForm,
-                  onJoin: _showJoinMessage,
+                  onJoin: _openJoinPage,
                 );
               }
 
@@ -399,7 +409,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
                           icon: Icons.group_add_outlined,
                           title: 'Join',
                           subtitle: 'Enter a circle',
-                          onTap: _showJoinMessage,
+                          onTap: _openJoinPage,
                         ),
                       ),
                     ],

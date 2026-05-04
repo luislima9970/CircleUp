@@ -122,7 +122,7 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
         },
       ),
 
-      /// 🔥 SAME bottom bar as your group page
+
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: 2,
@@ -227,7 +227,7 @@ class _GroupTasksCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  /// 🔥 TOP COLORED SECTION
+
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -239,7 +239,7 @@ class _GroupTasksCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        /// White circle with BLACK icon
+
                         Container(
                           width: 48,
                           height: 48,
@@ -282,7 +282,7 @@ class _GroupTasksCard extends StatelessWidget {
                     ),
                   ),
 
-                  /// 🔥 TASKS SECTION
+
                   Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(
@@ -384,7 +384,7 @@ class _TaskTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
 
-                    /// 🔥 DESCRIPTION (ensure visible + multi-line)
+
                     Text(
                       desc,
                       maxLines: 2,

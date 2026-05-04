@@ -205,4 +205,46 @@ class GroupService {
 
     return userGroups;
   }
+
+  Future<void> joinGroupByCode({
+    required String code,
+    required String userId,
+  }) async {
+    final cleanedCode = code.trim().toUpperCase();
+
+
+    final query = await FirebaseFirestore.instance
+        .collection('groups')
+        .where('joinCode', isEqualTo: cleanedCode)
+        .limit(1)
+        .get();
+
+    if (query.docs.isEmpty) {
+      throw Exception('Invalid code');
+    }
+
+    final groupDoc = query.docs.first;
+    final groupId = groupDoc.id;
+
+
+    final memberRef = FirebaseFirestore.instance
+        .collection('groups')
+        .doc(groupId)
+        .collection('members')
+        .doc(userId);
+
+    final memberSnap = await memberRef.get();
+
+    if (memberSnap.exists) {
+      throw Exception('Already joined');
+    }
+
+
+    await memberRef.set({
+      'userId': userId,
+      'joinedAt': FieldValue.serverTimestamp(),
+      'points': 0,
+      'streak': 0,
+    });
+  }
 }

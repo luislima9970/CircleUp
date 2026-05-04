@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:projesof/screens/tasks_screen.dart';
 
 class GroupPageScreen extends StatefulWidget {
@@ -94,6 +95,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
           }
 
           final groupData = groupDoc.data() ?? {};
+          final joinCode = groupData['joinCode']?.toString() ?? '';
 
           return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
             stream: FirebaseFirestore.instance
@@ -164,6 +166,13 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
                               pendingCount: 0,
                               color: color,
                               icon: icon,
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            _JoinCodeCard(
+                              joinCode: joinCode,
+                              color: color,
                             ),
 
                             const SizedBox(height: 24),
@@ -993,6 +1002,168 @@ class _BackgroundCircle extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
+      ),
+    );
+  }
+}
+class _JoinCodeCard extends StatefulWidget {
+  final String joinCode;
+  final Color color;
+
+  const _JoinCodeCard({
+    required this.joinCode,
+    required this.color,
+  });
+
+  @override
+  State<_JoinCodeCard> createState() => _JoinCodeCardState();
+}
+
+class _JoinCodeCardState extends State<_JoinCodeCard> {
+  bool _copied = false;
+
+  void _copy() async {
+    if (widget.joinCode.isEmpty) return;
+
+    await Clipboard.setData(
+      ClipboardData(text: widget.joinCode),
+    );
+
+    setState(() => _copied = true);
+
+
+    Future.delayed(const Duration(milliseconds: 1200), () {
+      if (mounted) {
+        setState(() => _copied = false);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = widget.color;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: const Color(0xFFE5EEF5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Invite Code',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF1C2A33),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    widget.joinCode,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      color: color,
+                    ),
+                  ),
+                ),
+
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+
+                    AnimatedOpacity(
+                      opacity: _copied ? 1 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: AnimatedSlide(
+                        offset: _copied
+                            ? Offset.zero
+                            : const Offset(0.3, 0),
+                        duration: const Duration(milliseconds: 200),
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Text(
+                            'Copied!',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: color.withValues(alpha: 0.9),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+
+                    GestureDetector(
+                      onTap: _copy,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: _copied ? color.withValues(alpha: 0.9) : color,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          transitionBuilder: (child, animation) =>
+                              ScaleTransition(
+                                scale: animation,
+                                child: child,
+                              ),
+                          child: _copied
+                              ? const Icon(
+                            Icons.check_rounded,
+                            key: ValueKey('check'),
+                            color: Colors.white,
+                            size: 18,
+                          )
+                              : const Icon(
+                            Icons.copy_rounded,
+                            key: ValueKey('copy'),
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          const Text(
+            'Share this code so others can join your group.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF7A8A94),
+            ),
+          ),
+        ],
       ),
     );
   }
