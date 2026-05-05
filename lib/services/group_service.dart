@@ -14,12 +14,15 @@ class GroupService {
   }) async {
     final groupRef = _firestore.collection('groups').doc();
 
+    final code = generateJoinCode();
+
     await groupRef.set({
       'name': name,
       'description': description,
       'theme': theme,
       'createdBy': createdBy,
       'createdAt': Timestamp.now(),
+      'joinCode': code,
     });
 
     return groupRef.id;
@@ -37,12 +40,15 @@ class GroupService {
 
     final batch = _firestore.batch();
 
+    final code = generateJoinCode();
+
     batch.set(groupRef, {
       'name': name,
       'description': description,
       'theme': theme,
       'createdBy': createdBy,
       'createdAt': Timestamp.now(),
+      'joinCode': code,
     });
 
     batch.set(groupRef.collection('members').doc(createdBy), {
@@ -204,6 +210,14 @@ class GroupService {
     }
 
     return userGroups;
+  }
+
+  String generateJoinCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    return List.generate(6, (index) {
+      final rand = DateTime.now().microsecondsSinceEpoch + index;
+      return chars[rand % chars.length];
+    }).join();
   }
 
   Future<void> joinGroupByCode({
