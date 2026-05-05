@@ -14,6 +14,8 @@ class JoinGroupScreen extends StatefulWidget {
 
 class _JoinGroupScreenState extends State<JoinGroupScreen> {
   final _controller = TextEditingController();
+  String? _error;
+  bool _success = false;
   bool _loading = false;
 
   final user = FirebaseAuth.instance.currentUser;
@@ -23,7 +25,11 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
 
     if (code.trim().isEmpty) return;
 
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+      _success = false;
+    });
 
     try {
       await GroupService().joinGroupByCode(
@@ -31,19 +37,13 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
         userId: user!.uid,
       );
 
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Joined group successfully')),
-      );
-
-      Navigator.pop(context);
+      setState(() {
+        _success = true;
+      });
     } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      setState(() {
+        _error = e.toString().replaceAll('Exception: ', '');
+      });
     }
 
     setState(() => _loading = false);
@@ -163,6 +163,58 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
                               ),
                             ),
                           ),
+
+                          if (_error != null) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.error_outline, color: Colors.red),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _error!,
+                                      style: const TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+
+                          if (_success) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.check_circle_outline, color: Colors.green),
+                                  const SizedBox(width: 8),
+                                  const Expanded(
+                                    child: Text(
+                                      'You joined the group successfully',
+                                      style: TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
 
                           const SizedBox(height: 20),
 
