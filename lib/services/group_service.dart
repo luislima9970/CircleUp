@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:projesof/services/user_service.dart';
 
 class GroupService {
   final FirebaseFirestore _firestore;
@@ -253,12 +255,10 @@ class GroupService {
       throw Exception('Already joined');
     }
 
+    final user = await UserService().getUserById(userId);
+    final userData = user.data();
+    final username = userData?['username']?.toString().trim() ?? '';
 
-    await memberRef.set({
-      'userId': userId,
-      'joinedAt': FieldValue.serverTimestamp(),
-      'points': 0,
-      'streak': 0,
-    });
+    addMemberToGroup(groupId: groupId, uid: userId, username: username);
   }
 }
