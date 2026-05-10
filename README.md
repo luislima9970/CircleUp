@@ -357,6 +357,14 @@ You can find below information and references related with the project managemen
 
     The page also includes a members area and a tab system to switch between Tasks and Leaderboard. The Tasks tab is currently prepared with an empty state, while the Leaderboard tab already uses member data stored in Firestore, such as points and streak values.
 
+- **Task Page**
+
+   The Tasks Page shows the tasks that the current user has yet to complete, separated by the group the tasks belong to.
+
+- **Joining a Group**
+
+   When creating a group, a code will be generated and appear on the group's page to its users to share with other people. In the circles page, there is a button that takes the user to a joining page where they can input a group's code to join it.
+
 ### Sprint 3
 
 ### Sprint 4
