@@ -15,3 +15,7 @@
 - Added a welcome screen.
 
 - Added a group page.
+
+- Added a tasks page.
+
+- Added a way for users to join other groups using a code.
