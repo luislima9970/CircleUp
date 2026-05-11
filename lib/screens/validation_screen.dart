@@ -1,0 +1,732 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:projesof/services/submission_service.dart';
+
+class ValidationScreen extends StatefulWidget {
+  final String groupId;
+  final String taskId;
+  final String submissionId;
+  final String taskTitle;
+  final String taskDescription;
+  final String themeColor;
+
+  const ValidationScreen({
+    super.key,
+    this.groupId = 'test_group_id',
+    this.taskId = 'test_task_id',
+    required this.submissionId,
+    this.taskTitle = 'Challenge task',
+    this.taskDescription =
+        'Review the submission and vote to accept or reject it.',
+    this.themeColor = 'Sustainability',
+  });
+
+  @override
+  State<ValidationScreen> createState() =>
+      _ValidationScreenState();
+}
+
+class _ValidationScreenState
+    extends State<ValidationScreen> {
+  final SubmissionService _submissionService = SubmissionService();
+  bool _isLoading = false;
+  String? _errorMessage;
+  late Future<Map<String, dynamic>> _submissionFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _submissionFuture = _fetchSubmissionData();
+  }
+
+  Color _getThemeColor() {
+    switch (widget.themeColor) {
+      case 'Fitness':
+        return const Color(0xFF2A8CFF);
+      case 'Wellness':
+        return const Color(0xFFFFB84D);
+      case 'Sustainability':
+      default:
+        return const Color(0xFF43D17A);
+    }
+  }
+
+  IconData _getThemeIcon() {
+    switch (widget.themeColor) {
+      case 'Fitness':
+        return Icons.fitness_center_rounded;
+      case 'Wellness':
+        return Icons.self_improvement_rounded;
+      case 'Sustainability':
+      default:
+        return Icons.eco_rounded;
+    }
+  }
+
+  Future<Map<String, dynamic>> _fetchSubmissionData() async {
+    final submissionSnapshot = await _submissionService.getSubmissionById(
+      groupId: widget.groupId,
+      taskId: widget.taskId,
+      submissionId: widget.submissionId,
+    );
+
+    final user = FirebaseAuth.instance.currentUser;
+    String? vote;
+
+    if (user != null && submissionSnapshot.exists) {
+      final voteSnapshot = await _submissionService.getVoteByUser(
+        groupId: widget.groupId,
+        taskId: widget.taskId,
+        submissionId: widget.submissionId,
+        voterId: user.uid,
+      );
+
+      vote = voteSnapshot.data()?['vote'] as String?;
+    }
+
+    return {'submission': submissionSnapshot, 'userVote': vote};
+  }
+
+  Future<void> _submitVote(String vote) async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      await _submissionService.voteSubmission(
+        groupId: widget.groupId,
+        taskId: widget.taskId,
+        submissionId: widget.submissionId,
+        voterId: user.uid,
+        vote: vote,
+      );
+
+      if (mounted) {
+        await _refreshSubmissionData();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              vote == 'VALID'
+                  ? 'Vote recorded: Accepted'
+                  : 'Vote recorded: Rejected',
+            ),
+            backgroundColor: _getThemeColor(),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Erro ao votar: ${e.toString()}';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshSubmissionData() async {
+    setState(() {
+      _submissionFuture = _fetchSubmissionData();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFEFFAF3),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFEAF4FF), Color(0xFFF8FCFF), Color(0xFFEFFAF3)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Positioned(
+                top: -90,
+                right: -70,
+                child: _BackgroundCircle(
+                  size: 210,
+                  color: Color.fromARGB(51, 42, 140, 255),
+                ),
+              ),
+              Positioned(
+                bottom: -100,
+                left: -80,
+                child: _BackgroundCircle(
+                  size: 230,
+                  color: Color.fromARGB(51, 67, 209, 122),
+                ),
+              ),
+              FutureBuilder<Map<String, dynamic>>(
+                future: _submissionFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        'Não foi possível carregar a submissão.',
+                        style: TextStyle(
+                          color: _getThemeColor(),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  }
+
+                  final submissionSnapshot =
+                      snapshot.data!['submission']
+                          as DocumentSnapshot<Map<String, dynamic>>;
+
+                  if (!submissionSnapshot.exists) {
+                    return Center(
+                      child: Text(
+                        'Submissão não encontrada.',
+                        style: TextStyle(
+                          color: _getThemeColor(),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  }
+
+                  final submissionData = submissionSnapshot.data() ?? {};
+                  final proofUrl = submissionData['proofUrl']?.toString();
+                  final authorUsername =
+                      submissionData['authorUsername']?.toString() ??
+                      'Desconhecido';
+                  final status =
+                      submissionData['status']?.toString() ?? 'PENDING';
+                  final validVotes = submissionData['validVotes'] ?? 0;
+                  final invalidVotes = submissionData['invalidVotes'] ?? 0;
+                  final currentVote = snapshot.data!['userVote'] as String?;
+
+                  return SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.05,
+                                      ),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_back_ios_new,
+                                  color: Color(0xFF1C2A33),
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              'Validate Submission',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1C2A33),
+                              ),
+                            ),
+                            const SizedBox(width: 44),
+                          ],
+                        ),
+                        const SizedBox(height: 28),
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: _getThemeColor().withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: _getThemeColor().withValues(alpha: 0.2),
+                              width: 1,
+                            ),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.how_to_vote_outlined,
+                                color: _getThemeColor(),
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Avaliador comunitário',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF1C2A33),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Vote se esta prova deve ser aceite ou rejeitada pela comunidade.',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: const Color(0xFF7A8A94),
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        Text(
+                          'Submission Details',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF1C2A33),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      color: _getThemeColor().withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      _getThemeIcon(),
+                                      color: _getThemeColor(),
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Submitted by',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Color(0xFF95A39A),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          authorUsername,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF1C2A33),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 7,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: status == 'APPROVED'
+                                          ? const Color(0xFFDFF5E3)
+                                          : status == 'REJECTED'
+                                          ? const Color(0xFFFFE5E5)
+                                          : const Color(0xFFE4F4EA),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      status == 'APPROVED'
+                                          ? 'Accepted'
+                                          : status == 'REJECTED'
+                                          ? 'Rejected'
+                                          : 'Pending',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: status == 'APPROVED'
+                                            ? const Color(0xFF2F7F3F)
+                                            : status == 'REJECTED'
+                                            ? const Color(0xFFD93030)
+                                            : const Color(0xFF6B7B89),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'Task',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF95A39A),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                widget.taskTitle,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF1C2A33),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              const Text(
+                                'Description',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF95A39A),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                widget.taskDescription,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF1C2A33),
+                                  height: 1.5,
+                                ),
+                              ),
+                              if (proofUrl != null) ...[
+                                const SizedBox(height: 20),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.network(
+                                    proofUrl,
+                                    width: double.infinity,
+                                    height: 240,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        Text(
+                          'Community vote',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF1C2A33),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _VoteBadge(
+                                    label: 'Aceites',
+                                    value: validVotes.toString(),
+                                    color: const Color(0xFF43D17A),
+                                  ),
+                                  _VoteBadge(
+                                    label: 'Rejeitados',
+                                    value: invalidVotes.toString(),
+                                    color: const Color(0xFFD63031),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 20),
+                              if (currentVote != null)
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF5F8FB),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: const Color(0xFFE8EFF1),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        currentVote == 'VALID'
+                                            ? Icons.thumb_up_alt_rounded
+                                            : Icons.thumb_down_alt_rounded,
+                                        color: _getThemeColor(),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          'Você já votou: ${currentVote == 'VALID' ? 'Aceitar' : 'Rejeitar'}.',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            color: Color(0xFF1C2A33),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else ...[
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        onPressed: _isLoading
+                                            ? null
+                                            : () => _submitVote('VALID'),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFF43D17A,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                        ),
+                                        child: _isLoading
+                                            ? const SizedBox(
+                                                height: 20,
+                                                width: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.white,
+                                                    ),
+                                              )
+                                            : const Text(
+                                                'Aceitar',
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: OutlinedButton(
+                                        onPressed: _isLoading
+                                            ? null
+                                            : () => _submitVote('INVALID'),
+                                        style: OutlinedButton.styleFrom(
+                                          side: const BorderSide(
+                                            color: Color(0xFFD63031),
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'Rejeitar',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: const Color(0xFFD63031),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        if (_errorMessage != null) ...[
+                          const SizedBox(height: 20),
+                          Container(
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFE5E5),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(
+                                  0xFFFF6B6B,
+                                ).withValues(alpha: 0.3),
+                                width: 1,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.error_outline,
+                                  color: Color(0xFFD63031),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFFD63031),
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VoteBadge extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+
+  const _VoteBadge({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BackgroundCircle extends StatelessWidget {
+  final double size;
+  final Color color;
+
+  const _BackgroundCircle({required this.size, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+    );
+  }
+}

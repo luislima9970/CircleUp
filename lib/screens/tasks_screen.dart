@@ -1,14 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:projesof/screens/createcircle_screen.dart';
+import 'package:projesof/screens/task_detail_screen.dart';
 
 class TasksPageScreen extends StatefulWidget {
   final String userId;
 
-  const TasksPageScreen({
-    super.key,
-    required this.userId,
-  });
+  const TasksPageScreen({super.key, required this.userId});
 
   @override
   State<TasksPageScreen> createState() => _TasksPageScreenState();
@@ -18,15 +16,14 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
   void _openCirclesPage(BuildContext context) {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (_) => const CreateCircleScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const CreateCircleScreen()),
     );
   }
 
   void _showComingSoon(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Color _themeColor(String theme) {
@@ -47,8 +44,7 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream:
-        FirebaseFirestore.instance.collection('groups').snapshots(),
+        stream: FirebaseFirestore.instance.collection('groups').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const _LoadingPage();
@@ -88,20 +84,13 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
                     ),
                   ),
                   ListView(
-                    padding:
-                    const EdgeInsets.fromLTRB(24, 22, 24, 100),
+                    padding: const EdgeInsets.fromLTRB(24, 22, 24, 100),
                     children: [
-                      _TasksTopBar(
-                        onBack: () => Navigator.pop(context),
-                      ),
-
-
+                      _TasksTopBar(onBack: () => Navigator.pop(context)),
 
                       const Text(
                         'Tasks separated by group',
-                        style: TextStyle(
-                          color: Color(0xFF7A8A94),
-                        ),
+                        style: TextStyle(color: Color(0xFF7A8A94)),
                       ),
                       const SizedBox(height: 24),
 
@@ -122,7 +111,6 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
         },
       ),
 
-
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: 2,
@@ -133,26 +121,33 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
         unselectedFontSize: 12,
         onTap: (index) {
           if (index == 0) Navigator.pop(context);
-          if (index == 1) _openCirclesPage(context);;
+          if (index == 1) _openCirclesPage(context);
+          ;
           if (index == 2) return;
           if (index == 3) {
             _showComingSoon('Profile coming soon');
           }
         },
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.home_filled), label: 'Home'),
+            icon: Icon(Icons.groups_outlined),
+            label: 'Circles',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.groups_outlined), label: 'Circles'),
+            icon: Icon(Icons.checklist_rtl),
+            label: 'Tasks',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.checklist_rtl), label: 'Tasks'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline), label: 'Profile'),
+            icon: Icon(Icons.person_outline),
+            label: 'Profile',
+          ),
         ],
       ),
     );
   }
 }
+
 class _GroupTasksCard extends StatelessWidget {
   final QueryDocumentSnapshot<Map<String, dynamic>> group;
   final String userId;
@@ -189,8 +184,7 @@ class _GroupTasksCard extends StatelessWidget {
           .doc(userId)
           .snapshots(),
       builder: (context, memberSnapshot) {
-        if (!memberSnapshot.hasData ||
-            !memberSnapshot.data!.exists) {
+        if (!memberSnapshot.hasData || !memberSnapshot.data!.exists) {
           return const SizedBox();
         }
 
@@ -227,7 +221,6 @@ class _GroupTasksCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -239,7 +232,6 @@ class _GroupTasksCard extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-
                         Container(
                           width: 48,
                           height: 48,
@@ -254,8 +246,7 @@ class _GroupTasksCard extends StatelessWidget {
 
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 name,
@@ -270,8 +261,7 @@ class _GroupTasksCard extends StatelessWidget {
                                 '$remainingTasks tasks remaining',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.black.withValues(
-                                      alpha: 0.7),
+                                  color: Colors.black.withValues(alpha: 0.7),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -282,7 +272,6 @@ class _GroupTasksCard extends StatelessWidget {
                     ),
                   ),
 
-
                   Padding(
                     padding: const EdgeInsets.all(14),
                     child: Column(
@@ -292,13 +281,14 @@ class _GroupTasksCard extends StatelessWidget {
                             task: task,
                             userId: userId,
                             color: color,
+                            groupId: groupId,
+                            theme: theme,
                           ),
-                          if (task != tasks.last)
-                            const SizedBox(height: 10),
-                        ]
+                          if (task != tasks.last) const SizedBox(height: 10),
+                        ],
                       ],
                     ),
-                  )
+                  ),
                 ],
               ),
             );
@@ -308,15 +298,20 @@ class _GroupTasksCard extends StatelessWidget {
     );
   }
 }
+
 class _TaskTile extends StatelessWidget {
   final QueryDocumentSnapshot<Map<String, dynamic>> task;
   final String userId;
   final Color color;
+  final String groupId;
+  final String theme;
 
   const _TaskTile({
     required this.task,
     required this.userId,
     required this.color,
+    required this.groupId,
+    required this.theme,
   });
 
   @override
@@ -327,10 +322,7 @@ class _TaskTile extends StatelessWidget {
     final desc = data['objective'] ?? '';
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: task.reference
-          .collection('submissions')
-          .doc(userId)
-          .snapshots(),
+      stream: task.reference.collection('submissions').doc(userId).snapshots(),
       builder: (context, snapshot) {
         String status = 'open';
 
@@ -355,111 +347,121 @@ class _TaskTile extends StatelessWidget {
             label = 'Open';
         }
 
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF7FAF9),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: color.withValues(alpha: 0.12),
-                child: Icon(Icons.task_alt, color: color),
-              ),
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                        color: Color(0xFF1C2A33),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-
-
-                    Text(
-                      desc,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        height: 1.4,
-                        color: Color(0xFF7A8A94),
-                      ),
-                    ),
-                  ],
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => TaskDetailScreen(
+                  groupId: groupId,
+                  taskId: task.id,
+                  taskTitle: title,
+                  taskDescription: desc,
+                  themeColor: theme,
                 ),
               ),
-
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: badgeColor,
-                  borderRadius: BorderRadius.circular(14),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7FAF9),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 22,
+                  backgroundColor: color.withValues(alpha: 0.12),
+                  child: Icon(Icons.task_alt, color: color),
                 ),
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: Color(0xFF1C2A33),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+
+                      Text(
+                        desc,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: Color(0xFF7A8A94),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badgeColor,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
 }
+
 class _LoadingPage extends StatelessWidget {
   const _LoadingPage();
 
   @override
   Widget build(BuildContext context) {
     return const Center(
-      child: CircularProgressIndicator(
-        color: Color(0xFF2A8CFF),
-      ),
+      child: CircularProgressIndicator(color: Color(0xFF2A8CFF)),
     );
   }
 }
+
 class _BackgroundCircle extends StatelessWidget {
   final double size;
   final Color color;
 
-  const _BackgroundCircle({
-    required this.size,
-    required this.color,
-  });
+  const _BackgroundCircle({required this.size, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }
+
 class _TasksTopBar extends StatelessWidget {
   final VoidCallback onBack;
 
-  const _TasksTopBar({
-    required this.onBack,
-  });
+  const _TasksTopBar({required this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -499,7 +501,6 @@ class _TasksTopBar extends StatelessWidget {
               color: Color(0xFF1C2A33),
             ),
           ),
-
         ),
       ],
     );

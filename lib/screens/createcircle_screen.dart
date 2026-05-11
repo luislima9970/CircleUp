@@ -78,14 +78,6 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
     });
   }
 
-  void _showJoinMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Join Circle will be available soon.'),
-      ),
-    );
-  }
-
   void _openJoinPage() {
     Navigator.push(
       context,

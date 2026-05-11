@@ -5,14 +5,14 @@ import 'package:projesof/services/image_upload_service.dart';
 import 'package:projesof/services/submission_service.dart';
 import 'package:projesof/services/user_service.dart';
 
-class SubmissionValidationScreen extends StatefulWidget {
+class SubmissionScreen extends StatefulWidget {
   final String groupId;
   final String taskId;
   final String taskTitle;
   final String taskDescription;
   final String themeColor; // 'Sustainability', 'Fitness', or 'Wellness'
 
-  const SubmissionValidationScreen({
+  const SubmissionScreen({
     super.key,
     this.groupId = 'test_group_id',
     this.taskId = 'test_task_id',
@@ -23,12 +23,12 @@ class SubmissionValidationScreen extends StatefulWidget {
   });
 
   @override
-  State<SubmissionValidationScreen> createState() =>
-      _SubmissionValidationScreenState();
+  State<SubmissionScreen> createState() =>
+      _SubmissionScreenState();
 }
 
-class _SubmissionValidationScreenState
-    extends State<SubmissionValidationScreen> {
+class _SubmissionScreenState
+    extends State<SubmissionScreen> {
   final ImageUploadService _imageUploadService = ImageUploadService();
   final SubmissionService _submissionService = SubmissionService();
   final UserService _userService = UserService();
@@ -109,7 +109,7 @@ class _SubmissionValidationScreenState
       );
 
       if (imageUrl == null) {
-        throw Exception('Failed to upload image');
+        throw Exception('Failed to upload image. Please check your internet connection and try again.');
       }
 
       // Create submission
