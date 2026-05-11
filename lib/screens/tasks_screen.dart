@@ -321,30 +321,34 @@ class _TaskTile extends StatelessWidget {
     final title = data['title'] ?? '';
     final desc = data['objective'] ?? '';
 
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: task.reference.collection('submissions').doc(userId).snapshots(),
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: task.reference
+          .collection('submissions')
+          .where('userId', isEqualTo: userId)
+          .limit(1)
+          .snapshots(),
       builder: (context, snapshot) {
-        String status = 'open';
-
-        if (snapshot.hasData && snapshot.data!.exists) {
-          status = snapshot.data!.data()?['status'] ?? 'open';
+        String status = 'ACTIVE';
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          final submission = snapshot.data!.docs.first.data();
+          status = submission['status'] ?? '';
         }
 
         Color badgeColor;
         String label;
 
         switch (status) {
-          case 'pending':
+          case 'PENDING':
             badgeColor = const Color(0xFFFFE7C2);
             label = 'Pending';
             break;
-          case 'completed':
+          case 'APPROVED':
             badgeColor = const Color(0xFFDFF5E3);
             label = 'Done';
             break;
           default:
             badgeColor = const Color(0xFFE4F4EA);
-            label = 'Open';
+            label = 'Active';
         }
 
         return GestureDetector(
