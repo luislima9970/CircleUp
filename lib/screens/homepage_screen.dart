@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projesof/screens/tasks_screen.dart';
 import 'package:projesof/services/group_service.dart';
-import 'package:projesof/services/task_service.dart';
 
 import 'createcircle_screen.dart';
 import 'group_page.dart';
