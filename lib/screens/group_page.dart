@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:projesof/screens/tasks_screen.dart';
+import 'package:projesof/screens/task_detail_screen.dart';
 
 class GroupPageScreen extends StatefulWidget {
   final String groupId;
@@ -287,8 +288,10 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
 
                                   if (_selectedTab == 0)
                                     _TasksTab(
+                                      groupId: widget.groupId,
                                       tasks: activeTasks,
                                       color: color,
+                                      theme: theme,
                                     )
                                   else
                                     _LeaderboardTab(
@@ -824,29 +827,17 @@ class _TabButton extends StatelessWidget {
 }
 
 class _TasksTab extends StatelessWidget {
+  final String groupId;
   final List<QueryDocumentSnapshot<Map<String, dynamic>>> tasks;
   final Color color;
+  final String theme;
 
   const _TasksTab({
+    required this.groupId,
     required this.tasks,
     required this.color,
+    required this.theme,
   });
-
-  int _parseReward(dynamic reward) {
-    if (reward is int) {
-      return reward;
-    }
-
-    if (reward is num) {
-      return reward.toInt();
-    }
-
-    if (reward is String) {
-      return int.tryParse(reward) ?? 0;
-    }
-
-    return 0;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -863,8 +854,10 @@ class _TasksTab extends StatelessWidget {
       children: [
         for (int i = 0; i < tasks.length; i++) ...[
           _GroupTaskCard(
+            groupId: groupId,
             taskDoc: tasks[i],
             color: color,
+            theme: theme,
           ),
           if (i != tasks.length - 1) const SizedBox(height: 12),
         ],
@@ -874,12 +867,16 @@ class _TasksTab extends StatelessWidget {
 }
 
 class _GroupTaskCard extends StatelessWidget {
+  final String groupId;
   final QueryDocumentSnapshot<Map<String, dynamic>> taskDoc;
   final Color color;
+  final String theme;
 
   const _GroupTaskCard({
+    required this.groupId,
     required this.taskDoc,
     required this.color,
+    required this.theme,
   });
 
   int _parseReward(dynamic reward) {
@@ -903,98 +900,129 @@ class _GroupTaskCard extends StatelessWidget {
     final data = taskDoc.data();
 
     final title = data['title']?.toString() ?? 'Untitled task';
-    final objective = data['objective']?.toString() ?? '';
+
+    final description = data['objective']?.toString().trim().isNotEmpty == true
+        ? data['objective'].toString()
+        : data['description']?.toString() ?? '';
+
     final reward = _parseReward(data['reward']);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.94),
+    return Material(
+      color: Colors.white.withValues(alpha: 0.94),
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFFE5EEF5),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => TaskDetailScreen(
+                groupId: groupId,
+                taskId: taskDoc.id,
+                taskTitle: title,
+                taskDescription: description,
+                themeColor: theme,
+              ),
+            ),
+          );
+        },
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: const Color(0xFFE5EEF5),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0D000000),
+                blurRadius: 16,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Icon(
+                  Icons.checklist_rounded,
+                  color: color,
+                  size: 28,
+                ),
+              ),
+
+              const SizedBox(width: 14),
+
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1C2A33),
+                      ),
+                    ),
+
+                    if (description.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        description,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.35,
+                          color: Color(0xFF7A8A94),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 10),
+
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '$reward pts',
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF95A39A),
+              ),
+            ],
+          ),
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(
-              Icons.checklist_rounded,
-              color: color,
-              size: 28,
-            ),
-          ),
-
-          const SizedBox(width: 14),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF1C2A33),
-                  ),
-                ),
-
-                if (objective.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    objective,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      height: 1.35,
-                      color: Color(0xFF7A8A94),
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 10),
-
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    '$reward pts',
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
