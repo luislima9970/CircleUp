@@ -36,6 +36,24 @@ class _SubmissionScreenState
   File? _selectedImage;
   bool _isLoading = false;
   String? _errorMessage;
+  late Future<bool> _hasSubmittedFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _hasSubmittedFuture = _checkIfUserHasSubmitted();
+  }
+
+  Future<bool> _checkIfUserHasSubmitted() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return false;
+
+    return await _submissionService.hasUserSubmittedForTask(
+      groupId: widget.groupId,
+      taskId: widget.taskId,
+      authorId: user.uid,
+    );
+  }
 
   @override
   void dispose() {
@@ -179,54 +197,100 @@ class _SubmissionScreenState
                 ),
               ),
               // Main content
-              SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header with back button
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              FutureBuilder<bool>(
+                future: _hasSubmittedFuture,
+                builder: (context, snapshot) {
+                  final hasSubmitted = snapshot.data ?? false;
+
+                  return SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            width: 44,
-                            height: 44,
+                        // Header with back button
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.05),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.arrow_back_ios_new,
+                                  color: Color(0xFF1C2A33),
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              'Submit Proof',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1C2A33),
+                              ),
+                            ),
+                            const SizedBox(width: 44),
+                          ],
+                        ),
+                        const SizedBox(height: 28),
+                        if (hasSubmitted)
+                          Container(
+                            width: double.infinity,
                             decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.05),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
+                              color: const Color(0xFFDFF5E3),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color(0xFF43D17A).withValues(alpha: 0.5),
+                                width: 1,
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.check_circle_outline,
+                                  color: const Color(0xFF43D17A),
+                                  size: 48,
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Proof Already Submitted',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF2F7F3F),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'You have already submitted proof for this task. Only one submission per task is allowed.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF2F7F3F),
+                                    height: 1.5,
+                                  ),
                                 ),
                               ],
                             ),
-                            child: const Icon(
-                              Icons.arrow_back_ios_new,
-                              color: Color(0xFF1C2A33),
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          'Submit Proof',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF1C2A33),
-                          ),
-                        ),
-                        const SizedBox(width: 44),
-                      ],
-                    ),
-                    const SizedBox(height: 28),
-
-                    // Info banner
-                    Container(
+                          )
+                        else ...[
+                          // Info banner
+                          Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
                         color: _getThemeColor().withValues(alpha: 0.1),
@@ -617,9 +681,12 @@ class _SubmissionScreenState
                               ),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+                          const SizedBox(height: 16),
+                        ],
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
           ),
