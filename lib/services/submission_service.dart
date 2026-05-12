@@ -160,4 +160,21 @@ class SubmissionService {
         .doc(voterId)
         .get();
   }
+
+  Future<bool> hasUserSubmittedForTask({
+    required String groupId,
+    required String taskId,
+    required String authorId,
+  }) async {
+    final querySnapshot = await _firestore
+        .collection('groups')
+        .doc(groupId)
+        .collection('tasks')
+        .doc(taskId)
+        .collection('submissions')
+        .where('authorId', isEqualTo: authorId)
+        .get();
+
+    return querySnapshot.docs.isNotEmpty;
+  }
 }

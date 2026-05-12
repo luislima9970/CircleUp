@@ -124,7 +124,7 @@ class _ValidationScreenState
       }
     } catch (e) {
       setState(() {
-        _errorMessage = 'Erro ao votar: ${e.toString()}';
+        _errorMessage = 'Error voting: ${e.toString()}';
       });
     } finally {
       if (mounted) {
@@ -184,7 +184,7 @@ class _ValidationScreenState
                   if (snapshot.hasError) {
                     return Center(
                       child: Text(
-                        'Não foi possível carregar a submissão.',
+                        'Could not load the submission.',
                         style: TextStyle(
                           color: _getThemeColor(),
                           fontSize: 16,
@@ -201,7 +201,7 @@ class _ValidationScreenState
                   if (!submissionSnapshot.exists) {
                     return Center(
                       child: Text(
-                        'Submissão não encontrada.',
+                        'Submission not found.',
                         style: TextStyle(
                           color: _getThemeColor(),
                           fontSize: 16,
@@ -292,7 +292,7 @@ class _ValidationScreenState
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Text(
-                                      'Avaliador comunitário',
+                                      'Community Validator',
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600,
@@ -301,7 +301,7 @@ class _ValidationScreenState
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'Vote se esta prova deve ser aceite ou rejeitada pela comunidade.',
+                                      'Vote whether this proof should be approved or rejected by the community.',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: const Color(0xFF7A8A94),
@@ -498,12 +498,12 @@ class _ValidationScreenState
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   _VoteBadge(
-                                    label: 'Aceites',
+                                    label: 'Approved',
                                     value: validVotes.toString(),
                                     color: const Color(0xFF43D17A),
                                   ),
                                   _VoteBadge(
-                                    label: 'Rejeitados',
+                                    label: 'Rejected',
                                     value: invalidVotes.toString(),
                                     color: const Color(0xFFD63031),
                                   ),
@@ -532,7 +532,7 @@ class _ValidationScreenState
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Text(
-                                          'Você já votou: ${currentVote == 'VALID' ? 'Aceitar' : 'Rejeitar'}.',
+                                          'You have already voted: ${currentVote == 'VALID' ? 'Approve' : 'Reject'}.',
                                           style: const TextStyle(
                                             fontSize: 14,
                                             color: Color(0xFF1C2A33),
@@ -574,7 +574,7 @@ class _ValidationScreenState
                                                     ),
                                               )
                                             : const Text(
-                                                'Aceitar',
+                                                'Approve',
                                                 style: TextStyle(
                                                   fontSize: 15,
                                                   fontWeight: FontWeight.w700,
@@ -602,7 +602,7 @@ class _ValidationScreenState
                                           ),
                                         ),
                                         child: Text(
-                                          'Rejeitar',
+                                          'Reject',
                                           style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700,
