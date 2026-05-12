@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projesof/screens/tasks_screen.dart';
 import 'package:projesof/services/group_service.dart';
+import 'package:projesof/services/task_service.dart';
 
 import 'createcircle_screen.dart';
 import 'group_page.dart';
@@ -84,7 +85,7 @@ class HomepageScreen extends StatelessWidget {
 
                     const SizedBox(height: 26),
 
-                    const _ProgressPlaceholderCard(),
+                    const _TodayProgressCard(),
 
                     const SizedBox(height: 30),
 
@@ -95,21 +96,6 @@ class HomepageScreen extends StatelessWidget {
                     const SizedBox(height: 14),
 
                     const _UserGroupsList(),
-
-                    const SizedBox(height: 30),
-
-                    const _SectionHeader(
-                      title: 'Pending Tasks',
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    const _EmptyStateCard(
-                      icon: Icons.checklist_rtl,
-                      title: 'No pending tasks',
-                      subtitle:
-                      'Tasks from your groups will appear here once they are connected.',
-                    ),
                   ],
                 ),
               ),
@@ -277,60 +263,301 @@ class _HomeHeaderState extends State<_HomeHeader> {
   }
 }
 
-class _ProgressPlaceholderCard extends StatelessWidget {
-  const _ProgressPlaceholderCard();
+class _TodayProgressCard extends StatefulWidget {
+  const _TodayProgressCard();
+
+  @override
+  State<_TodayProgressCard> createState() => _TodayProgressCardState();
+}
+
+class _TodayProgressCardState extends State<_TodayProgressCard> {
+  final GroupService _groupService = GroupService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  late final Future<_TodayProgressData> _progressFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _progressFuture = _loadTodayProgress();
+  }
+
+  String _todayKey() {
+    final now = DateTime.now();
+
+    final year = now.year.toString().padLeft(4, '0');
+    final month = now.month.toString().padLeft(2, '0');
+    final day = now.day.toString().padLeft(2, '0');
+
+    return '$year-$month-$day';
+  }
+
+  int _parseReward(dynamic reward) {
+    if (reward is int) {
+      return reward;
+    }
+
+    if (reward is num) {
+      return reward.toInt();
+    }
+
+    if (reward is String) {
+      return int.tryParse(reward) ?? 0;
+    }
+
+    return 0;
+  }
+
+  Future<int> _getActiveTasksCount(String groupId) async {
+    final snapshot = await _firestore
+        .collection('groups')
+        .doc(groupId)
+        .collection('tasks')
+        .where('isActive', isEqualTo: true)
+        .get();
+
+    return snapshot.docs.length;
+  }
+
+  Future<int> _getTodayEarnedPoints({
+    required String groupId,
+    required String userId,
+  }) async {
+    final today = _todayKey();
+
+    final snapshot = await _firestore
+        .collection('groups')
+        .doc(groupId)
+        .collection('taskCompletions')
+        .where('userId', isEqualTo: userId)
+        .where('completedDate', isEqualTo: today)
+        .get();
+
+    int total = 0;
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      total += _parseReward(data['reward']);
+    }
+
+    return total;
+  }
+
+  Future<_TodayProgressData> _loadTodayProgress() async {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const _TodayProgressData(
+        groupsCount: 0,
+        activeTasksCount: 0,
+        todayPoints: 0,
+      );
+    }
+
+    final groups = await _groupService.getGroupsForUser(user.uid);
+
+    int activeTasksCount = 0;
+    int todayPoints = 0;
+
+    for (final group in groups) {
+      activeTasksCount += await _getActiveTasksCount(group.id);
+
+      todayPoints += await _getTodayEarnedPoints(
+        groupId: group.id,
+        userId: user.uid,
+      );
+    }
+
+    return _TodayProgressData(
+      groupsCount: groups.length,
+      activeTasksCount: activeTasksCount,
+      todayPoints: todayPoints,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_TodayProgressData>(
+      future: _progressFuture,
+      builder: (context, snapshot) {
+        final isLoading = snapshot.connectionState == ConnectionState.waiting;
+
+        final progress = snapshot.data ??
+            const _TodayProgressData(
+              groupsCount: 0,
+              activeTasksCount: 0,
+              todayPoints: 0,
+            );
+
+        String message;
+
+        if (isLoading) {
+          message = 'Loading your progress...';
+        } else if (progress.groupsCount == 0) {
+          message = 'Create or join a group to start completing challenges.';
+        } else if (progress.todayPoints > 0) {
+          message =
+          'You earned ${progress.todayPoints} point${progress.todayPoints == 1 ? '' : 's'} today. Keep going!';
+        } else if (progress.activeTasksCount > 0) {
+          message =
+          'You have ${progress.activeTasksCount} active task${progress.activeTasksCount == 1 ? '' : 's'} waiting for you.';
+        } else {
+          message = 'You are in groups, but there are no active tasks yet.';
+        }
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF2A8CFF),
+                Color(0xFF43D17A),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x242A8CFF),
+                blurRadius: 26,
+                offset: Offset(0, 14),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.local_fire_department_rounded,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Today’s Progress',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 21,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  if (isLoading)
+                    const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              Text(
+                message,
+                style: const TextStyle(
+                  color: Color(0xEFFFFFFF),
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _ProgressStatBox(
+                      value: progress.groupsCount.toString(),
+                      label: 'Groups',
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _ProgressStatBox(
+                      value: progress.activeTasksCount.toString(),
+                      label: 'Tasks',
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _ProgressStatBox(
+                      value: progress.todayPoints.toString(),
+                      label: 'Points',
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TodayProgressData {
+  final int groupsCount;
+  final int activeTasksCount;
+  final int todayPoints;
+
+  const _TodayProgressData({
+    required this.groupsCount,
+    required this.activeTasksCount,
+    required this.todayPoints,
+  });
+}
+
+class _ProgressStatBox extends StatelessWidget {
+  final String value;
+  final String label;
+
+  const _ProgressStatBox({
+    required this.value,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF2A8CFF),
-            Color(0xFF43D17A),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x242A8CFF),
-            blurRadius: 26,
-            offset: Offset(0, 14),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(
+        vertical: 14,
+        horizontal: 10,
       ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.22),
+        ),
+      ),
+      child: Column(
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.local_fire_department_rounded,
-                color: Colors.white,
-                size: 30,
-              ),
-              SizedBox(width: 10),
-              Text(
-                'Today’s Progress',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 21,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 12),
           Text(
-            'Your progress will appear here once you have groups and tasks.',
-            style: TextStyle(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
               color: Color(0xEFFFFFFF),
-              fontSize: 14,
-              height: 1.4,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

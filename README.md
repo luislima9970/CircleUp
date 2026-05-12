@@ -36,6 +36,20 @@ Thank you!
 * Gabriela Felgueiras gabriela.abreu.felgueiras@gmail.com
 * Vasco Castanheira vasco.castanheira@gmail.com
 ---
+
+## Setup The Environment
+
+- **In order to run the project you should have [Flutter SDK](https://flutter.dev/) and [Dart SDK](https://dart.dev/) installed**
+- **It is also advised to have an editor such as [VSCode](https://code.visualstudio.com/) or [AndroidStudio](https://developer.android.com/studio)**
+- **After that you need to have a mobile phone emulator or one connected to your computer**
+- **If you have everything ready, just open the emulator and run the following in your console:**
+
+    - `flutter pub get`
+
+        `flutter run`
+
+- **Everything should be up and running smoothly!**
+
 ## Business Modelling
 <!-- 
 Business modeling in software development involves defining the product's vision, understanding market needs, aligning features with user expectations, and setting the groundwork for strategic planning and execution. -->
