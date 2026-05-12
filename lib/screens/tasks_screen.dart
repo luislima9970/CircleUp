@@ -122,7 +122,6 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
         onTap: (index) {
           if (index == 0) Navigator.pop(context);
           if (index == 1) _openCirclesPage(context);
-          ;
           if (index == 2) return;
           if (index == 3) {
             _showComingSoon('Profile coming soon');

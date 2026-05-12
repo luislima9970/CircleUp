@@ -193,7 +193,7 @@ class WelcomeScreen extends StatelessWidget {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
-                              backgroundColor: Colors.white.withOpacity(0.75),
+                              backgroundColor: Colors.white.withValues(alpha: 0.75),
                             ),
                             child: const Text(
                               'Create Account',
@@ -255,7 +255,7 @@ class _FeatureCard extends StatelessWidget {
       height: 86,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.85),
+        color: Colors.white.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: const Color(0xFFE5EEF5),
