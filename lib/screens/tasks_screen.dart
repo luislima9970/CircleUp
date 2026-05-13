@@ -5,8 +5,9 @@ import 'package:projesof/screens/task_detail_screen.dart';
 
 class TasksPageScreen extends StatefulWidget {
   final String userId;
+  final FirebaseFirestore? firestore;
 
-  const TasksPageScreen({super.key, required this.userId});
+  const TasksPageScreen({super.key, required this.userId, this.firestore});
 
   @override
   State<TasksPageScreen> createState() => _TasksPageScreenState();
@@ -44,7 +45,7 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance.collection('groups').snapshots(),
+        stream: (widget.firestore ?? FirebaseFirestore.instance).collection('groups').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const _LoadingPage();
@@ -101,6 +102,7 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
                           userId: widget.userId,
                           themeColor: _themeColor,
                           themeIcon: _themeIcon,
+                          firestore: widget.firestore ?? FirebaseFirestore.instance,
                         ),
                     ],
                   ),
@@ -152,12 +154,14 @@ class _GroupTasksCard extends StatelessWidget {
   final String userId;
   final Color Function(String) themeColor;
   final IconData Function(String) themeIcon;
+  final FirebaseFirestore firestore;
 
   const _GroupTasksCard({
     required this.group,
     required this.userId,
     required this.themeColor,
     required this.themeIcon,
+    required this.firestore,
   });
 
   Color _pastel(Color c) {
@@ -176,7 +180,7 @@ class _GroupTasksCard extends StatelessWidget {
     final icon = themeIcon(theme);
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
+      stream: firestore
           .collection('groups')
           .doc(groupId)
           .collection('members')
@@ -188,7 +192,7 @@ class _GroupTasksCard extends StatelessWidget {
         }
 
         return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-          stream: FirebaseFirestore.instance
+          stream: firestore
               .collection('groups')
               .doc(groupId)
               .collection('tasks')

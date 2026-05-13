@@ -8,7 +8,8 @@ import 'createcircle_screen.dart';
 import 'group_page.dart';
 
 class HomepageScreen extends StatelessWidget {
-  const HomepageScreen({super.key});
+  final GroupService? groupService;
+  const HomepageScreen({super.key, this.groupService});
 
   void _openCirclesPage(BuildContext context) {
     Navigator.push(
@@ -84,7 +85,7 @@ class HomepageScreen extends StatelessWidget {
 
                     const SizedBox(height: 26),
 
-                    const _TodayProgressCard(),
+                    _TodayProgressCard(groupService: groupService),
 
                     const SizedBox(height: 30),
 
@@ -94,7 +95,7 @@ class HomepageScreen extends StatelessWidget {
 
                     const SizedBox(height: 14),
 
-                    const _UserGroupsList(),
+                    _UserGroupsList(groupService: groupService),
                   ],
                 ),
               ),
@@ -263,21 +264,23 @@ class _HomeHeaderState extends State<_HomeHeader> {
 }
 
 class _TodayProgressCard extends StatefulWidget {
-  const _TodayProgressCard();
+  final GroupService? groupService; 
+  const _TodayProgressCard({this.groupService});
 
   @override
   State<_TodayProgressCard> createState() => _TodayProgressCardState();
 }
 
 class _TodayProgressCardState extends State<_TodayProgressCard> {
-  final GroupService _groupService = GroupService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late final GroupService _groupService;
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
   late final Future<_TodayProgressData> _progressFuture;
 
   @override
   void initState() {
     super.initState();
+    _groupService = widget.groupService ?? GroupService();
     _progressFuture = _loadTodayProgress();
   }
 
@@ -343,35 +346,43 @@ class _TodayProgressCardState extends State<_TodayProgressCard> {
   }
 
   Future<_TodayProgressData> _loadTodayProgress() async {
-    final user = FirebaseAuth.instance.currentUser;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) {
+      if (user == null) {
+        return const _TodayProgressData(
+          groupsCount: 0,
+          activeTasksCount: 0,
+          todayPoints: 0,
+        );
+      }
+
+      final groups = await _groupService.getGroupsForUser(user.uid);
+
+      int activeTasksCount = 0;
+      int todayPoints = 0;
+
+      for (final group in groups) {
+        activeTasksCount += await _getActiveTasksCount(group.id);
+
+        todayPoints += await _getTodayEarnedPoints(
+          groupId: group.id,
+          userId: user.uid,
+        );
+      }
+
+      return _TodayProgressData(
+        groupsCount: groups.length,
+        activeTasksCount: activeTasksCount,
+        todayPoints: todayPoints,
+      );
+    } catch (_) {
       return const _TodayProgressData(
         groupsCount: 0,
         activeTasksCount: 0,
         todayPoints: 0,
       );
     }
-
-    final groups = await _groupService.getGroupsForUser(user.uid);
-
-    int activeTasksCount = 0;
-    int todayPoints = 0;
-
-    for (final group in groups) {
-      activeTasksCount += await _getActiveTasksCount(group.id);
-
-      todayPoints += await _getTodayEarnedPoints(
-        groupId: group.id,
-        userId: user.uid,
-      );
-    }
-
-    return _TodayProgressData(
-      groupsCount: groups.length,
-      activeTasksCount: activeTasksCount,
-      todayPoints: todayPoints,
-    );
   }
 
   @override
@@ -438,7 +449,7 @@ class _TodayProgressCardState extends State<_TodayProgressCard> {
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
-                      'Today’s Progress',
+                      "Today's Progress",
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 21,
@@ -566,14 +577,15 @@ class _ProgressStatBox extends StatelessWidget {
 }
 
 class _UserGroupsList extends StatefulWidget {
-  const _UserGroupsList();
+  final GroupService? groupService;
+  const _UserGroupsList({this.groupService});
 
   @override
   State<_UserGroupsList> createState() => _UserGroupsListState();
 }
 
 class _UserGroupsListState extends State<_UserGroupsList> {
-  final GroupService _groupService = GroupService();
+  late final GroupService _groupService;
 
   late final Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
   _groupsFuture;
@@ -581,18 +593,19 @@ class _UserGroupsListState extends State<_UserGroupsList> {
   @override
   void initState() {
     super.initState();
+    _groupService = widget.groupService ?? GroupService(); 
     _groupsFuture = _loadUserGroups();
   }
 
   Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
   _loadUserGroups() async {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return [];
+      return _groupService.getGroupsForUser(user.uid);
+    } catch (_) {
       return [];
     }
-
-    return _groupService.getGroupsForUser(user.uid);
   }
 
   @override

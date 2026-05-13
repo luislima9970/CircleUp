@@ -3,14 +3,13 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ImageUploadService {
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  final ImagePicker _imagePicker = ImagePicker();
+  final FirebaseStorage _storage;
+  final ImagePicker _imagePicker;
 
-  ImageUploadService() {
-    print('ImageUploadService initialized with bucket: ${_storage.bucket}');
-  }
+  ImageUploadService({FirebaseStorage? storage, ImagePicker? imagePicker,})  : 
+  _storage = storage ?? FirebaseStorage.instance,
+        _imagePicker = imagePicker ?? ImagePicker();
 
-  /// Abre a câmara para tirar uma foto
   Future<File?> pickImageFromCamera() async {
     try {
       final XFile? pickedFile = await _imagePicker.pickImage(
@@ -33,7 +32,6 @@ class ImageUploadService {
     }
   }
 
-  /// Abre a galeria para selecionar uma foto
   Future<File?> pickImageFromGallery() async {
     try {
       final XFile? pickedFile = await _imagePicker.pickImage(
@@ -56,8 +54,6 @@ class ImageUploadService {
     }
   }
 
-  /// Faz upload da imagem para Firebase Storage
-  /// Retorna a URL da imagem ou null em caso de erro
   Future<String?> uploadImage({
     required File imageFile,
     required String groupId,
@@ -68,7 +64,6 @@ class ImageUploadService {
     late final SettableMetadata metadata;
 
     try {
-      // Verificar se o arquivo existe e tem tamanho válido
       if (!await imageFile.exists()) {
         print('Erro: Arquivo de imagem não existe');
         return null;
@@ -99,7 +94,6 @@ class ImageUploadService {
 
       final uploadTask = _storage.ref(fileName).putFile(imageFile, metadata);
 
-      // Monitorar o progresso do upload
       uploadTask.snapshotEvents.listen(
         (TaskSnapshot snapshot) {
           print('Progresso do upload: ${snapshot.bytesTransferred}/${snapshot.totalBytes}');
@@ -179,7 +173,6 @@ class ImageUploadService {
     return null;
   }
 
-  /// Deleta uma imagem do Firebase Storage
   Future<bool> deleteImage(String imageUrl) async {
     try {
       await _storage.refFromURL(imageUrl).delete();

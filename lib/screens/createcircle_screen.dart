@@ -12,10 +12,14 @@ import 'joincircle_screen.dart';
 
 class CreateCircleScreen extends StatefulWidget {
   final bool startInCreateMode;
+  final GroupService? groupService;
+  final UserService? userService;
 
   const CreateCircleScreen({
     super.key,
     this.startInCreateMode = false,
+    this.groupService,
+    this.userService,
   });
 
   @override
@@ -23,8 +27,8 @@ class CreateCircleScreen extends StatefulWidget {
 }
 
 class _CreateCircleScreenState extends State<CreateCircleScreen> {
-  final GroupService _groupService = GroupService();
-  final UserService _userService = UserService();
+  late final GroupService _groupService;
+  late final UserService _userService;
 
   final _formKey = GlobalKey<FormState>();
   final _circleNameController = TextEditingController();
@@ -39,6 +43,10 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
   @override
   void initState() {
     super.initState();
+    
+    _groupService = widget.groupService ?? GroupService();
+    _userService = widget.userService ?? UserService();
+
     _showCreateForm = widget.startInCreateMode;
     _groupsFuture = _loadUserGroups();
   }
@@ -52,13 +60,13 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
 
   Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
   _loadUserGroups() async {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return [];
+      return _groupService.getGroupsForUser(user.uid);
+    } catch (_) {
       return [];
     }
-
-    return _groupService.getGroupsForUser(user.uid);
   }
 
   void _openCreateForm() {
