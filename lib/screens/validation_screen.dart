@@ -112,7 +112,9 @@ class _ValidationScreenState
 
       if (mounted) {
         await _refreshSubmissionData();
+      }
 
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
