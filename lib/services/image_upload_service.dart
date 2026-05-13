@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ImageUploadService {
@@ -21,13 +22,13 @@ class ImageUploadService {
 
       if (pickedFile != null) {
         final file = File(pickedFile.path);
-        print('Imagem capturada da câmera: ${file.path}');
+        debugPrint('Imagem capturada da câmera: ${file.path}');
         return file;
       }
-      print('Nenhuma imagem capturada da câmera');
+      debugPrint('Nenhuma imagem capturada da câmera');
       return null;
     } catch (e) {
-      print('Erro ao abrir câmara: $e');
+      debugPrint('Erro ao abrir câmara: $e');
       return null;
     }
   }
@@ -43,13 +44,13 @@ class ImageUploadService {
 
       if (pickedFile != null) {
         final file = File(pickedFile.path);
-        print('Imagem selecionada da galeria: ${file.path}');
+        debugPrint('Imagem selecionada da galeria: ${file.path}');
         return file;
       }
-      print('Nenhuma imagem selecionada da galeria');
+      debugPrint('Nenhuma imagem selecionada da galeria');
       return null;
     } catch (e) {
-      print('Erro ao abrir galeria: $e');
+      debugPrint('Erro ao abrir galeria: $e');
       return null;
     }
   }
@@ -65,27 +66,27 @@ class ImageUploadService {
 
     try {
       if (!await imageFile.exists()) {
-        print('Erro: Arquivo de imagem não existe');
+        debugPrint('Erro: Arquivo de imagem não existe');
         return null;
       }
 
       final fileSize = await imageFile.length();
-      print('Tamanho do arquivo: $fileSize bytes');
+      debugPrint('Tamanho do arquivo: $fileSize bytes');
 
       if (fileSize == 0) {
-        print('Erro: Arquivo de imagem está vazio');
+        debugPrint('Erro: Arquivo de imagem está vazio');
         return null;
       }
 
       if (fileSize > 10 * 1024 * 1024) {
-        print('Erro: Arquivo muito grande (${fileSize} bytes)');
+        debugPrint('Erro: Arquivo muito grande ($fileSize bytes)');
         return null;
       }
 
       fileName =
           'submissions/$groupId/$taskId/${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-      print('Fazendo upload para: $fileName');
+      debugPrint('Fazendo upload para: $fileName');
 
       metadata = SettableMetadata(
         contentType: 'image/jpeg',
@@ -96,32 +97,32 @@ class ImageUploadService {
 
       uploadTask.snapshotEvents.listen(
         (TaskSnapshot snapshot) {
-          print('Progresso do upload: ${snapshot.bytesTransferred}/${snapshot.totalBytes}');
+          debugPrint('Progresso do upload: ${snapshot.bytesTransferred}/${snapshot.totalBytes}');
         },
         onError: (error) {
-          print('Upload snapshot error: $error');
+          debugPrint('Upload snapshot error: $error');
         },
       );
 
       final taskSnapshot = await uploadTask;
-      print('Upload concluído, obtendo URL de download...');
+      debugPrint('Upload concluído, obtendo URL de download...');
 
       final downloadUrl = await taskSnapshot.ref.getDownloadURL();
-      print('URL de download obtida: $downloadUrl');
+      debugPrint('URL de download obtida: $downloadUrl');
 
       return downloadUrl;
     } catch (e, stackTrace) {
-      print('Erro detalhado ao fazer upload: $e');
-      print('Stack trace: $stackTrace');
-      print('Tipo do erro: ${e.runtimeType}');
+      debugPrint('Erro detalhado ao fazer upload: $e');
+      debugPrint('Stack trace: $stackTrace');
+      debugPrint('Tipo do erro: ${e.runtimeType}');
       if (e is FirebaseException) {
-        print('Código do erro Firebase: ${e.code}');
-        print('Mensagem do erro Firebase: ${e.message}');
-        print('Plugin do erro Firebase: ${e.plugin}');
+        debugPrint('Código do erro Firebase: ${e.code}');
+        debugPrint('Mensagem do erro Firebase: ${e.message}');
+        debugPrint('Plugin do erro Firebase: ${e.plugin}');
 
         if (e.code == 'object-not-found') {
           final bucket = _storage.bucket;
-          print('Tentando recuperar bucket alternativo para projeto... Bucket atual: $bucket');
+          debugPrint('Tentando recuperar bucket alternativo para projeto... Bucket atual: $bucket');
           return await _retryWithAlternateBucket(
             fileName: fileName,
             imageFile: imageFile,
@@ -148,25 +149,25 @@ class ImageUploadService {
     for (final bucket in candidates) {
       if (bucket == _storage.bucket) continue;
       try {
-        print('Tentando bucket alternativo: $bucket');
+        debugPrint('Tentando bucket alternativo: $bucket');
         final backupStorage = FirebaseStorage.instanceFor(bucket: bucket);
         final uploadTask = backupStorage.ref(fileName).putFile(imageFile, metadata);
 
         uploadTask.snapshotEvents.listen(
           (TaskSnapshot snapshot) {
-            print('Progresso do upload com bucket alternativo: ${snapshot.bytesTransferred}/${snapshot.totalBytes}');
+            debugPrint('Progresso do upload com bucket alternativo: ${snapshot.bytesTransferred}/${snapshot.totalBytes}');
           },
           onError: (error) {
-            print('Upload snapshot error (alternative bucket): $error');
+            debugPrint('Upload snapshot error (alternative bucket): $error');
           },
         );
 
         final taskSnapshot = await uploadTask;
         final downloadUrl = await taskSnapshot.ref.getDownloadURL();
-        print('Upload alternativo concluído: $downloadUrl');
+        debugPrint('Upload alternativo concluído: $downloadUrl');
         return downloadUrl;
       } catch (e) {
-        print('Falha no upload com bucket $bucket: $e');
+        debugPrint('Falha no upload com bucket $bucket: $e');
       }
     }
 
@@ -178,7 +179,7 @@ class ImageUploadService {
       await _storage.refFromURL(imageUrl).delete();
       return true;
     } catch (e) {
-      print('Erro ao deletar imagem: $e');
+      debugPrint('Erro ao deletar imagem: $e');
       return false;
     }
   }
