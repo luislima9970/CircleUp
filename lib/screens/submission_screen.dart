@@ -10,16 +10,21 @@ class SubmissionScreen extends StatefulWidget {
   final String taskId;
   final String taskTitle;
   final String taskDescription;
-  final String themeColor; // 'Sustainability', 'Fitness', or 'Wellness'
+  final String themeColor;
+  final SubmissionService? submissionService;
+  final UserService? userService;
+  final ImageUploadService? imageUploadService;
 
   const SubmissionScreen({
     super.key,
-    this.groupId = 'test_group_id',
-    this.taskId = 'test_task_id',
+    required this.groupId,
+    required this.taskId,
     this.taskTitle = 'Recycle Plastic Bottles',
-    this.taskDescription =
-        'Collect and recycle at least 5 plastic bottles this week to help reduce plastic waste in our environment.',
+    this.taskDescription = 'Collect and recycle at least 5 plastic bottles this week to help reduce plastic waste in our environment.',
     this.themeColor = 'Sustainability',
+    this.submissionService,
+    this.userService,
+    this.imageUploadService,
   });
 
   @override
@@ -29,9 +34,9 @@ class SubmissionScreen extends StatefulWidget {
 
 class _SubmissionScreenState
     extends State<SubmissionScreen> {
-  final ImageUploadService _imageUploadService = ImageUploadService();
-  final SubmissionService _submissionService = SubmissionService();
-  final UserService _userService = UserService();
+  ImageUploadService? _imageUploadService;
+  late final SubmissionService _submissionService;
+  late final UserService _userService;
 
   File? _selectedImage;
   bool _isLoading = false;
@@ -41,18 +46,27 @@ class _SubmissionScreenState
   @override
   void initState() {
     super.initState();
+    _submissionService = widget.submissionService ?? SubmissionService();
+    _userService = widget.userService ?? UserService();
+    try {
+      _imageUploadService = widget.imageUploadService ?? ImageUploadService();
+    } catch (_) {}
     _hasSubmittedFuture = _checkIfUserHasSubmitted();
   }
 
   Future<bool> _checkIfUserHasSubmitted() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return false;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return false;
 
-    return await _submissionService.hasUserSubmittedForTask(
-      groupId: widget.groupId,
-      taskId: widget.taskId,
-      authorId: user.uid,
-    );
+      return await _submissionService.hasUserSubmittedForTask(
+        groupId: widget.groupId,
+        taskId: widget.taskId,
+        authorId: user.uid,
+      );
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
@@ -73,7 +87,7 @@ class _SubmissionScreenState
   }
 
   Future<void> _pickImageFromCamera() async {
-    final image = await _imageUploadService.pickImageFromCamera();
+    final image = await _imageUploadService?.pickImageFromCamera();
     if (image != null) {
       setState(() {
         _selectedImage = image;
@@ -83,7 +97,7 @@ class _SubmissionScreenState
   }
 
   Future<void> _pickImageFromGallery() async {
-    final image = await _imageUploadService.pickImageFromGallery();
+    final image = await _imageUploadService?.pickImageFromGallery();
     if (image != null) {
       setState(() {
         _selectedImage = image;
@@ -119,7 +133,7 @@ class _SubmissionScreenState
       }
       final userDoc = await _userService.getUserById(user.uid);
       final username = (userDoc.get('username') as String?) ?? 'Unknown';
-      final imageUrl = await _imageUploadService.uploadImage(
+      final imageUrl = await _imageUploadService?.uploadImage(
         imageFile: _selectedImage!,
         groupId: widget.groupId,
         taskId: widget.taskId,

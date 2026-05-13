@@ -10,16 +10,17 @@ class ValidationScreen extends StatefulWidget {
   final String taskTitle;
   final String taskDescription;
   final String themeColor;
+  final SubmissionService? submissionService;
 
   const ValidationScreen({
     super.key,
-    this.groupId = 'test_group_id',
-    this.taskId = 'test_task_id',
+    required this.groupId,
+    required this.taskId,
     required this.submissionId,
     this.taskTitle = 'Challenge task',
-    this.taskDescription =
-        'Review the submission and vote to accept or reject it.',
+    this.taskDescription = 'Review the submission and vote to accept or reject it.',
     this.themeColor = 'Sustainability',
+    this.submissionService,
   });
 
   @override
@@ -29,7 +30,7 @@ class ValidationScreen extends StatefulWidget {
 
 class _ValidationScreenState
     extends State<ValidationScreen> {
-  final SubmissionService _submissionService = SubmissionService();
+  late final SubmissionService _submissionService;
   bool _isLoading = false;
   String? _errorMessage;
   late Future<Map<String, dynamic>> _submissionFuture;
@@ -37,6 +38,7 @@ class _ValidationScreenState
   @override
   void initState() {
     super.initState();
+    _submissionService = widget.submissionService ?? SubmissionService();
     _submissionFuture = _fetchSubmissionData();
   }
 
@@ -71,19 +73,19 @@ class _ValidationScreenState
       submissionId: widget.submissionId,
     );
 
-    final user = FirebaseAuth.instance.currentUser;
     String? vote;
-
-    if (user != null && submissionSnapshot.exists) {
-      final voteSnapshot = await _submissionService.getVoteByUser(
-        groupId: widget.groupId,
-        taskId: widget.taskId,
-        submissionId: widget.submissionId,
-        voterId: user.uid,
-      );
-
-      vote = voteSnapshot.data()?['vote'] as String?;
-    }
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && submissionSnapshot.exists) {
+        final voteSnapshot = await _submissionService.getVoteByUser(
+          groupId: widget.groupId,
+          taskId: widget.taskId,
+          submissionId: widget.submissionId,
+          voterId: user.uid,
+        );
+        vote = voteSnapshot.data()?['vote'] as String?;
+      }
+    } catch (_) {}
 
     return {'submission': submissionSnapshot, 'userVote': vote};
   }
@@ -461,6 +463,8 @@ class _ValidationScreenState
                                     width: double.infinity,
                                     height: 240,
                                     fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        const SizedBox(height: 240),
                                   ),
                                 ),
                               ],
