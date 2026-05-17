@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:projesof/screens/createcircle_screen.dart';
-import 'package:projesof/screens/tasks_screen.dart';
 import 'package:projesof/services/group_service.dart';
+
+import 'createcircle_screen.dart';
+import 'tasks_screen.dart';
+import 'homepage_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -172,6 +174,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       MaterialPageRoute(
         builder: (_) => const CreateCircleScreen(),
       ),
+    );
+  }
+
+  void _openHomePage(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const HomepageScreen(),
+      ),
+          (route) => false,
     );
   }
 
@@ -376,7 +388,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         unselectedFontSize: 12,
         onTap: (index) {
           if (index == 0) {
-            Navigator.pop(context);
+            _openHomePage(context);
           }
 
           if (index == 1) {
