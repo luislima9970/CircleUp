@@ -9,6 +9,7 @@ import 'package:projesof/services/user_service.dart';
 import 'homepage_screen.dart';
 import 'group_page.dart';
 import 'joincircle_screen.dart';
+import 'profile_screen.dart';
 
 class CreateCircleScreen extends StatefulWidget {
   final bool startInCreateMode;
@@ -105,10 +106,11 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
     );
   }
 
-  void _showProfileMessage() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profile page will be available soon.'),
+  void _openProfilePage() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ProfileScreen(),
       ),
     );
   }
@@ -289,7 +291,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
           }
 
           if (index == 3) {
-            _showProfileMessage();
+            _openProfilePage();
           }
         },
         items: const [

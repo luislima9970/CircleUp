@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:projesof/screens/createcircle_screen.dart';
 import 'package:projesof/screens/task_detail_screen.dart';
+import 'package:projesof/screens/profile_screen.dart';
 
 class TasksPageScreen extends StatefulWidget {
   final String userId;
@@ -21,12 +22,14 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
     );
   }
 
-  void _showComingSoon(String message) {
-    ScaffoldMessenger.of(
+  void _openProfilePage(BuildContext context) {
+    Navigator.push(
       context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+      MaterialPageRoute(
+        builder: (_) => const ProfileScreen(),
+      ),
+    );
   }
-
   Color _themeColor(String theme) {
     if (theme == 'Fitness') return const Color(0xFF2A8CFF);
     if (theme == 'Wellness') return const Color(0xFFFFB84D);
@@ -126,7 +129,7 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
           if (index == 1) _openCirclesPage(context);
           if (index == 2) return;
           if (index == 3) {
-            _showComingSoon('Profile coming soon');
+            _openProfilePage(context);
           }
         },
         items: const [

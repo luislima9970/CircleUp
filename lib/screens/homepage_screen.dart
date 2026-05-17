@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projesof/screens/tasks_screen.dart';
 import 'package:projesof/services/group_service.dart';
 
+import 'profile_screen.dart';
 import 'createcircle_screen.dart';
 import 'group_page.dart';
 
@@ -30,10 +31,11 @@ class HomepageScreen extends StatelessWidget {
     );
   }
 
-  void _showProfileMessage(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profile page will be available soon.'),
+  void _openProfilePage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ProfileScreen(),
       ),
     );
   }
@@ -126,8 +128,7 @@ class HomepageScreen extends StatelessWidget {
           }
 
           if (index == 3) {
-            _showProfileMessage(context);
-          }
+            _openProfilePage(context);          }
         },
         items: const [
           BottomNavigationBarItem(

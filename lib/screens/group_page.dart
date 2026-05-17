@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:projesof/screens/tasks_screen.dart';
 import 'package:projesof/screens/task_detail_screen.dart';
+import 'package:projesof/screens/profile_screen.dart';
 
 class GroupPageScreen extends StatefulWidget {
   final String groupId;
@@ -20,9 +21,12 @@ class GroupPageScreen extends StatefulWidget {
 class _GroupPageScreenState extends State<GroupPageScreen> {
   int _selectedTab = 0;
 
-  void _showComingSoon(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+  void _openProfilePage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ProfileScreen(),
+      ),
     );
   }
 
@@ -333,7 +337,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
           }
 
           if (index == 3) {
-            _showComingSoon('Profile page will be available soon.');
+            _openProfilePage(context);
           }
         },
         items: const [
