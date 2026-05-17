@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:projesof/screens/createcircle_screen.dart';
+import 'package:projesof/screens/homepage_screen.dart';
+import 'package:projesof/screens/login_screen.dart';
+import 'package:projesof/screens/tasks_screen.dart';
 import 'package:projesof/services/group_service.dart';
-
-import 'createcircle_screen.dart';
-import 'tasks_screen.dart';
-import 'homepage_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,12 +18,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final GroupService _groupService = GroupService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  late final Future<_ProfileData> _profileFuture;
+  late Future<_ProfileData> _profileFuture;
 
   @override
   void initState() {
     super.initState();
     _profileFuture = _loadProfileData();
+  }
+
+  int _parseReward(dynamic reward) {
+    if (reward is int) return reward;
+    if (reward is num) return reward.toInt();
+    if (reward is String) return int.tryParse(reward) ?? 0;
+    return 0;
   }
 
   String _dateKey(DateTime date) {
@@ -34,11 +41,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return '$year-$month-$day';
   }
 
-  int _parseReward(dynamic reward) {
-    if (reward is int) return reward;
-    if (reward is num) return reward.toInt();
-    if (reward is String) return int.tryParse(reward) ?? 0;
-    return 0;
+  bool _isThisWeek(String dateKey) {
+    final date = DateTime.tryParse(dateKey);
+
+    if (date == null) {
+      return false;
+    }
+
+    final now = DateTime.now();
+
+    final startOfWeek = DateTime(
+      now.year,
+      now.month,
+      now.day - (now.weekday - 1),
+    );
+
+    final today = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    );
+
+    final cleanDate = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    );
+
+    return (cleanDate.isAtSameMomentAs(startOfWeek) ||
+        cleanDate.isAfter(startOfWeek)) &&
+        !cleanDate.isAfter(today);
   }
 
   int _calculateStreak(Set<String> completedDates) {
@@ -53,39 +85,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return streak;
   }
 
-  bool _isThisWeek(String dateKey) {
-    final date = DateTime.tryParse(dateKey);
-
-    if (date == null) return false;
-
-    final now = DateTime.now();
-    final startOfWeek = DateTime(
-      now.year,
-      now.month,
-      now.day - (now.weekday - 1),
-    );
-
-    final cleanDate = DateTime(date.year, date.month, date.day);
-
-    return cleanDate.isAtSameMomentAs(startOfWeek) ||
-        cleanDate.isAfter(startOfWeek);
-  }
-
   Future<_ProfileData> _loadProfileData() async {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      return const _ProfileData(
-        username: 'User',
-        email: '',
-        profileImageUrl: '',
-        groupsCount: 0,
-        completedTasks: 0,
-        weeklyCompletedTasks: 0,
-        weeklyTarget: 7,
-        totalPoints: 0,
-        streak: 0,
-      );
+      return const _ProfileData.empty();
     }
 
     final userDoc = await _firestore.collection('users').doc(user.uid).get();
@@ -93,12 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final username = userData?['username']?.toString().trim();
     final email = userData?['email']?.toString().trim();
-
-    final profileImageUrl =
-        userData?['photoUrl']?.toString().trim() ??
-            userData?['profileImage']?.toString().trim() ??
-            userData?['profileImageUrl']?.toString().trim() ??
-            '';
+    final phrase = userData?['profilePhrase']?.toString().trim();
 
     final groups = await _groupService.getGroupsForUser(user.uid);
 
@@ -145,36 +144,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     }
 
-    final weeklyTarget = activeTasksCount == 0 ? 7 : activeTasksCount;
-
     return _ProfileData(
       username: username == null || username.isEmpty ? 'User' : username,
       email: email == null || email.isEmpty ? user.email ?? '' : email,
-      profileImageUrl: profileImageUrl,
+      phrase: phrase == null || phrase.isEmpty
+          ? 'Turning small actions into daily impact.'
+          : phrase,
       groupsCount: groups.length,
       completedTasks: completedTasks,
       weeklyCompletedTasks: weeklyCompletedTasks,
-      weeklyTarget: weeklyTarget,
+      weeklyTarget: activeTasksCount == 0 ? 7 : activeTasksCount,
       totalPoints: totalPoints,
       streak: _calculateStreak(completedDates),
     );
   }
 
-  String _getInitial(String username) {
+  String _initial(String username) {
     final trimmed = username.trim();
 
-    if (trimmed.isEmpty) return '?';
+    if (trimmed.isEmpty) {
+      return '?';
+    }
 
     return trimmed[0].toUpperCase();
   }
 
-  void _openCirclesPage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const CreateCircleScreen(),
-      ),
-    );
+  String _handle(String username) {
+    final cleanUsername = username
+        .toLowerCase()
+        .trim()
+        .replaceAll(RegExp(r'\s+'), '');
+
+    if (cleanUsername.isEmpty) {
+      return '@circleup';
+    }
+
+    return '@$cleanUsername';
   }
 
   void _openHomePage(BuildContext context) {
@@ -187,25 +192,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  void _openCirclesPage(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CreateCircleScreen(),
+      ),
+          (route) => false,
+    );
+  }
+
   void _openTasksPage(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) return;
+    if (user == null) {
+      return;
+    }
 
-    Navigator.push(
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
         builder: (_) => TasksPageScreen(userId: user.uid),
       ),
+          (route) => false,
     );
   }
 
-  Future<void> _signOut() async {
+  Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
-    Navigator.popUntil(context, (route) => route.isFirst);
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+          (route) => false,
+    );
   }
 
   @override
@@ -268,22 +294,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                   }
 
-                  final profile = snapshot.data ??
-                      const _ProfileData(
-                        username: 'User',
-                        email: '',
-                        profileImageUrl: '',
-                        groupsCount: 0,
-                        completedTasks: 0,
-                        weeklyCompletedTasks: 0,
-                        weeklyTarget: 7,
-                        totalPoints: 0,
-                        streak: 0,
-                      );
+                  final profile = snapshot.data ?? const _ProfileData.empty();
 
                   final progress = profile.weeklyTarget == 0
                       ? 0.0
-                      : profile.weeklyCompletedTasks / profile.weeklyTarget;
+                      : (profile.weeklyCompletedTasks / profile.weeklyTarget)
+                      .clamp(0.0, 1.0);
 
                   return SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
@@ -291,12 +307,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _ProfileTopCard(
+                        _ProfileHeaderCard(
                           username: profile.username,
-                          email: profile.email,
-                          initial: _getInitial(profile.username),
-                          profileImageUrl: profile.profileImageUrl,
-                          streak: profile.streak,
+                          handle: _handle(profile.username),
+                          phrase: profile.phrase,
+                          initial: _initial(profile.username),
+                          onEdit: () {},
                         ),
 
                         const SizedBox(height: 22),
@@ -314,7 +330,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Expanded(
                               child: _ProfileStatCard(
                                 icon: Icons.local_fire_department_rounded,
-                                value: '${profile.streak} days',
+                                value: profile.streak == 1
+                                    ? '1 day'
+                                    : '${profile.streak} days',
                                 label: 'Streak',
                               ),
                             ),
@@ -345,28 +363,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _WeeklyActivityCard(
                           completed: profile.weeklyCompletedTasks,
                           target: profile.weeklyTarget,
-                          progress: progress.clamp(0.0, 1.0),
+                          progress: progress,
                           completedTasks: profile.completedTasks,
                           groupsCount: profile.groupsCount,
                         ),
 
-                        const SizedBox(height: 22),
+                        const SizedBox(height: 18),
 
-                        _ProfileOptionCard(
-                          icon: Icons.email_outlined,
-                          title: 'Email',
-                          subtitle: profile.email.isEmpty
-                              ? 'No email available'
-                              : profile.email,
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        _ProfileOptionCard(
-                          icon: Icons.logout_rounded,
-                          title: 'Sign out',
-                          subtitle: 'Leave your current account',
-                          onTap: _signOut,
+                        _LogoutCard(
+                          onTap: _logout,
                         ),
                       ],
                     ),
@@ -429,7 +434,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 class _ProfileData {
   final String username;
   final String email;
-  final String profileImageUrl;
+  final String phrase;
   final int groupsCount;
   final int completedTasks;
   final int weeklyCompletedTasks;
@@ -440,7 +445,7 @@ class _ProfileData {
   const _ProfileData({
     required this.username,
     required this.email,
-    required this.profileImageUrl,
+    required this.phrase,
     required this.groupsCount,
     required this.completedTasks,
     required this.weeklyCompletedTasks,
@@ -448,32 +453,39 @@ class _ProfileData {
     required this.totalPoints,
     required this.streak,
   });
+
+  const _ProfileData.empty()
+      : username = 'User',
+        email = '',
+        phrase = 'Turning small actions into daily impact.',
+        groupsCount = 0,
+        completedTasks = 0,
+        weeklyCompletedTasks = 0,
+        weeklyTarget = 7,
+        totalPoints = 0,
+        streak = 0;
 }
 
-class _ProfileTopCard extends StatelessWidget {
+class _ProfileHeaderCard extends StatelessWidget {
   final String username;
-  final String email;
+  final String handle;
+  final String phrase;
   final String initial;
-  final String profileImageUrl;
-  final int streak;
+  final VoidCallback onEdit;
 
-  const _ProfileTopCard({
+  const _ProfileHeaderCard({
     required this.username,
-    required this.email,
+    required this.handle,
+    required this.phrase,
     required this.initial,
-    required this.profileImageUrl,
-    required this.streak,
+    required this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
-    final badgeText = streak >= 7
-        ? 'Top Consistency Badge'
-        : 'Keep Building Consistency';
-
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 26),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -484,10 +496,10 @@ class _ProfileTopCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(44),
-          bottomRight: Radius.circular(44),
           topLeft: Radius.circular(26),
           topRight: Radius.circular(26),
+          bottomLeft: Radius.circular(44),
+          bottomRight: Radius.circular(44),
         ),
         boxShadow: [
           BoxShadow(
@@ -500,28 +512,21 @@ class _ProfileTopCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 106,
-            height: 106,
-            padding: const EdgeInsets.all(4),
+            width: 108,
+            height: 108,
             decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.95),
               shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.35),
             ),
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              backgroundImage: profileImageUrl.isEmpty
-                  ? null
-                  : NetworkImage(profileImageUrl),
-              child: profileImageUrl.isEmpty
-                  ? Text(
+            child: Center(
+              child: Text(
                 initial,
                 style: const TextStyle(
                   color: Color(0xFF2A8CFF),
-                  fontSize: 38,
+                  fontSize: 40,
                   fontWeight: FontWeight.w900,
                 ),
-              )
-                  : null,
+              ),
             ),
           ),
 
@@ -538,10 +543,10 @@ class _ProfileTopCard extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
 
           Text(
-            email.isEmpty ? '@circleup' : email,
+            handle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
@@ -553,10 +558,10 @@ class _ProfileTopCard extends StatelessWidget {
 
           const SizedBox(height: 18),
 
-          const Text(
-            'Turning small actions into daily impact.',
+          Text(
+            phrase,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: const TextStyle(
               color: Color(0xEFFFFFFF),
               fontSize: 16,
               height: 1.4,
@@ -565,36 +570,24 @@ class _ProfileTopCard extends StatelessWidget {
 
           const SizedBox(height: 22),
 
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 18,
-              vertical: 12,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.20),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.18),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  badgeText,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 14,
+          SizedBox(
+            height: 46,
+            child: ElevatedButton.icon(
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit_rounded, size: 18),
+              label: const Text('Edit Profile'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white.withValues(alpha: 0.22),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                  side: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.20),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -617,7 +610,7 @@ class _ProfileStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 134,
+      height: 124,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.96),
@@ -641,18 +634,18 @@ class _ProfileStatCard extends StatelessWidget {
             color: const Color(0xFF43D17A),
             size: 28,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Color(0xFF1C2A33),
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           Text(
             label,
             style: const TextStyle(
@@ -684,6 +677,8 @@ class _WeeklyActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final taskWord = target == 1 ? 'task' : 'tasks';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
@@ -716,7 +711,7 @@ class _WeeklyActivityCard extends StatelessWidget {
           const SizedBox(height: 10),
 
           Text(
-            'You completed $completed out of $target tasks this week.',
+            'You completed $completed out of $target $taskWord this week.',
             style: const TextStyle(
               color: Color(0xFF7A8A94),
               fontSize: 15,
@@ -807,17 +802,11 @@ class _SmallSummaryBox extends StatelessWidget {
   }
 }
 
-class _ProfileOptionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
+class _LogoutCard extends StatelessWidget {
+  final VoidCallback onTap;
 
-  const _ProfileOptionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.onTap,
+  const _LogoutCard({
+    required this.onTap,
   });
 
   @override
@@ -850,33 +839,31 @@ class _ProfileOptionCard extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF4FF),
+                  color: const Color(0xFFFFECEC),
                   borderRadius: BorderRadius.circular(18),
                 ),
-                child: Icon(
-                  icon,
-                  color: const Color(0xFF2A8CFF),
+                child: const Icon(
+                  Icons.logout_rounded,
+                  color: Color(0xFFE05252),
                 ),
               ),
               const SizedBox(width: 15),
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
-                      style: const TextStyle(
+                      'Logout',
+                      style: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF1C2A33),
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFFE05252),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
-                      subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      'Leave your current account',
+                      style: TextStyle(
                         fontSize: 13,
                         color: Color(0xFF7A8A94),
                       ),
@@ -884,11 +871,10 @@ class _ProfileOptionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (onTap != null)
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Color(0xFF95A39A),
-                ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: Color(0xFF95A39A),
+              ),
             ],
           ),
         ),
