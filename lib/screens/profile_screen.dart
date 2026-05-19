@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:projesof/screens/createcircle_screen.dart';
-import 'package:projesof/screens/homepage_screen.dart';
-import 'package:projesof/screens/login_screen.dart';
-import 'package:projesof/screens/tasks_screen.dart';
 import 'package:projesof/services/group_service.dart';
+
+import 'createcircle_screen.dart';
+import 'homepage_screen.dart';
+import 'login_screen.dart';
+import 'tasks_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -142,19 +144,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return trimmed[0].toUpperCase();
   }
 
-  String _handle(String username) {
-    final cleanUsername = username
-        .toLowerCase()
-        .trim()
-        .replaceAll(RegExp(r'\s+'), '');
-
-    if (cleanUsername.isEmpty) {
-      return '@circleup';
-    }
-
-    return '@$cleanUsername';
-  }
-
   void _openHomePage(BuildContext context) {
     Navigator.pushAndRemoveUntil(
       context,
@@ -189,6 +178,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
           (route) => false,
     );
+  }
+
+  Future<void> _openEditProfile(_ProfileData profile) async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(
+          username: profile.username,
+          email: profile.email,
+          phrase: profile.phrase,
+        ),
+      ),
+    );
+
+    if (updated == true && mounted) {
+      setState(() {
+        _profileFuture = _loadProfileData();
+      });
+    }
   }
 
   Future<void> _logout() async {
@@ -282,10 +290,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         _ProfileHeaderCard(
                           username: profile.username,
-                          handle: _handle(profile.username),
                           phrase: profile.phrase,
                           initial: _initial(profile.username),
-                          onEdit: () {},
+                          onEdit: () => _openEditProfile(profile),
                         ),
 
                         const SizedBox(height: 22),
@@ -441,14 +448,12 @@ class _ProfileData {
 
 class _ProfileHeaderCard extends StatelessWidget {
   final String username;
-  final String handle;
   final String phrase;
   final String initial;
   final VoidCallback onEdit;
 
   const _ProfileHeaderCard({
     required this.username,
-    required this.handle,
     required this.phrase,
     required this.initial,
     required this.onEdit,
@@ -513,19 +518,6 @@ class _ProfileHeaderCard extends StatelessWidget {
               color: Colors.white,
               fontSize: 27,
               fontWeight: FontWeight.w900,
-            ),
-          ),
-
-          const SizedBox(height: 4),
-
-          Text(
-            handle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xEFFFFFFF),
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
             ),
           ),
 
