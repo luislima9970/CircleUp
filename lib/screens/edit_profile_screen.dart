@@ -4,13 +4,11 @@ import 'package:flutter/material.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final String username;
-  final String email;
   final String phrase;
 
   const EditProfileScreen({
     super.key,
     required this.username,
-    required this.email,
     required this.phrase,
   });
 
@@ -22,7 +20,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _usernameController;
-  late final TextEditingController _emailController;
   late final TextEditingController _phraseController;
 
   final TextEditingController _currentPasswordController =
@@ -38,14 +35,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
 
     _usernameController = TextEditingController(text: widget.username);
-    _emailController = TextEditingController(text: widget.email);
     _phraseController = TextEditingController(text: widget.phrase);
   }
 
   @override
   void dispose() {
     _usernameController.dispose();
-    _emailController.dispose();
     _phraseController.dispose();
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
@@ -116,21 +111,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     final username = _usernameController.text.trim();
-    final newEmail = _emailController.text.trim();
     final phrase = _phraseController.text.trim();
     final currentPassword = _currentPasswordController.text.trim();
     final newPassword = _newPasswordController.text.trim();
 
-    final wantsToChangeEmail = newEmail != widget.email;
     final wantsToChangePassword = newPassword.isNotEmpty;
 
-    if ((wantsToChangeEmail || wantsToChangePassword) &&
-        currentPassword.isEmpty) {
+    if (wantsToChangePassword && currentPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Enter your current password to change email or password.',
-          ),
+          content: Text('Enter your current password to change password.'),
         ),
       );
       return;
@@ -141,15 +131,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      if (wantsToChangeEmail || wantsToChangePassword) {
-        await _reauthenticate(user);
-      }
-
-      if (wantsToChangeEmail) {
-        await user.verifyBeforeUpdateEmail(newEmail);
-      }
-
       if (wantsToChangePassword) {
+        await _reauthenticate(user);
         await user.updatePassword(newPassword);
       }
 
@@ -158,8 +141,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
         {
           'username': username,
-          'email': newEmail,
           'profilePhrase': phrase,
+          'email': user.email,
         },
         SetOptions(merge: true),
       );
@@ -188,11 +171,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
         message = 'Current password is incorrect.';
       } else if (e.code == 'requires-recent-login') {
-        message = 'Please log in again before changing email or password.';
-      } else if (e.code == 'email-already-in-use') {
-        message = 'This email is already being used.';
-      } else if (e.code == 'invalid-email') {
-        message = 'Invalid email address.';
+        message = 'Please log in again before changing your password.';
       } else if (e.code == 'weak-password') {
         message = 'The new password is too weak.';
       }
@@ -270,230 +249,241 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   children: [
                     _TopBar(
                       title: 'Edit Profile',
+                      subtitle: 'Update your personal details',
                       onBack: () => Navigator.pop(context),
                     ),
 
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 28),
 
                     Center(
-                      child: Container(
-                        width: 116,
-                        height: 116,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.95),
-                          shape: BoxShape.circle,
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x12000000),
-                              blurRadius: 20,
-                              offset: Offset(0, 8),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 118,
+                            height: 118,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.96),
+                              shape: BoxShape.circle,
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x14000000),
+                                  blurRadius: 24,
+                                  offset: Offset(0, 10),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            _getInitial(),
-                            style: const TextStyle(
-                              color: Color(0xFF2A8CFF),
-                              fontSize: 42,
+                            child: Center(
+                              child: Text(
+                                _getInitial(),
+                                style: const TextStyle(
+                                  color: Color(0xFF2A8CFF),
+                                  fontSize: 42,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Profile information',
+                            style: TextStyle(
+                              color: Color(0xFF1C2A33),
+                              fontSize: 22,
                               fontWeight: FontWeight.w900,
                             ),
                           ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 26),
-
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.96),
-                        borderRadius: BorderRadius.circular(28),
-                        border: Border.all(
-                          color: const Color(0xFFE5EEF5),
-                        ),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x0D000000),
-                            blurRadius: 16,
-                            offset: Offset(0, 8),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Change your name and profile phrase.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Color(0xFF7A8A94),
+                              fontSize: 14,
+                            ),
                           ),
                         ],
                       ),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          children: [
-                            _EditProfileField(
-                              controller: _usernameController,
-                              label: 'Username',
-                              icon: Icons.person_outline_rounded,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Enter a username';
-                                }
+                    ),
 
-                                if (value.trim().length < 3) {
-                                  return 'Username must have at least 3 characters';
-                                }
+                    const SizedBox(height: 28),
 
-                                return null;
-                              },
-                            ),
+                    Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          _EditSectionCard(
+                            title: 'Personal details',
+                            icon: Icons.person_outline_rounded,
+                            children: [
+                              _EditProfileField(
+                                controller: _usernameController,
+                                label: 'Username',
+                                icon: Icons.person_outline_rounded,
+                                validator: (value) {
+                                  if (value == null ||
+                                      value.trim().isEmpty) {
+                                    return 'Enter a username';
+                                  }
 
-                            const SizedBox(height: 16),
+                                  if (value.trim().length < 3) {
+                                    return 'Username must have at least 3 characters';
+                                  }
 
-                            _EditProfileField(
-                              controller: _phraseController,
-                              label: 'Profile phrase',
-                              icon: Icons.format_quote_rounded,
-                              maxLines: 2,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Enter a profile phrase';
-                                }
-
-                                return null;
-                              },
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            _EditProfileField(
-                              controller: _emailController,
-                              label: 'Email',
-                              icon: Icons.email_outlined,
-                              keyboardType: TextInputType.emailAddress,
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Enter an email';
-                                }
-
-                                if (!value.contains('@')) {
-                                  return 'Enter a valid email';
-                                }
-
-                                return null;
-                              },
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            _EditProfileField(
-                              controller: _currentPasswordController,
-                              label: 'Current password',
-                              icon: Icons.lock_outline_rounded,
-                              obscureText: true,
-                              helperText:
-                              'Required only if you change email or password',
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            _EditProfileField(
-                              controller: _newPasswordController,
-                              label: 'New password',
-                              icon: Icons.password_rounded,
-                              obscureText: true,
-                              helperText: 'Leave empty to keep current password',
-                              validator: (value) {
-                                if (value != null &&
-                                    value.trim().isNotEmpty &&
-                                    value.trim().length < 6) {
-                                  return 'Password must have at least 6 characters';
-                                }
-
-                                return null;
-                              },
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            _EditProfileField(
-                              controller: _confirmPasswordController,
-                              label: 'Confirm new password',
-                              icon: Icons.password_rounded,
-                              obscureText: true,
-                              validator: (value) {
-                                final newPassword =
-                                _newPasswordController.text.trim();
-
-                                if (newPassword.isEmpty) {
                                   return null;
-                                }
+                                },
+                              ),
 
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Confirm your new password';
-                                }
+                              const SizedBox(height: 16),
 
-                                if (value.trim() != newPassword) {
-                                  return 'Passwords do not match';
-                                }
+                              _EditProfileField(
+                                controller: _phraseController,
+                                label: 'Profile phrase',
+                                icon: Icons.format_quote_rounded,
+                                maxLines: 3,
+                                validator: (value) {
+                                  if (value == null ||
+                                      value.trim().isEmpty) {
+                                    return 'Enter a profile phrase';
+                                  }
 
-                                return null;
-                              },
-                            ),
+                                  if (value.trim().length > 90) {
+                                    return 'Phrase must be shorter than 90 characters';
+                                  }
 
-                            const SizedBox(height: 26),
+                                  return null;
+                                },
+                              ),
+                            ],
+                          ),
 
-                            SizedBox(
-                              width: double.infinity,
-                              height: 54,
-                              child: ElevatedButton(
-                                onPressed: _isSaving ? null : _saveProfile,
-                                style: ElevatedButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  backgroundColor: Colors.transparent,
-                                  disabledBackgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                  elevation: 0,
+                          const SizedBox(height: 18),
+
+                          _EditSectionCard(
+                            title: 'Security',
+                            icon: Icons.lock_outline_rounded,
+                            children: [
+                              const _InfoBox(
+                                text:
+                                'Leave the password fields empty if you do not want to change your password.',
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              _EditProfileField(
+                                controller: _currentPasswordController,
+                                label: 'Current password',
+                                icon: Icons.lock_outline_rounded,
+                                obscureText: true,
+                                helperText:
+                                'Required only when changing password',
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              _EditProfileField(
+                                controller: _newPasswordController,
+                                label: 'New password',
+                                icon: Icons.password_rounded,
+                                obscureText: true,
+                                validator: (value) {
+                                  if (value != null &&
+                                      value.trim().isNotEmpty &&
+                                      value.trim().length < 6) {
+                                    return 'Password must have at least 6 characters';
+                                  }
+
+                                  return null;
+                                },
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              _EditProfileField(
+                                controller: _confirmPasswordController,
+                                label: 'Confirm new password',
+                                icon: Icons.password_rounded,
+                                obscureText: true,
+                                validator: (value) {
+                                  final newPassword =
+                                  _newPasswordController.text.trim();
+
+                                  if (newPassword.isEmpty) {
+                                    return null;
+                                  }
+
+                                  if (value == null ||
+                                      value.trim().isEmpty) {
+                                    return 'Confirm your new password';
+                                  }
+
+                                  if (value.trim() != newPassword) {
+                                    return 'Passwords do not match';
+                                  }
+
+                                  return null;
+                                },
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 26),
+
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: ElevatedButton(
+                              onPressed: _isSaving ? null : _saveProfile,
+                              style: ElevatedButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                backgroundColor: Colors.transparent,
+                                disabledBackgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
                                 ),
-                                child: Ink(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: _isSaving
-                                          ? const [
-                                        Color(0xFFB7C4CC),
-                                        Color(0xFFB7C4CC),
-                                      ]
-                                          : const [
-                                        Color(0xFF2A8CFF),
-                                        Color(0xFF43D17A),
-                                      ],
-                                    ),
-                                    borderRadius: const BorderRadius.all(
-                                      Radius.circular(18),
-                                    ),
+                                elevation: 0,
+                              ),
+                              child: Ink(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: _isSaving
+                                        ? const [
+                                      Color(0xFFB7C4CC),
+                                      Color(0xFFB7C4CC),
+                                    ]
+                                        : const [
+                                      Color(0xFF2A8CFF),
+                                      Color(0xFF43D17A),
+                                    ],
                                   ),
-                                  child: Center(
-                                    child: _isSaving
-                                        ? const SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2.4,
-                                      ),
-                                    )
-                                        : const Text(
-                                      'Save Changes',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w900,
-                                      ),
+                                  borderRadius: const BorderRadius.all(
+                                    Radius.circular(18),
+                                  ),
+                                ),
+                                child: Center(
+                                  child: _isSaving
+                                      ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.4,
+                                    ),
+                                  )
+                                      : const Text(
+                                    'Save Changes',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w900,
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -502,6 +492,115 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _EditSectionCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final List<Widget> children;
+
+  const _EditSectionCard({
+    required this.title,
+    required this.icon,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: const Color(0xFFE5EEF5),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF4FF),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  icon,
+                  color: const Color(0xFF2A8CFF),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFF1C2A33),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoBox extends StatelessWidget {
+  final String text;
+
+  const _InfoBox({
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F8F5),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline_rounded,
+            size: 20,
+            color: Color(0xFF43D17A),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Color(0xFF7A8A94),
+                fontSize: 13,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -567,10 +666,12 @@ class _EditProfileField extends StatelessWidget {
 
 class _TopBar extends StatelessWidget {
   final String title;
+  final String subtitle;
   final VoidCallback onBack;
 
   const _TopBar({
     required this.title,
+    required this.subtitle,
     required this.onBack,
   });
 
@@ -600,15 +701,28 @@ class _TopBar extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 14),
         Expanded(
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              color: Color(0xFF1C2A33),
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF1C2A33),
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF7A8A94),
+                ),
+              ),
+            ],
           ),
         ),
       ],

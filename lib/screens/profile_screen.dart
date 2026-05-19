@@ -186,7 +186,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       MaterialPageRoute(
         builder: (_) => EditProfileScreen(
           username: profile.username,
-          email: profile.email,
           phrase: profile.phrase,
         ),
       ),
