@@ -83,6 +83,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final email = userData?['email']?.toString().trim();
     final phrase = userData?['profilePhrase']?.toString().trim();
 
+    final firestorePhotoUrl = userData?['photoUrl']?.toString().trim() ?? '';
+    final authPhotoUrl = user.photoURL?.trim() ?? '';
+
+    final photoUrl =
+    firestorePhotoUrl.isNotEmpty ? firestorePhotoUrl : authPhotoUrl;
+
     final groups = await _groupService.getGroupsForUser(user.uid);
 
     int totalPoints = 0;
@@ -125,6 +131,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       phrase: phrase == null || phrase.isEmpty
           ? 'Turning small actions into daily impact.'
           : phrase,
+      photoUrl: photoUrl,
       groupsCount: groups.length,
       completedTasks: completedTasks,
       dailyCompletedTasks: dailyCompletedTasks,
@@ -187,6 +194,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         builder: (_) => EditProfileScreen(
           username: profile.username,
           phrase: profile.phrase,
+          photoUrl: profile.photoUrl,
         ),
       ),
     );
@@ -291,6 +299,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           username: profile.username,
                           phrase: profile.phrase,
                           initial: _initial(profile.username),
+                          photoUrl: profile.photoUrl,
                           onEdit: () => _openEditProfile(profile),
                         ),
 
@@ -414,6 +423,7 @@ class _ProfileData {
   final String username;
   final String email;
   final String phrase;
+  final String photoUrl;
   final int groupsCount;
   final int completedTasks;
   final int dailyCompletedTasks;
@@ -425,6 +435,7 @@ class _ProfileData {
     required this.username,
     required this.email,
     required this.phrase,
+    required this.photoUrl,
     required this.groupsCount,
     required this.completedTasks,
     required this.dailyCompletedTasks,
@@ -437,6 +448,7 @@ class _ProfileData {
       : username = 'User',
         email = '',
         phrase = 'Turning small actions into daily impact.',
+        photoUrl = '',
         groupsCount = 0,
         completedTasks = 0,
         dailyCompletedTasks = 0,
@@ -449,12 +461,14 @@ class _ProfileHeaderCard extends StatelessWidget {
   final String username;
   final String phrase;
   final String initial;
+  final String photoUrl;
   final VoidCallback onEdit;
 
   const _ProfileHeaderCard({
     required this.username,
     required this.phrase,
     required this.initial,
+    required this.photoUrl,
     required this.onEdit,
   });
 
@@ -489,21 +503,26 @@ class _ProfileHeaderCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 108,
-            height: 108,
+            width: 112,
+            height: 112,
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.95),
+              color: Colors.white.withValues(alpha: 0.35),
               shape: BoxShape.circle,
             ),
-            child: Center(
-              child: Text(
+            child: CircleAvatar(
+              backgroundColor: Colors.white,
+              backgroundImage: photoUrl.isEmpty ? null : NetworkImage(photoUrl),
+              child: photoUrl.isEmpty
+                  ? Text(
                 initial,
                 style: const TextStyle(
                   color: Color(0xFF2A8CFF),
                   fontSize: 40,
                   fontWeight: FontWeight.w900,
                 ),
-              ),
+              )
+                  : null,
             ),
           ),
 

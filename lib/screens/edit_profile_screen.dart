@@ -1,15 +1,20 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:projesof/services/image_upload_service.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final String username;
   final String phrase;
+  final String photoUrl;
 
   const EditProfileScreen({
     super.key,
     required this.username,
     required this.phrase,
+    required this.photoUrl,
   });
 
   @override
@@ -29,6 +34,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   TextEditingController();
 
   bool _isSaving = false;
+
+  final ImageUploadService _imageUploadService = ImageUploadService();
+
+  File? _selectedImage;
 
   @override
   void initState() {
@@ -58,6 +67,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return username[0].toUpperCase();
   }
 
+  ImageProvider? _getAvatarImage() {
+    if (_selectedImage != null) {
+      return FileImage(_selectedImage!);
+    }
+
+    if (widget.photoUrl.isNotEmpty) {
+      return NetworkImage(widget.photoUrl);
+    }
+
+    return null;
+  }
+
+  Future<void> _pickProfileImage() async {
+    final image = await _imageUploadService.pickImageFromGallery();
+
+    if (image == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedImage = image;
+    });
+  }
+
   Future<void> _reauthenticate(User user) async {
     final currentPassword = _currentPasswordController.text.trim();
 
@@ -79,6 +112,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _updateMemberDocuments({
     required String uid,
     required String username,
+    String? photoUrl,
   }) async {
     try {
       final memberDocs = await FirebaseFirestore.instance
@@ -90,6 +124,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         await memberDoc.reference.set(
           {
             'username': username,
+            if (photoUrl != null) 'photoUrl': photoUrl,
           },
           SetOptions(merge: true),
         );
@@ -136,6 +171,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         await user.updatePassword(newPassword);
       }
 
+      String? uploadedPhotoUrl;
+
+      if (_selectedImage != null) {
+        uploadedPhotoUrl = await _imageUploadService.uploadProfileImage(
+          imageFile: _selectedImage!,
+          userId: user.uid,
+        );
+
+        if (uploadedPhotoUrl == null) {
+          throw Exception('Could not upload profile image.');
+        }
+
+        await user.updatePhotoURL(uploadedPhotoUrl);
+      }
+
       await user.updateDisplayName(username);
 
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
@@ -143,6 +193,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           'username': username,
           'profilePhrase': phrase,
           'email': user.email,
+          if (uploadedPhotoUrl != null) 'photoUrl': uploadedPhotoUrl,
         },
         SetOptions(merge: true),
       );
@@ -150,6 +201,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       await _updateMemberDocuments(
         uid: user.uid,
         username: username,
+        photoUrl: uploadedPhotoUrl,
       );
 
       await user.reload();
@@ -206,6 +258,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final avatarImage = _getAvatarImage();
+
     return Scaffold(
       backgroundColor: const Color(0xFFEFFAF3),
       body: Container(
@@ -258,29 +312,62 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     Center(
                       child: Column(
                         children: [
-                          Container(
-                            width: 118,
-                            height: 118,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.96),
-                              shape: BoxShape.circle,
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x14000000),
-                                  blurRadius: 24,
-                                  offset: Offset(0, 10),
+                          GestureDetector(
+                            onTap: _pickProfileImage,
+                            child: Stack(
+                              children: [
+                                Container(
+                                  width: 122,
+                                  height: 122,
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.96),
+                                    shape: BoxShape.circle,
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Color(0x14000000),
+                                        blurRadius: 24,
+                                        offset: Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: CircleAvatar(
+                                    backgroundColor: const Color(0xFFEAF4FF),
+                                    backgroundImage: avatarImage,
+                                    child: avatarImage == null
+                                        ? Text(
+                                      _getInitial(),
+                                      style: const TextStyle(
+                                        color: Color(0xFF2A8CFF),
+                                        fontSize: 42,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    )
+                                        : null,
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: 4,
+                                  right: 4,
+                                  child: Container(
+                                    width: 38,
+                                    height: 38,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2A8CFF),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 3,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt_rounded,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ),
                                 ),
                               ],
-                            ),
-                            child: Center(
-                              child: Text(
-                                _getInitial(),
-                                style: const TextStyle(
-                                  color: Color(0xFF2A8CFF),
-                                  fontSize: 42,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              ),
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -294,7 +381,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                           const SizedBox(height: 6),
                           const Text(
-                            'Change your name and profile phrase.',
+                            'Tap the avatar to change your photo.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Color(0xFF7A8A94),
