@@ -41,7 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return '$year-$month-$day';
   }
 
-  bool _isThisWeek(String dateKey) {
+  bool _isToday(String dateKey) {
     final date = DateTime.tryParse(dateKey);
 
     if (date == null) {
@@ -50,27 +50,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final now = DateTime.now();
 
-    final startOfWeek = DateTime(
-      now.year,
-      now.month,
-      now.day - (now.weekday - 1),
-    );
-
-    final today = DateTime(
-      now.year,
-      now.month,
-      now.day,
-    );
-
-    final cleanDate = DateTime(
-      date.year,
-      date.month,
-      date.day,
-    );
-
-    return (cleanDate.isAtSameMomentAs(startOfWeek) ||
-        cleanDate.isAfter(startOfWeek)) &&
-        !cleanDate.isAfter(today);
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   int _calculateStreak(Set<String> completedDates) {
@@ -103,20 +85,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     int totalPoints = 0;
     int completedTasks = 0;
-    int weeklyCompletedTasks = 0;
-    int activeTasksCount = 0;
+    int dailyCompletedTasks = 0;
 
     final completedDates = <String>{};
 
     for (final group in groups) {
-      final tasksSnapshot = await _firestore
-          .collection('groups')
-          .doc(group.id)
-          .collection('tasks')
-          .where('isActive', isEqualTo: true)
-          .get();
-
-      activeTasksCount += tasksSnapshot.docs.length;
 
       final completionsSnapshot = await _firestore
           .collection('groups')
@@ -137,8 +110,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (completedDate != null && completedDate.isNotEmpty) {
           completedDates.add(completedDate);
 
-          if (_isThisWeek(completedDate)) {
-            weeklyCompletedTasks++;
+          if (_isToday(completedDate)) {
+            dailyCompletedTasks++;
           }
         }
       }
@@ -152,8 +125,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           : phrase,
       groupsCount: groups.length,
       completedTasks: completedTasks,
-      weeklyCompletedTasks: weeklyCompletedTasks,
-      weeklyTarget: activeTasksCount == 0 ? 7 : activeTasksCount,
+      dailyCompletedTasks: dailyCompletedTasks,
+      dailyTarget: groups.length,
       totalPoints: totalPoints,
       streak: _calculateStreak(completedDates),
     );
@@ -296,9 +269,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   final profile = snapshot.data ?? const _ProfileData.empty();
 
-                  final progress = profile.weeklyTarget == 0
+                  final progress = profile.dailyTarget == 0
                       ? 0.0
-                      : (profile.weeklyCompletedTasks / profile.weeklyTarget)
+                      : (profile.dailyCompletedTasks / profile.dailyTarget)
                       .clamp(0.0, 1.0);
 
                   return SingleChildScrollView(
@@ -361,8 +334,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 16),
 
                         _WeeklyActivityCard(
-                          completed: profile.weeklyCompletedTasks,
-                          target: profile.weeklyTarget,
+                          completed: profile.dailyCompletedTasks,
+                          target: profile.dailyTarget,
                           progress: progress,
                           completedTasks: profile.completedTasks,
                           groupsCount: profile.groupsCount,
@@ -437,8 +410,8 @@ class _ProfileData {
   final String phrase;
   final int groupsCount;
   final int completedTasks;
-  final int weeklyCompletedTasks;
-  final int weeklyTarget;
+  final int dailyCompletedTasks;
+  final int dailyTarget;
   final int totalPoints;
   final int streak;
 
@@ -448,8 +421,8 @@ class _ProfileData {
     required this.phrase,
     required this.groupsCount,
     required this.completedTasks,
-    required this.weeklyCompletedTasks,
-    required this.weeklyTarget,
+    required this.dailyCompletedTasks,
+    required this.dailyTarget,
     required this.totalPoints,
     required this.streak,
   });
@@ -460,8 +433,8 @@ class _ProfileData {
         phrase = 'Turning small actions into daily impact.',
         groupsCount = 0,
         completedTasks = 0,
-        weeklyCompletedTasks = 0,
-        weeklyTarget = 7,
+        dailyCompletedTasks = 0,
+        dailyTarget = 0,
         totalPoints = 0,
         streak = 0;
 }
@@ -700,7 +673,7 @@ class _WeeklyActivityCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Weekly activity',
+            'Daily activity',
             style: TextStyle(
               color: Color(0xFF1C2A33),
               fontSize: 21,
@@ -711,7 +684,7 @@ class _WeeklyActivityCard extends StatelessWidget {
           const SizedBox(height: 10),
 
           Text(
-            'You completed $completed out of $target $taskWord this week.',
+            'You completed $completed out of $target $taskWord today!',
             style: const TextStyle(
               color: Color(0xFF7A8A94),
               fontSize: 15,
