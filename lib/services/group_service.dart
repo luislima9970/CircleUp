@@ -1,150 +1,152 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:projesof/services/user_service.dart';
+import 'package:projesof/models/group_model.dart';
+import 'package:projesof/models/member_model.dart';
 
 class GroupService {
-  final FirebaseFirestore _firestore;
-
-  GroupService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  final _groups = FirebaseFirestore.instance.collection('groups');
 
   Future<String> createGroup({
-    required String name,
-    required String description,
-    required String theme,
-    required String createdBy,
+    required GroupModel group,
   }) async {
-    final groupRef = _firestore.collection('groups').doc();
-
-    final code = generateJoinCode();
-
-    await groupRef.set({
-      'name': name,
-      'description': description,
-      'theme': theme,
-      'createdBy': createdBy,
-      'createdAt': Timestamp.now(),
-      'joinCode': code,
-    });
-
-    return groupRef.id;
+    final docRef = await _groups.add(group.toFirestore());
+    return docRef.id;
   }
 
   Future<String> createGroupWithOwner({
-    required String name,
-    required String description,
-    required String theme,
-    required String createdBy,
-    required String username,
-    String? photoUrl,
+    required GroupModel group,
+    required String userId,
   }) async {
-    final groupRef = _firestore.collection('groups').doc();
+    final groupRef = await _groups.add(group.toFirestore());
 
-    final batch = _firestore.batch();
-
-    final code = generateJoinCode();
-
-    batch.set(groupRef, {
-      'name': name,
-      'description': description,
-      'theme': theme,
-      'createdBy': createdBy,
-      'createdAt': Timestamp.now(),
-      'joinCode': code,
-    });
-
-    batch.set(groupRef.collection('members').doc(createdBy), {
-      'username': username,
-      'photoUrl': photoUrl,
+    await groupRef
+        .collection('members')
+        .doc(userId)
+        .set({
+      'userId': userId,
       'points': 0,
       'streak': 0,
-      'role': 'owner',
-      'joinedAt': Timestamp.now(),
+      'role': 'owner'
     });
-
-    await batch.commit();
 
     return groupRef.id;
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> getGroupById(
-      String groupId,
-      ) async {
-    return await _firestore.collection('groups').doc(groupId).get();
+  Future<GroupModel?> getGroupById(String groupId) async {
+
+    final doc = await _groups.doc(groupId).get();
+
+    if (!doc.exists) return null;
+
+    return GroupModel.fromFirestore(
+      doc.data()!,
+      doc.id,
+    );
   }
 
-  Future<QuerySnapshot<Map<String, dynamic>>> getAllGroups() async {
-    return await _firestore.collection('groups').get();
+  Stream<List<GroupModel>> getAllGroups() {
+
+    return _groups
+        .snapshots()
+        .map((snapshot) {
+
+      return snapshot.docs.map((doc) {
+
+        return GroupModel.fromFirestore(
+          doc.data(),
+          doc.id,
+        );
+
+      }).toList();
+    });
   }
 
   Future<void> deleteGroup(String groupId) async {
-    await _firestore.collection('groups').doc(groupId).delete();
+    await _groups.doc(groupId).delete();
   }
 
   Future<void> addMemberToGroup({
     required String groupId,
-    required String uid,
-    required String username,
-    String? photoUrl,
-    String role = 'member',
+    required String userId
   }) async {
-    await _firestore
-        .collection('groups')
+    final memberRef = _groups
         .doc(groupId)
         .collection('members')
-        .doc(uid)
-        .set({
-      'username': username,
-      'photoUrl': photoUrl,
-      'points': 0,
-      'streak': 0,
-      'role': role,
-      'joinedAt': Timestamp.now(),
-    });
+        .doc(userId);
+
+    final memberSnap = await memberRef.get();
+
+    if (memberSnap.exists) {
+      throw Exception('Already joined');
+    }
+    await memberRef.set(MemberModel(userId: userId).toFirestore());
+
   }
 
   Future<void> removeMemberFromGroup({
     required String groupId,
     required String uid,
   }) async {
-    await _firestore
-        .collection('groups')
+    await _groups
         .doc(groupId)
         .collection('members')
         .doc(uid)
         .delete();
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> getMember({
+  Future<MemberModel?> getMember({
     required String groupId,
-    required String uid,
+    required String userId
   }) async {
-    return await _firestore
-        .collection('groups')
-        .doc(groupId)
-        .collection('members')
-        .doc(uid)
-        .get();
+
+    final doc = await _groups.doc(groupId).collection('members').doc(userId).get();
+
+    if (!doc.exists) return null;
+
+    return MemberModel.fromFirestore(
+      doc.data()!,
+      doc.id,
+    );
   }
 
-  Future<QuerySnapshot<Map<String, dynamic>>> getGroupMembers(
-      String groupId,
-      ) async {
-    return await _firestore
-        .collection('groups')
+  Stream<List<MemberModel>> getGroupMembers({
+    required String groupId
+}) {
+
+    return _groups
         .doc(groupId)
         .collection('members')
-        .get();
+        .snapshots()
+        .map((snapshot) {
+
+      return snapshot.docs.map((doc) {
+
+        return MemberModel.fromFirestore(
+          doc.data(),
+          doc.id,
+        );
+
+      }).toList();
+    });
   }
 
-  Future<QuerySnapshot<Map<String, dynamic>>> getLeaderboard(
+  Future<List<MemberModel>> getLeaderboard(
       String groupId,
       ) async {
-    return await _firestore
-        .collection('groups')
+
+    final snapshot = await _groups
         .doc(groupId)
         .collection('members')
         .orderBy('points', descending: true)
         .get();
+
+    return snapshot.docs.map((doc) {
+
+      return MemberModel.fromFirestore(
+        doc.data(),
+        doc.id,
+      );
+
+    }).toList();
   }
 
   Future<void> updateMemberPoints({
@@ -152,8 +154,7 @@ class GroupService {
     required String uid,
     required int points,
   }) async {
-    await _firestore
-        .collection('groups')
+    await _groups
         .doc(groupId)
         .collection('members')
         .doc(uid)
@@ -167,8 +168,7 @@ class GroupService {
     required String uid,
     required int delta,
   }) async {
-    await _firestore
-        .collection('groups')
+    await _groups
         .doc(groupId)
         .collection('members')
         .doc(uid)
@@ -182,8 +182,7 @@ class GroupService {
     required String uid,
     required int streak,
   }) async {
-    await _firestore
-        .collection('groups')
+    await _groups
         .doc(groupId)
         .collection('members')
         .doc(uid)
@@ -192,33 +191,33 @@ class GroupService {
     });
   }
 
-  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> getGroupsForUser(
+  Future<List<GroupModel>> getGroupsForUser(
       String uid,
       ) async {
-    final groupsSnapshot = await _firestore.collection('groups').get();
 
-    final List<QueryDocumentSnapshot<Map<String, dynamic>>> userGroups = [];
+    final groupsSnapshot = await _groups.get();
+
+    final List<GroupModel> userGroups = [];
 
     for (final groupDoc in groupsSnapshot.docs) {
+
       final memberDoc = await groupDoc.reference
           .collection('members')
           .doc(uid)
           .get();
 
       if (memberDoc.exists) {
-        userGroups.add(groupDoc);
+
+        userGroups.add(
+          GroupModel.fromFirestore(
+            groupDoc.data(),
+            groupDoc.id,
+          ),
+        );
       }
     }
 
     return userGroups;
-  }
-
-  String generateJoinCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    return List.generate(6, (index) {
-      final rand = DateTime.now().microsecondsSinceEpoch + index;
-      return chars[rand % chars.length];
-    }).join();
   }
 
   Future<void> joinGroupByCode({
@@ -228,8 +227,7 @@ class GroupService {
     final cleanedCode = code.trim().toUpperCase();
 
 
-    final query = await FirebaseFirestore.instance
-        .collection('groups')
+    final query = await _groups
         .where('joinCode', isEqualTo: cleanedCode)
         .limit(1)
         .get();
@@ -241,23 +239,6 @@ class GroupService {
     final groupDoc = query.docs.first;
     final groupId = groupDoc.id;
 
-
-    final memberRef = FirebaseFirestore.instance
-        .collection('groups')
-        .doc(groupId)
-        .collection('members')
-        .doc(userId);
-
-    final memberSnap = await memberRef.get();
-
-    if (memberSnap.exists) {
-      throw Exception('Already joined');
-    }
-
-    final user = await UserService().getUserById(userId);
-    final userData = user.data();
-    final username = userData?['username']?.toString().trim() ?? '';
-
-    addMemberToGroup(groupId: groupId, uid: userId, username: username);
+    addMemberToGroup(groupId: groupId, userId: userId);
   }
 }

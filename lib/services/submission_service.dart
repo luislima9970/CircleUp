@@ -1,79 +1,87 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projesof/models/vote_model.dart';
+import '../models/submission_model.dart';
 
 class SubmissionService {
-  final FirebaseFirestore _firestore;
-
-  SubmissionService({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
+  final _groups = FirebaseFirestore.instance.collection('groups');
 
   Future<String> createSubmission({
     required String groupId,
     required String taskId,
-    required String authorId,
-    required String authorUsername,
-    required String proofUrl,
+    required SubmissionModel submission
   }) async {
-    final submissionRef = _firestore
-        .collection('groups')
+    final submissionRef = _groups
         .doc(groupId)
         .collection('tasks')
         .doc(taskId)
-        .collection('submissions')
-        .doc();
+        .collection('submission')
+        .doc(submission.userId);
 
-    await submissionRef.set({
-      'authorId': authorId,
-      'authorUsername': authorUsername,
-      'proofUrl': proofUrl,
-      'timestamp': Timestamp.now(),
-      'status': 'PENDING',
-      'validVotes': 0,
-      'invalidVotes': 0,
-    });
+    final submissionSnap = await submissionRef.get();
 
+    if (submissionSnap.exists) {
+      throw Exception('Already submitted');
+    }
+    await submissionRef.set(submission.toFirestore());
     return submissionRef.id;
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> getSubmissionById({
+  Future<SubmissionModel?> getSubmissionByUser({
     required String groupId,
     required String taskId,
-    required String submissionId,
+    required String userId,
   }) async {
-    return await _firestore
-        .collection('groups')
+    final doc = await _groups
         .doc(groupId)
         .collection('tasks')
         .doc(taskId)
         .collection('submissions')
-        .doc(submissionId)
+        .doc(userId)
         .get();
+
+    if (!doc.exists) return null;
+
+    return SubmissionModel.fromFirestore(
+      doc.data()!,
+      doc.id,
+    );
   }
 
-  Future<QuerySnapshot<Map<String, dynamic>>> getSubmissionsForTask({
+  Stream<List<SubmissionModel>> getSubmissionsForTask({
     required String groupId,
     required String taskId,
-  }) async {
-    return await _firestore
-        .collection('groups')
+  }) {
+    return _groups
         .doc(groupId)
         .collection('tasks')
         .doc(taskId)
         .collection('submissions')
-        .get();
+        .snapshots()
+        .map((snapshot) {
+
+      return snapshot.docs.map((doc) {
+
+        return SubmissionModel.fromFirestore(
+          doc.data(),
+          doc.id,
+        );
+
+      }).toList();
+    });
   }
 
   Future<void> updateSubmissionStatus({
     required String groupId,
     required String taskId,
-    required String submissionId,
+    required String userId,
     required String status,
   }) async {
-    await _firestore
-        .collection('groups')
+    await _groups
         .doc(groupId)
         .collection('tasks')
         .doc(taskId)
         .collection('submissions')
-        .doc(submissionId)
+        .doc(userId)
         .update({
       'status': status,
     });
@@ -82,82 +90,107 @@ class SubmissionService {
   Future<void> deleteSubmission({
     required String groupId,
     required String taskId,
-    required String submissionId,
+    required String userId,
   }) async {
-    await _firestore
-        .collection('groups')
+    await _groups
         .doc(groupId)
         .collection('tasks')
         .doc(taskId)
         .collection('submissions')
-        .doc(submissionId)
+        .doc(userId)
         .delete();
   }
 
   Future<void> voteSubmission({
     required String groupId,
     required String taskId,
-    required String submissionId,
+    required String authorId,
     required String voterId,
-    required String vote,
+    required VoteModel vote,
   }) async {
-    final submissionRef = _firestore
-        .collection('groups')
+    final submissionRef = _groups
         .doc(groupId)
         .collection('tasks')
         .doc(taskId)
         .collection('submissions')
-        .doc(submissionId);
+        .doc(authorId);
 
     final voteRef = submissionRef.collection('votes').doc(voterId);
 
-    await voteRef.set({
-      'vote': vote,
-      'votedAt': Timestamp.now(),
-    });
-
-    if (vote == 'VALID') {
-      await submissionRef.update({
-        'validVotes': FieldValue.increment(1),
-      });
-    } else if (vote == 'INVALID') {
-      await submissionRef.update({
-        'invalidVotes': FieldValue.increment(1),
-      });
-    }
+    await voteRef.set(vote.toFirestore());
   }
 
-  Future<QuerySnapshot<Map<String, dynamic>>> getVotesForSubmission({
+  Future<List<VoteModel>> getVotesForSubmission({
     required String groupId,
     required String taskId,
-    required String submissionId,
+    required String userId,
   }) async {
-    return await _firestore
-        .collection('groups')
+    final snap = await _groups
         .doc(groupId)
         .collection('tasks')
         .doc(taskId)
         .collection('submissions')
-        .doc(submissionId)
+        .doc(userId)
         .collection('votes')
         .get();
+
+    return snap.docs.map((doc) {
+
+      return VoteModel.fromFirestore(
+        doc.data(),
+        doc.id,
+      );
+
+    }).toList();
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> getVoteByUser({
+  Future<VoteModel?> getVoteByUser({
     required String groupId,
     required String taskId,
-    required String submissionId,
+    required String authorId,
     required String voterId,
   }) async {
-    return await _firestore
-        .collection('groups')
+    final doc = await _groups
         .doc(groupId)
         .collection('tasks')
         .doc(taskId)
         .collection('submissions')
-        .doc(submissionId)
+        .doc(authorId)
         .collection('votes')
         .doc(voterId)
         .get();
+
+    if (!doc.exists) return null;
+
+    return VoteModel.fromFirestore(
+      doc.data()!,
+      doc.id,
+    );
+  }
+
+  Future<int> getVotesCountForSubmission({
+    required String groupId,
+    required String taskId,
+    required String userId,
+    required String validity
+  }) async {
+    final snap = await _groups
+        .doc(groupId)
+        .collection('tasks')
+        .doc(taskId)
+        .collection('submissions')
+        .doc(userId)
+        .collection('votes')
+        .where('vote', isEqualTo: validity)
+        .get();
+
+    return snap.docs.map((doc) {
+
+      return VoteModel.fromFirestore(
+        doc.data(),
+        doc.id,
+      );
+
+    }).toList().length;
   }
 }

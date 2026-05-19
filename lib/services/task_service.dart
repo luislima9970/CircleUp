@@ -1,66 +1,73 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projesof/models/task_model.dart';
 
 class TaskService {
-  final FirebaseFirestore _firestore;
-
-  TaskService({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
+  final _groups = FirebaseFirestore.instance.collection('groups');
 
   Future<String> createTask({
     required String groupId,
-    required String title,
-    required String objective,
-    required int reward,
-    required String createdBy,
+    required TaskModel task
   }) async {
-    final taskRef = _firestore
-        .collection('groups')
-        .doc(groupId)
-        .collection('tasks')
-        .doc();
-
-    await taskRef.set({
-      'title': title,
-      'objective': objective,
-      'reward': reward,
-      'createdBy': createdBy,
-      'createdAt': Timestamp.now(),
-      'isActive': true,
-    });
-
-    return taskRef.id;
+    final docRef = await _groups.doc(groupId).collection('tasks').add(task.toFirestore());
+    return docRef.id;
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> getTaskById({
+  Future<TaskModel?> getTaskById({
     required String groupId,
-    required String taskId,
+    required String uid
   }) async {
-    return await _firestore
-        .collection('groups')
-        .doc(groupId)
-        .collection('tasks')
-        .doc(taskId)
-        .get();
+
+    final doc = await _groups.doc(groupId).collection('tasks').doc(uid).get();
+
+    if (!doc.exists) return null;
+
+    return TaskModel.fromFirestore(
+      doc.data()!,
+      doc.id,
+    );
   }
 
-  Future<QuerySnapshot<Map<String, dynamic>>> getTasksForGroup(
-      String groupId,
-      ) async {
-    return await _firestore
-        .collection('groups')
+  Stream<List<TaskModel>> getTasksForGroup({
+    required String groupId
+  }) {
+
+    return _groups
         .doc(groupId)
         .collection('tasks')
-        .get();
+        .snapshots()
+        .map((snapshot) {
+
+      return snapshot.docs.map((doc) {
+
+        return TaskModel.fromFirestore(
+          doc.data(),
+          doc.id,
+        );
+
+      }).toList();
+    });
   }
 
-  Future<QuerySnapshot<Map<String, dynamic>>> getActiveTasks(
-      String groupId,
-      ) async {
-    return await _firestore
-        .collection('groups')
+  Stream<List<TaskModel>> getActiveTasks({
+    required String groupId
+  }) {
+
+    return _groups
         .doc(groupId)
         .collection('tasks')
         .where('isActive', isEqualTo: true)
-        .get();
+        .snapshots()
+        .map((snapshot) {
+
+      return snapshot.docs.map((doc) {
+
+        return TaskModel.fromFirestore(
+          doc.data(),
+          doc.id,
+        );
+
+      }).toList();
+    });
   }
 
   Future<void> updateTask({
@@ -79,8 +86,7 @@ class TaskService {
     if (isActive != null) updates['isActive'] = isActive;
 
     if (updates.isNotEmpty) {
-      await _firestore
-          .collection('groups')
+      await _groups
           .doc(groupId)
           .collection('tasks')
           .doc(taskId)
@@ -93,8 +99,7 @@ class TaskService {
     required String taskId,
     required bool isActive,
   }) async {
-    await _firestore
-        .collection('groups')
+    await _groups
         .doc(groupId)
         .collection('tasks')
         .doc(taskId)
@@ -107,8 +112,7 @@ class TaskService {
     required String groupId,
     required String taskId,
   }) async {
-    await _firestore
-        .collection('groups')
+    await _groups
         .doc(groupId)
         .collection('tasks')
         .doc(taskId)
