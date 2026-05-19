@@ -19,3 +19,7 @@
 - Added a tasks page.
 
 - Added a way for users to join other groups using a code.
+
+- Added Submission and Validation pages.
+
+- Now it is possible to upload your proof and vote on them to be accepted.

@@ -36,6 +36,20 @@ Thank you!
 * Gabriela Felgueiras gabriela.abreu.felgueiras@gmail.com
 * Vasco Castanheira vasco.castanheira@gmail.com
 ---
+
+## Setup The Environment
+
+- **In order to run the project you should have [Flutter SDK](https://flutter.dev/) and [Dart SDK](https://dart.dev/) installed**
+- **It is also advised to have an editor such as [VSCode](https://code.visualstudio.com/) or [AndroidStudio](https://developer.android.com/studio)**
+- **After that you need to have a mobile phone emulator or one connected to your computer**
+- **If you have everything ready, just open the emulator and run the following in your console:**
+
+    - `flutter pub get`
+
+        `flutter run`
+
+- **Everything should be up and running smoothly!**
+
 ## Business Modelling
 <!-- 
 Business modeling in software development involves defining the product's vision, understanding market needs, aligning features with user expectations, and setting the groundwork for strategic planning and execution. -->
@@ -128,7 +142,7 @@ At the end, it is good to add a rough indication of the value of the user story 
 
 ### Domain model
 
-<img width="1331" height="1416" alt="Domain Model" src="https://github.com/user-attachments/assets/75d7c9f2-c001-4548-9c62-648efad1a0c1" />
+<img width="1459" height="1487" alt="Domain Model" src="https://github.com/user-attachments/assets/3793283d-f5df-4a9d-9807-d88663d0fdd7" />
 
 
 
@@ -175,6 +189,8 @@ The system is organised into three layers: **Screens** (UI), **Services** (busin
 - **Models:** User, Group, Challenge, Submission, Vote, Theme  
 
 <img width="1469" height="834" alt="package" src="https://github.com/user-attachments/assets/45250416-f43e-48cd-90b9-251d602e43da" />
+
+Currently, our architecture doesn't reflect this diagram as we have been using the services directly to access data. We will refactor our code to use models in the next sprint so we decided it's doesnt make sense to remove them from the diagram now as they will be implemented later.
 
 ### Physical architecture
 The app runs as a Flutter application on the user's smartphone. There is no custom server — all backend is provided by Firebase on Google Cloud. The Flutter app communicates with Firebase exclusively through the bundled Firebase SDK over HTTPS.
@@ -336,12 +352,6 @@ You can find below information and references related with the project managemen
 
 ### Sprint 2
 
-- **Sprint planning and retrospectives:**  
-  * **Plans:** 
-    - In this sprint is espected to implement the core mechanism of the app.
-    
-      ![alt text](assets/Plan-Sprint2.png)
-
 - **Welcome Page**
 
     The Welcome Page is the first screen shown when opening the app. It presents the CircleUP identity and gives the user two clear options: log in or create an account. Its main goal is to provide a simple and branded entry point before authentication.
@@ -363,6 +373,35 @@ You can find below information and references related with the project managemen
 - **Joining a Group**
 
    When creating a group, a code will be generated and appear on the group's page to its users to share with other people. In the circles page, there is a button that takes the user to a joining page where they can input a group's code to join it.
+
+- **Task Submission&Validation Page**
+
+  When opening a task, a new page will be showed with the task name and description where you will be able to attach photos to prove that you have done the task however it is not still working, that will be correct in the next sprint.
+
+- **Bugs**
+
+  - **Task Submission&Validation Page Firebase Storage**
+
+    The error occurs during an uploadImage. While it seems counter-intuitive to get a "Not Found" error when creating a new file, Firebase triggers this when the Bucket configuration is incorrect or the Security Rules prevent the initial handshake of the upload session.
+
+    **Solution**: Update rules in the Firebase by creating a Firebase Storage in Firebase Console.
+
+- **Sprint planning and retrospectives:**  
+  * **Plans:** 
+    - In this sprint is espected to implement the core mechanism of the app.
+    
+      ![alt text](assets/Plan-Sprint2.png)
+
+    - In this sprint everything was implemented as expected.
+
+      ![alt text](assets/Retro-Sprint2.png)
+  
+  * **Retrospectives:** Meeting notes were recorded in a document in the repository, addressing the following questions:  
+    - **Did well:** The workflow was smooth and effective. Everything was completed on time and without unresolved bugs.
+    - **Do differently:** In Sprint 2, some tasks should be done by diferent people who have acess to the Firebase.  
+    - **Puzzles:** The database was fully implemented, and now the user, authentication, groups, tasks and submission features are currently in use. With testing, we can confirm that everything, is fully functional.  
+    - **List of a few improvements to implement in the next Sprint:** We will be able to the our profile and others aswell. We will only be able to submit a task image once.
+
 
 ### Sprint 3
 
