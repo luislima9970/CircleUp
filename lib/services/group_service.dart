@@ -1,9 +1,127 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projesof/models/group_model.dart';
 import 'package:projesof/models/member_model.dart';
+import 'package:projesof/models/task_model.dart';
+import 'package:projesof/services/task_service.dart';
 
 class GroupService {
   final _groups = FirebaseFirestore.instance.collection('groups');
+
+  static final Map<String, List<TaskModel>> _tasksByTheme = {
+    'sustainability': [
+      TaskModel(
+        title: 'Reusable Bag at the Store',
+        objective: 'Take a photo of your groceries packed in a reusable bag at the shop or on the way home.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Litter Pickup',
+        objective: 'Take a photo of the litter you collected from a public space, bagged and ready to dispose.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Plant or Garden Care',
+        objective: 'Take a photo of a plant you watered, repotted, or planted today.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Reusable Water Bottle',
+        objective: 'Take a photo of your filled reusable bottle in a public setting.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Meatless Meal',
+        objective: 'Take a photo of a plant-based meal you prepared, plated and visible.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Bicycle or Walking Commute',
+        objective: 'Take a photo of your bike at your destination, or a selfie at your destination after walking there.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Waste Sorting',
+        objective: 'Take a photo of correctly sorted waste separated into the right recycling bins.',
+        reward: 10,
+      ),
+    ],
+
+    'wellness': [
+      TaskModel(
+        title: 'Healthy Breakfast',
+        objective: 'Take a photo of a nutritious homemade breakfast on your table before eating.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Nature Walk',
+        objective: 'Take a photo of yourself or your surroundings during a walk in a park, forest, or beach.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Journaling',
+        objective: 'Take a photo of an open journal or notebook with handwritten content visible on the page.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Herbal Tea or Healthy Drink',
+        objective: 'Take a photo of a prepared herbal tea, smoothie, or infused water you made.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Early Morning Sunrise',
+        objective: 'Take a photo of the sunrise, proving you were up early and outside.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Screen-Free Activity',
+        objective: 'Take a photo doing an offline activity: reading a physical book, drawing, doing a puzzle, or playing a table game.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Healthy Homemade Meal',
+        objective: 'Take a photo of a balanced, home-cooked meal plated and ready to eat.',
+        reward: 10,
+      ),
+    ],
+
+    'fitness': [
+      TaskModel(
+        title: 'Gym Check-in',
+        objective: 'Go to the gym and take a photo at the entrance or next to a piece of equipment.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Outdoor Run/Cycling',
+        objective: 'Take a photo of your running shoes or bike on a road, track, or trail with visible outdoor surroundings.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Post-Workout Selfie',
+        objective: 'Take a sweaty selfie right after a workout session showing visible effort.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Home Workout Setup',
+        objective: 'Take a photo of your workout space set up before or after training.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Stretch Session',
+        objective: 'Take a photo of yourself in a stretch pose, such as a split or hamstring stretch.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Sports Activity',
+        objective: 'Take a photo playing any sport with the court or field visible.',
+        reward: 10,
+      ),
+      TaskModel(
+        title: 'Staircase Challenge',
+        objective: 'Take a photo at the top of a staircase after climbing it.',
+        reward: 10,
+      ),
+    ],
+  };
 
   Future<String> createGroup({
     required GroupModel group,
@@ -28,11 +146,16 @@ class GroupService {
       'role': 'owner'
     });
 
+    final taskService = TaskService();
+    final tasks = _tasksByTheme[group.theme.toLowerCase()] ?? [];
+    for (final task in tasks) {
+      await taskService.createTask(groupId: groupRef.id, task: task);
+    }
+
     return groupRef.id;
   }
 
   Future<GroupModel?> getGroupById(String groupId) async {
-
     final doc = await _groups.doc(groupId).get();
 
     if (!doc.exists) return null;
@@ -44,18 +167,14 @@ class GroupService {
   }
 
   Stream<List<GroupModel>> getAllGroups() {
-
     return _groups
         .snapshots()
         .map((snapshot) {
-
       return snapshot.docs.map((doc) {
-
         return GroupModel.fromFirestore(
           doc.data(),
           doc.id,
         );
-
       }).toList();
     });
   }
@@ -79,7 +198,6 @@ class GroupService {
       throw Exception('Already joined');
     }
     await memberRef.set(MemberModel(userId: userId).toFirestore());
-
   }
 
   Future<void> removeMemberFromGroup({
@@ -97,7 +215,6 @@ class GroupService {
     required String groupId,
     required String userId
   }) async {
-
     final doc = await _groups.doc(groupId).collection('members').doc(userId).get();
 
     if (!doc.exists) return null;
@@ -110,21 +227,17 @@ class GroupService {
 
   Stream<List<MemberModel>> getGroupMembers({
     required String groupId
-}) {
-
+  }) {
     return _groups
         .doc(groupId)
         .collection('members')
         .snapshots()
         .map((snapshot) {
-
       return snapshot.docs.map((doc) {
-
         return MemberModel.fromFirestore(
           doc.data(),
           doc.id,
         );
-
       }).toList();
     });
   }
@@ -132,7 +245,6 @@ class GroupService {
   Future<List<MemberModel>> getLeaderboard(
       String groupId,
       ) async {
-
     final snapshot = await _groups
         .doc(groupId)
         .collection('members')
@@ -140,12 +252,10 @@ class GroupService {
         .get();
 
     return snapshot.docs.map((doc) {
-
       return MemberModel.fromFirestore(
         doc.data(),
         doc.id,
       );
-
     }).toList();
   }
 
@@ -194,20 +304,17 @@ class GroupService {
   Future<List<GroupModel>> getGroupsForUser(
       String uid,
       ) async {
-
     final groupsSnapshot = await _groups.get();
 
     final List<GroupModel> userGroups = [];
 
     for (final groupDoc in groupsSnapshot.docs) {
-
       final memberDoc = await groupDoc.reference
           .collection('members')
           .doc(uid)
           .get();
 
       if (memberDoc.exists) {
-
         userGroups.add(
           GroupModel.fromFirestore(
             groupDoc.data(),
@@ -225,7 +332,6 @@ class GroupService {
     required String userId,
   }) async {
     final cleanedCode = code.trim().toUpperCase();
-
 
     final query = await _groups
         .where('joinCode', isEqualTo: cleanedCode)
