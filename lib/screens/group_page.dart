@@ -2,9 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:projesof/screens/tasks_screen.dart';
-import 'package:projesof/screens/task_detail_screen.dart';
-import 'package:projesof/screens/profile_screen.dart';
+
+import 'tasks_screen.dart';
+import 'task_detail_screen.dart';
+import 'profile_screen.dart';
+import 'public_profile_screen.dart';
 
 class GroupPageScreen extends StatefulWidget {
   final String groupId;
@@ -274,6 +276,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
                                   _MembersCard(
                                     members: members,
                                     color: color,
+                                    groupId: widget.groupId,
                                   ),
 
                                   const SizedBox(height: 24),
@@ -655,10 +658,12 @@ class _InlineStat extends StatelessWidget {
 class _MembersCard extends StatelessWidget {
   final List<QueryDocumentSnapshot<Map<String, dynamic>>> members;
   final Color color;
+  final String groupId;
 
   const _MembersCard({
     required this.members,
     required this.color,
+    required this.groupId,
   });
 
   String _initials(String username) {
@@ -725,15 +730,34 @@ class _MembersCard extends StatelessWidget {
                   final username =
                       data['username']?.toString() ?? 'User';
 
-                  return CircleAvatar(
-                    radius: 21,
-                    backgroundColor: color.withValues(alpha: 0.12),
-                    child: Text(
-                      _initials(username),
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.w900,
-                      ),
+                  final userId = data['userId']?.toString() ?? members[index].id;
+                  final photoUrl = data['photoUrl']?.toString().trim() ?? '';
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PublicProfileScreen(
+                            userId: userId,
+                            groupId: groupId,
+                          ),
+                        ),
+                      );
+                    },
+                    child: CircleAvatar(
+                      radius: 21,
+                      backgroundColor: color.withValues(alpha: 0.12),
+                      backgroundImage: photoUrl.isEmpty ? null : NetworkImage(photoUrl),
+                      child: photoUrl.isEmpty
+                          ? Text(
+                        _initials(username),
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      )
+                          : null,
                     ),
                   );
                 },
