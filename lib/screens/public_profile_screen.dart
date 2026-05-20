@@ -54,7 +54,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   String _initial(String username) {
     final trimmed = username.trim();
 
-    if (trimmed.isEmpty) return '?';
+    if (trimmed.isEmpty) {
+      return '?';
+    }
 
     return trimmed[0].toUpperCase();
   }
@@ -86,8 +88,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Future<_PublicProfileData> _loadProfile() async {
     final firestore = FirebaseFirestore.instance;
 
-    final userDoc =
-    await firestore.collection('users').doc(widget.userId).get();
+    final userDoc = await firestore.collection('users').doc(widget.userId).get();
 
     final groupDoc =
     await firestore.collection('groups').doc(widget.groupId).get();
@@ -109,7 +110,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         ? userData['profilePhrase'].toString().trim()
         : 'Turning small actions into daily impact.';
 
-    final photoUrl = userData['photoUrl']?.toString().trim().isNotEmpty == true
+    final photoUrl =
+    userData['photoUrl']?.toString().trim().isNotEmpty == true
         ? userData['photoUrl'].toString().trim()
         : memberData['photoUrl']?.toString().trim() ?? '';
 
@@ -214,7 +216,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     );
                   }
 
-                  if (snapshot.hasError) {
+                  if (snapshot.hasError || !snapshot.hasData) {
                     return const Center(
                       child: Text(
                         'Could not load profile.',
@@ -227,7 +229,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   }
 
                   final profile = snapshot.data!;
-
                   final color = _themeColor(profile.groupTheme);
                   final icon = _themeIcon(profile.groupTheme);
 
@@ -238,7 +239,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _TopBar(
-                          title: 'Member Profile',
+                          title: 'Profile',
                           onBack: () => Navigator.pop(context),
                         ),
 
@@ -283,9 +284,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           ],
                         ),
 
-                        const SizedBox(height: 26),
+                        const SizedBox(height: 22),
 
-                        _GroupInfoCard(
+                        _CircleContextCard(
                           groupName: profile.groupName,
                           groupTheme: profile.groupTheme,
                           color: color,
@@ -394,7 +395,7 @@ class _PublicProfileHeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 26),
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -466,6 +467,7 @@ class _PublicProfileHeaderCard extends StatelessWidget {
               color: Color(0xEFFFFFFF),
               fontSize: 16,
               height: 1.4,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -538,13 +540,13 @@ class _ProfileStatCard extends StatelessWidget {
   }
 }
 
-class _GroupInfoCard extends StatelessWidget {
+class _CircleContextCard extends StatelessWidget {
   final String groupName;
   final String groupTheme;
   final Color color;
   final IconData icon;
 
-  const _GroupInfoCard({
+  const _CircleContextCard({
     required this.groupName,
     required this.groupTheme,
     required this.color,
@@ -585,20 +587,13 @@ class _GroupInfoCard extends StatelessWidget {
               size: 28,
             ),
           ),
+
           const SizedBox(width: 14),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Group',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF7A8A94),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
                 Text(
                   groupName,
                   maxLines: 1,
@@ -609,18 +604,33 @@ class _GroupInfoCard extends StatelessWidget {
                     fontWeight: FontWeight.w900,
                   ),
                 ),
+
                 if (groupTheme.isNotEmpty) ...[
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   Text(
                     groupTheme,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF7A8A94),
-                      fontWeight: FontWeight.w600,
+                      color: color,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
               ],
+            ),
+          ),
+
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              Icons.groups_rounded,
+              color: color,
+              size: 21,
             ),
           ),
         ],
