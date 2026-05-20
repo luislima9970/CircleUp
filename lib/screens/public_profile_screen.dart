@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userId;
-  final String groupId;
+  final String? groupId;
 
   const PublicProfileScreen({
     super.key,
     required this.userId,
-    required this.groupId,
+    this.groupId,
   });
 
   @override
@@ -61,48 +61,102 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     return trimmed[0].toUpperCase();
   }
 
-  Future<Map<String, dynamic>> _loadMemberData() async {
-    final membersRef = FirebaseFirestore.instance
-        .collection('groups')
-        .doc(widget.groupId)
-        .collection('members');
+  Future<List<_PublicProfileGroupData>> _loadUserGroups(
+      FirebaseFirestore firestore,
+      ) async {
+    final groups = <_PublicProfileGroupData>[];
+    final seenGroupIds = <String>{};
 
-    final directMemberDoc = await membersRef.doc(widget.userId).get();
+    try {
+      final allGroupsSnapshot = await firestore.collection('groups').get();
 
-    if (directMemberDoc.exists) {
-      return directMemberDoc.data() ?? {};
+      for (final groupDoc in allGroupsSnapshot.docs) {
+        final groupId = groupDoc.id;
+
+        if (seenGroupIds.contains(groupId)) {
+          continue;
+        }
+
+        bool isMember = false;
+
+        try {
+          final directMemberDoc = await firestore
+              .collection('groups')
+              .doc(groupId)
+              .collection('members')
+              .doc(widget.userId)
+              .get();
+
+          if (directMemberDoc.exists) {
+            isMember = true;
+          }
+        } catch (e) {
+          debugPrint('Could not check direct member doc for $groupId: $e');
+        }
+
+        if (!isMember) {
+          try {
+            final memberQuery = await firestore
+                .collection('groups')
+                .doc(groupId)
+                .collection('members')
+                .where('userId', isEqualTo: widget.userId)
+                .limit(1)
+                .get();
+
+            if (memberQuery.docs.isNotEmpty) {
+              isMember = true;
+            }
+          } catch (e) {
+            debugPrint('Could not query member field for $groupId: $e');
+          }
+        }
+
+        if (!isMember) {
+          continue;
+        }
+
+        seenGroupIds.add(groupId);
+
+        final groupData = groupDoc.data();
+
+        final groupName = groupData['name']?.toString() ?? 'Unnamed group';
+        final groupTheme = groupData['theme']?.toString() ?? '';
+
+        groups.add(
+          _PublicProfileGroupData(
+            id: groupId,
+            name: groupName,
+            theme: groupTheme,
+          ),
+        );
+      }
+
+      groups.sort((a, b) {
+        if (widget.groupId != null) {
+          if (a.id == widget.groupId) return -1;
+          if (b.id == widget.groupId) return 1;
+        }
+
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
+
+      return groups;
+    } catch (e) {
+      debugPrint('Could not load all public profile groups: $e');
+      return [];
     }
-
-    final query = await membersRef
-        .where('userId', isEqualTo: widget.userId)
-        .limit(1)
-        .get();
-
-    if (query.docs.isEmpty) {
-      return {};
-    }
-
-    return query.docs.first.data();
   }
 
   Future<_PublicProfileData> _loadProfile() async {
     final firestore = FirebaseFirestore.instance;
 
     final userDoc = await firestore.collection('users').doc(widget.userId).get();
-
-    final groupDoc =
-    await firestore.collection('groups').doc(widget.groupId).get();
-
-    final memberData = await _loadMemberData();
-
     final userData = userDoc.data() ?? {};
-    final groupData = groupDoc.data() ?? {};
 
     final username =
     userData['username']?.toString().trim().isNotEmpty == true
         ? userData['username'].toString().trim()
-        : memberData['username']?.toString().trim().isNotEmpty == true
-        ? memberData['username'].toString().trim()
         : 'User';
 
     final phrase =
@@ -113,40 +167,43 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     final photoUrl =
     userData['photoUrl']?.toString().trim().isNotEmpty == true
         ? userData['photoUrl'].toString().trim()
-        : memberData['photoUrl']?.toString().trim() ?? '';
+        : '';
 
-    final groupName = groupData['name']?.toString() ?? 'Unknown group';
-    final groupTheme = groupData['theme']?.toString() ?? '';
-
-    final completionsSnapshot = await firestore
-        .collection('groups')
-        .doc(widget.groupId)
-        .collection('taskCompletions')
-        .where('userId', isEqualTo: widget.userId)
-        .get();
+    final groups = await _loadUserGroups(firestore);
 
     int totalPoints = 0;
+    int completedTasks = 0;
     final completedDates = <String>{};
 
-    for (final completion in completionsSnapshot.docs) {
-      final data = completion.data();
+    try {
+      final completionsSnapshot = await firestore
+          .collectionGroup('taskCompletions')
+          .where('userId', isEqualTo: widget.userId)
+          .get();
 
-      totalPoints += _parseReward(data['reward']);
+      completedTasks = completionsSnapshot.docs.length;
 
-      final completedDate = data['completedDate']?.toString();
+      for (final completion in completionsSnapshot.docs) {
+        final data = completion.data();
 
-      if (completedDate != null && completedDate.isNotEmpty) {
-        completedDates.add(completedDate);
+        totalPoints += _parseReward(data['reward']);
+
+        final completedDate = data['completedDate']?.toString();
+
+        if (completedDate != null && completedDate.isNotEmpty) {
+          completedDates.add(completedDate);
+        }
       }
+    } catch (e) {
+      debugPrint('Could not load public profile completions: $e');
     }
 
     return _PublicProfileData(
       username: username,
       phrase: phrase,
       photoUrl: photoUrl,
-      groupName: groupName,
-      groupTheme: groupTheme,
-      completedTasks: completionsSnapshot.docs.length,
+      groups: groups,
+      completedTasks: completedTasks,
       totalPoints: totalPoints,
       streak: _calculateStreak(completedDates),
     );
@@ -217,6 +274,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   }
 
                   if (snapshot.hasError || !snapshot.hasData) {
+                    debugPrint('Public profile error: ${snapshot.error}');
+
                     return const Center(
                       child: Text(
                         'Could not load profile.',
@@ -229,8 +288,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   }
 
                   final profile = snapshot.data!;
-                  final color = _themeColor(profile.groupTheme);
-                  final icon = _themeIcon(profile.groupTheme);
 
                   return SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
@@ -276,9 +333,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: _ProfileStatCard(
-                                icon: Icons.check_circle_rounded,
-                                value: profile.completedTasks.toString(),
-                                label: 'Done',
+                                icon: Icons.groups_rounded,
+                                value: profile.groups.length.toString(),
+                                label: 'Groups',
                               ),
                             ),
                           ],
@@ -286,11 +343,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
                         const SizedBox(height: 22),
 
-                        _CircleContextCard(
-                          groupName: profile.groupName,
-                          groupTheme: profile.groupTheme,
-                          color: color,
-                          icon: icon,
+                        _CompletedChallengesCard(
+                          completedTasks: profile.completedTasks,
+                        ),
+
+                        const SizedBox(height: 22),
+
+                        _GroupsCard(
+                          groups: profile.groups,
+                          themeColor: _themeColor,
+                          themeIcon: _themeIcon,
                         ),
                       ],
                     ),
@@ -309,8 +371,7 @@ class _PublicProfileData {
   final String username;
   final String phrase;
   final String photoUrl;
-  final String groupName;
-  final String groupTheme;
+  final List<_PublicProfileGroupData> groups;
   final int completedTasks;
   final int totalPoints;
   final int streak;
@@ -319,11 +380,22 @@ class _PublicProfileData {
     required this.username,
     required this.phrase,
     required this.photoUrl,
-    required this.groupName,
-    required this.groupTheme,
+    required this.groups,
     required this.completedTasks,
     required this.totalPoints,
     required this.streak,
+  });
+}
+
+class _PublicProfileGroupData {
+  final String id;
+  final String name;
+  final String theme;
+
+  const _PublicProfileGroupData({
+    required this.id,
+    required this.name,
+    required this.theme,
   });
 }
 
@@ -476,6 +548,360 @@ class _PublicProfileHeaderCard extends StatelessWidget {
   }
 }
 
+class _CompletedChallengesCard extends StatelessWidget {
+  final int completedTasks;
+
+  const _CompletedChallengesCard({
+    required this.completedTasks,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: const Color(0xFFE5EEF5),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: const Color(0xFF43D17A).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              color: Color(0xFF43D17A),
+              size: 28,
+            ),
+          ),
+
+          const SizedBox(width: 14),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Completed challenges',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF7A8A94),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  completedTasks.toString(),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    color: Color(0xFF1C2A33),
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GroupsCard extends StatelessWidget {
+  final List<_PublicProfileGroupData> groups;
+  final Color Function(String theme) themeColor;
+  final IconData Function(String theme) themeIcon;
+
+  const _GroupsCard({
+    required this.groups,
+    required this.themeColor,
+    required this.themeIcon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (groups.isEmpty) {
+      return const _EmptyGroupsCard();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: const Color(0xFFE5EEF5),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF4FF),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.groups_rounded,
+                  color: Color(0xFF2A8CFF),
+                  size: 25,
+                ),
+              ),
+
+              const SizedBox(width: 14),
+
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Circles',
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF1C2A33),
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'Communities this user belongs to',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF7A8A94),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEAF4FF),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  groups.length.toString(),
+                  style: const TextStyle(
+                    color: Color(0xFF2A8CFF),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          Column(
+            children: [
+              for (int i = 0; i < groups.length; i++) ...[
+                _GroupMiniRow(
+                  group: groups[i],
+                  color: themeColor(groups[i].theme),
+                  icon: themeIcon(groups[i].theme),
+                ),
+                if (i != groups.length - 1) const SizedBox(height: 12),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GroupMiniRow extends StatelessWidget {
+  final _PublicProfileGroupData group;
+  final Color color;
+  final IconData icon;
+
+  const _GroupMiniRow({
+    required this.group,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7FBF8),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: const Color(0xFFE8F0EA),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 27,
+            ),
+          ),
+
+          const SizedBox(width: 14),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  group.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF1C2A33),
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+
+                const SizedBox(height: 5),
+
+                Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+
+                    const SizedBox(width: 7),
+
+                    Text(
+                      group.theme.isEmpty ? 'Circle' : group.theme,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF7A8A94),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyGroupsCard extends StatelessWidget {
+  const _EmptyGroupsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: const Color(0xFFE5EEF5),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEAF4FF),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(
+              Icons.groups_outlined,
+              color: Color(0xFF2A8CFF),
+              size: 28,
+            ),
+          ),
+
+          const SizedBox(width: 14),
+
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No visible circles',
+                  style: TextStyle(
+                    color: Color(0xFF1C2A33),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'This user is not currently in any visible circles.',
+                  style: TextStyle(
+                    color: Color(0xFF7A8A94),
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProfileStatCard extends StatelessWidget {
   final IconData icon;
   final String value;
@@ -532,105 +958,6 @@ class _ProfileStatCard extends StatelessWidget {
               color: Color(0xFF7A8A94),
               fontSize: 13,
               fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CircleContextCard extends StatelessWidget {
-  final String groupName;
-  final String groupTheme;
-  final Color color;
-  final IconData icon;
-
-  const _CircleContextCard({
-    required this.groupName,
-    required this.groupTheme,
-    required this.color,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: const Color(0xFFE5EEF5),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 28,
-            ),
-          ),
-
-          const SizedBox(width: 14),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  groupName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    color: Color(0xFF1C2A33),
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-
-                if (groupTheme.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    groupTheme,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: color,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              Icons.groups_rounded,
-              color: color,
-              size: 21,
             ),
           ),
         ],
