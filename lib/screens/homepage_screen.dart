@@ -7,6 +7,7 @@ import 'package:projesof/services/group_service.dart';
 import 'profile_screen.dart';
 import 'createcircle_screen.dart';
 import 'group_page.dart';
+import 'user_search_screen.dart';
 
 class HomepageScreen extends StatelessWidget {
   final GroupService? groupService;
@@ -201,6 +202,15 @@ class _HomeHeaderState extends State<_HomeHeader> {
     }
   }
 
+  void _openUserSearch() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const UserSearchScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<String>(
@@ -237,24 +247,30 @@ class _HomeHeaderState extends State<_HomeHeader> {
                 ],
               ),
             ),
-            const SizedBox(width: 14),
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: Colors.white,
+            Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              child: InkWell(
+                onTap: _openUserSearch,
                 borderRadius: BorderRadius.circular(18),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 18,
-                    offset: Offset(0, 8),
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x14000000),
+                        blurRadius: 18,
+                        offset: Offset(0, 8),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: const Icon(
-                Icons.person_rounded,
-                color: Color(0xFF2A8CFF),
+                  child: const Icon(
+                    Icons.search_rounded,
+                    color: Color(0xFF2A8CFF),
+                  ),
+                ),
               ),
             ),
           ],
