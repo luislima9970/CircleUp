@@ -731,34 +731,15 @@ class _MembersCard extends StatelessWidget {
                       data['username']?.toString() ?? 'User';
 
                   final userId = data['userId']?.toString() ?? members[index].id;
-                  final photoUrl = data['photoUrl']?.toString().trim() ?? '';
+                  final fallbackPhotoUrl = data['photoUrl']?.toString().trim() ?? '';
 
-                  return GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PublicProfileScreen(
-                            userId: userId,
-                            groupId: groupId,
-                          ),
-                        ),
-                      );
-                    },
-                    child: CircleAvatar(
-                      radius: 21,
-                      backgroundColor: color.withValues(alpha: 0.12),
-                      backgroundImage: photoUrl.isEmpty ? null : NetworkImage(photoUrl),
-                      child: photoUrl.isEmpty
-                          ? Text(
-                        _initials(username),
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      )
-                          : null,
-                    ),
+                  return _MemberAvatar(
+                    userId: userId,
+                    username: username,
+                    fallbackPhotoUrl: fallbackPhotoUrl,
+                    groupId: groupId,
+                    color: color,
+                    initials: _initials(username),
                   );
                 },
               ),
@@ -766,6 +747,92 @@ class _MembersCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _MemberAvatar extends StatelessWidget {
+  final String userId;
+  final String username;
+  final String fallbackPhotoUrl;
+  final String groupId;
+  final Color color;
+  final String initials;
+
+  const _MemberAvatar({
+    required this.userId,
+    required this.username,
+    required this.fallbackPhotoUrl,
+    required this.groupId,
+    required this.color,
+    required this.initials,
+  });
+
+  void _openProfile(BuildContext context) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser != null && currentUser.uid == userId) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const ProfileScreen(),
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PublicProfileScreen(
+          userId: userId,
+          groupId: groupId,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final userData = snapshot.data?.data();
+
+        final userPhotoUrl =
+            userData?['photoUrl']?.toString().trim() ?? '';
+
+        final photoUrl =
+        userPhotoUrl.isNotEmpty ? userPhotoUrl : fallbackPhotoUrl;
+
+        final displayUsername =
+        userData?['username']?.toString().trim().isNotEmpty == true
+            ? userData!['username'].toString().trim()
+            : username;
+
+        return GestureDetector(
+          onTap: () => _openProfile(context),
+          child: CircleAvatar(
+            radius: 21,
+            backgroundColor: color.withValues(alpha: 0.12),
+            backgroundImage: photoUrl.isEmpty ? null : NetworkImage(photoUrl),
+            child: photoUrl.isEmpty
+                ? Text(
+              displayUsername.trim().isEmpty
+                  ? '?'
+                  : displayUsername.trim()[0].toUpperCase(),
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w900,
+              ),
+            )
+                : null,
+          ),
+        );
+      },
     );
   }
 }
@@ -1142,68 +1209,129 @@ class _LeaderboardRow extends StatelessWidget {
     required this.color,
   });
 
+  String _initial(String name) {
+    final trimmed = name.trim();
+
+    if (trimmed.isEmpty) {
+      return '?';
+    }
+
+    return trimmed[0].toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final data = member.data();
+    final memberData = member.data();
 
-    final username = data['username']?.toString() ?? 'User';
-    final points = (data['points'] as num?)?.toInt() ?? 0;
-    final streak = (data['streak'] as num?)?.toInt() ?? 0;
+    final fallbackUsername = memberData['username']?.toString() ?? 'User';
+    final fallbackPhotoUrl =
+        memberData['photoUrl']?.toString().trim() ?? '';
 
-    return Row(
-      children: [
-        Container(
-          width: 38,
-          height: 38,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Text(
-            '#$position',
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                username,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1C2A33),
-                ),
+    final points = (memberData['points'] as num?)?.toInt() ?? 0;
+    final streak = (memberData['streak'] as num?)?.toInt() ?? 0;
+
+    final userId =
+    memberData['userId']?.toString().trim().isNotEmpty == true
+        ? memberData['userId'].toString().trim()
+        : member.id;
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final userData = snapshot.data?.data();
+
+        final username =
+        userData?['username']?.toString().trim().isNotEmpty == true
+            ? userData!['username'].toString().trim()
+            : fallbackUsername;
+
+        final photoUrl =
+        userData?['photoUrl']?.toString().trim().isNotEmpty == true
+            ? userData!['photoUrl'].toString().trim()
+            : fallbackPhotoUrl;
+
+        return Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
               ),
-              const SizedBox(height: 3),
-              Text(
-                '$streak day streak',
-                style: const TextStyle(
+              child: Text(
+                '#$position',
+                style: TextStyle(
+                  color: color,
                   fontSize: 12,
-                  color: Color(0xFF7A8A94),
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-            ],
-          ),
-        ),
-        Text(
-          '$points pts',
-          style: TextStyle(
-            color: color,
-            fontSize: 14,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-      ],
+            ),
+
+            const SizedBox(width: 10),
+
+            CircleAvatar(
+              radius: 19,
+              backgroundColor: color.withValues(alpha: 0.12),
+              backgroundImage: photoUrl.isEmpty ? null : NetworkImage(photoUrl),
+              child: photoUrl.isEmpty
+                  ? Text(
+                _initial(username),
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 13,
+                ),
+              )
+                  : null,
+            ),
+
+            const SizedBox(width: 12),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    username,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1C2A33),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    streak == 1
+                        ? '1 day streak'
+                        : '$streak day streak',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF7A8A94),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Text(
+              '$points pts',
+              style: TextStyle(
+                color: color,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

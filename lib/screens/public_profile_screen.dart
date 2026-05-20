@@ -249,10 +249,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                           phrase: profile.phrase,
                           initial: _initial(profile.username),
                           photoUrl: profile.photoUrl,
-                          groupName: profile.groupName,
-                          groupTheme: profile.groupTheme,
-                          groupColor: color,
-                          groupIcon: icon,
                         ),
 
                         const SizedBox(height: 22),
@@ -386,20 +382,12 @@ class _PublicProfileHeaderCard extends StatelessWidget {
   final String phrase;
   final String initial;
   final String photoUrl;
-  final String groupName;
-  final String groupTheme;
-  final Color groupColor;
-  final IconData groupIcon;
 
   const _PublicProfileHeaderCard({
     required this.username,
     required this.phrase,
     required this.initial,
     required this.photoUrl,
-    required this.groupName,
-    required this.groupTheme,
-    required this.groupColor,
-    required this.groupIcon,
   });
 
   @override
@@ -478,45 +466,6 @@ class _PublicProfileHeaderCard extends StatelessWidget {
               color: Color(0xEFFFFFFF),
               fontSize: 16,
               height: 1.4,
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 10,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.22),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.20),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  groupIcon,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    groupName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
             ),
           ),
         ],
