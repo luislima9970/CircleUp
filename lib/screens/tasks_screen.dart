@@ -182,7 +182,7 @@ class _GroupTasksCard extends StatelessWidget {
     final user = AppState.currentUser!;
 
     return StreamBuilder<List<TaskModel>>(
-          stream: taskService.getRemainingTasksForUser(groupId: group.id!, userId: user.id!),
+          stream: taskService.getRemainingTasksForUserInGroup(groupId: group.id!, userId: user.id!),
           builder: (context, taskSnapshot) {
             final tasks = taskSnapshot.data;
 

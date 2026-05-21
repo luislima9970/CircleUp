@@ -5,8 +5,8 @@ class UserModel {
   final String username;
   final String email;
   final String? photoUrl;
-  final int totalPoints;
-  final int maxStreak;
+  int totalPoints;
+  int maxStreak;
   final Timestamp createdAt;
 
 

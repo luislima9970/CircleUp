@@ -72,7 +72,7 @@ class TaskService {
     });
   }
 
-  Stream<List<TaskModel>> getRemainingTasksForUser({
+  Stream<List<TaskModel>> getRemainingTasksForUserInGroup({
     required String groupId,
     required String userId
   }) {

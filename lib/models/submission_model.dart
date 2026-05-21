@@ -3,10 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class SubmissionModel {
   final String userId;
   final String? photoUrl;
-  final String status;
-  final int validVotes;
-  final int invalidVotes;
-  final Timestamp createdAt;
+  String status;
+  int validVotes;
+  int invalidVotes;
+  Timestamp? completedAt;
 
   SubmissionModel({
     required this.userId,
@@ -14,8 +14,8 @@ class SubmissionModel {
     this.status = 'PENDING',
     this.validVotes = 0,
     this.invalidVotes = 0,
-    Timestamp? createdAt,
-  }) : createdAt = createdAt ?? Timestamp.now();
+    this.completedAt
+  });
 
   factory SubmissionModel.fromFirestore(
       Map<String, dynamic> data,
@@ -27,7 +27,7 @@ class SubmissionModel {
       status: data['status'] ?? '',
       validVotes: data['validVotes'] ?? 0,
       invalidVotes: data['invalidVotes'] ?? 0,
-      createdAt: data['createdAt'],
+      completedAt: data['completedAt'],
     );
   }
 
@@ -37,7 +37,7 @@ class SubmissionModel {
       'status': status,
       'validVotes': validVotes,
       'invalidVotes': invalidVotes,
-      'createdAt': createdAt
+      'completedAt': completedAt
     };
   }
 

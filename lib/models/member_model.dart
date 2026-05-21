@@ -4,9 +4,9 @@ class MemberModel {
   final String userId;
   final String username;
   final String? photoUrl;
-  final int points;
-  final int streak;
-  final String role;
+  int points;
+  int streak;
+  String role;
   final Timestamp joinedAt;
 
   MemberModel({
