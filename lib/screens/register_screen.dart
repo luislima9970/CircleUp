@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:projesof/models/user_model.dart';
 import 'package:projesof/screens/login_screen.dart';
 import 'package:projesof/services/auth_service.dart';
 import 'package:projesof/services/user_service.dart';
@@ -59,9 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       await _userService.createUser(
-        uid: userCredential.user!.uid,
-        username: _usernameController.text.trim(),
-        email: _emailController.text.trim(),
+        user: UserModel(id: userCredential.user?.uid, username: _usernameController.text.trim(), email: _emailController.text.trim())
       );
 
       if (!mounted) return;
@@ -279,7 +278,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     }
 
                                     final emailRegex = RegExp(
-                                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                      r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$',
                                     );
 
                                     if (!emailRegex.hasMatch(value.trim())) {

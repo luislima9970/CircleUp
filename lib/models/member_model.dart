@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MemberModel {
   final String userId;
+  final String username;
+  final String? photoUrl;
   final int points;
   final int streak;
   final String role;
@@ -9,14 +11,13 @@ class MemberModel {
 
   MemberModel({
     required this.userId,
-    int? points,
-    int? streak,
-    String? role,
+    required this.username,
+    this.photoUrl,
+    this.points = 0,
+    this.streak = 0,
+    this.role = 'member',
     Timestamp? joinedAt,
-  }) : points = points ?? 0,
-        streak = streak ?? 0,
-        role = role ?? 'member',
-        joinedAt = joinedAt ?? Timestamp.now();
+  }) : joinedAt = joinedAt ?? Timestamp.now();
 
   factory MemberModel.fromFirestore(
       Map<String, dynamic> data,
@@ -24,6 +25,8 @@ class MemberModel {
       ) {
     return MemberModel(
         userId: docId,
+        username: data['username'] ?? 'User',
+        photoUrl: data['photoUrl'] ?? '',
         points: data['points'] ?? 0,
         streak: data['streak'] ?? 0,
         role: data['role'] ?? '',
@@ -33,6 +36,8 @@ class MemberModel {
 
   Map<String, dynamic> toFirestore() {
     return {
+      'username': username,
+      'photoUrl': photoUrl,
       'points': points,
       'streak': streak,
       'role': role,

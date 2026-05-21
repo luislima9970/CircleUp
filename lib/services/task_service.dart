@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projesof/models/task_model.dart';
+import 'package:projesof/services/submission_service.dart';
 
 class TaskService {
+  final SubmissionService _submissionService = SubmissionService();
   final _groups = FirebaseFirestore.instance.collection('groups');
 
   Future<String> createTask({
@@ -67,6 +69,28 @@ class TaskService {
         );
 
       }).toList();
+    });
+  }
+
+  Stream<List<TaskModel>> getRemainingTasksForUser({
+    required String groupId,
+    required String userId
+  }) {
+
+    return _groups
+        .doc(groupId)
+        .collection('tasks')
+        .where('isActive', isEqualTo: true)
+        .snapshots()
+        .asyncMap((snapshot) async {
+
+      final List<TaskModel> tasks = [];
+
+      for (final taskDoc in snapshot.docs) {
+        final submission = await _submissionService.getSubmissionByUser(groupId: groupId, taskId: taskDoc.id, userId: userId);
+        if (submission?.status != 'APPROVED') tasks.add(TaskModel.fromFirestore(taskDoc.data(), taskDoc.id));
+      }
+      return tasks;
     });
   }
 

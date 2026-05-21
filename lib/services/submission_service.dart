@@ -70,6 +70,31 @@ class SubmissionService {
     });
   }
 
+  Stream<List<SubmissionModel>> getSubmissionsForTaskWithStatus({
+    required String groupId,
+    required String taskId,
+    required String status
+  }) {
+    return _groups
+        .doc(groupId)
+        .collection('tasks')
+        .doc(taskId)
+        .collection('submissions')
+        .where('status', isEqualTo: status)
+        .snapshots()
+        .map((snapshot) {
+
+      return snapshot.docs.map((doc) {
+
+        return SubmissionModel.fromFirestore(
+          doc.data(),
+          doc.id,
+        );
+
+      }).toList();
+    });
+  }
+
   Future<void> updateSubmissionStatus({
     required String groupId,
     required String taskId,
@@ -168,46 +193,11 @@ class SubmissionService {
     );
   }
 
-  Future<int> getVotesCountForSubmission({
-    required String groupId,
-    required String taskId,
-    required String userId,
-    required String validity
-  }) async {
-    final snap = await _groups
-        .doc(groupId)
-        .collection('tasks')
-        .doc(taskId)
-        .collection('submissions')
-        .doc(userId)
-        .collection('votes')
-        .where('vote', isEqualTo: validity)
-        .get();
-
-    return snap.docs.map((doc) {
-
-      return VoteModel.fromFirestore(
-        doc.data(),
-        doc.id,
-      );
-
-    }).toList().length;
-  }
-
   Future<bool> hasUserSubmittedForTask({
     required String groupId,
     required String taskId,
     required String authorId,
   }) async {
-    final querySnapshot = await _firestore
-        .collection('groups')
-        .doc(groupId)
-        .collection('tasks')
-        .doc(taskId)
-        .collection('submissions')
-        .where('authorId', isEqualTo: authorId)
-        .get();
-
-    return querySnapshot.docs.isNotEmpty;
+    return await getSubmissionByUser(groupId: groupId, taskId: taskId, userId: authorId) != null;
   }
 }

@@ -10,8 +10,8 @@ class UserService {
     await _users.add(user.toFirestore());
   }
 
-  Future<UserModel?> getUserById(String userId) async {
-
+  Future<UserModel?> getUserById(String? userId) async {
+    if (userId == null) return null;
     final doc = await _users.doc(userId).get();
 
     if (!doc.exists) return null;

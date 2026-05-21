@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projesof/models/group_model.dart';
+import 'package:projesof/models/user_model.dart';
 import 'package:projesof/screens/tasks_screen.dart';
 
 import 'package:projesof/services/group_service.dart';
-import 'package:projesof/services/user_service.dart';
 
+import '../app_state.dart';
 import 'homepage_screen.dart';
 import 'group_page.dart';
 import 'joincircle_screen.dart';
@@ -13,14 +14,10 @@ import 'profile_screen.dart';
 
 class CreateCircleScreen extends StatefulWidget {
   final bool startInCreateMode;
-  final GroupService? groupService;
-  final UserService? userService;
 
   const CreateCircleScreen({
     super.key,
     this.startInCreateMode = false,
-    this.groupService,
-    this.userService,
   });
 
   @override
@@ -28,28 +25,26 @@ class CreateCircleScreen extends StatefulWidget {
 }
 
 class _CreateCircleScreenState extends State<CreateCircleScreen> {
-  late final GroupService _groupService;
-  late final UserService _userService;
+  final GroupService _groupService = GroupService();
 
   final _formKey = GlobalKey<FormState>();
   final _circleNameController = TextEditingController();
   final _descriptionController = TextEditingController();
 
+  final user = AppState.currentUser!;
+
   String _selectedTheme = 'Sustainability';
   bool _isLoading = false;
   late bool _showCreateForm;
 
-  late Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _groupsFuture;
+  late Stream<List<GroupModel>> _groups;
 
   @override
   void initState() {
     super.initState();
-    
-    _groupService = widget.groupService ?? GroupService();
-    _userService = widget.userService ?? UserService();
 
     _showCreateForm = widget.startInCreateMode;
-    _groupsFuture = _loadUserGroups();
+    _groups = _groupService.getGroupsForUser(user.id);
   }
 
   @override
@@ -57,17 +52,6 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
     _circleNameController.dispose();
     _descriptionController.dispose();
     super.dispose();
-  }
-
-  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
-  _loadUserGroups() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return [];
-      return _groupService.getGroupsForUser(user.uid);
-    } catch (_) {
-      return [];
-    }
   }
 
   void _openCreateForm() {
@@ -83,7 +67,6 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
     setState(() {
       _selectedTheme = 'Sustainability';
       _showCreateForm = false;
-      _groupsFuture = _loadUserGroups();
     });
   }
 
@@ -97,11 +80,10 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
   }
 
   void _openTasksPage(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => TasksPageScreen(userId: user!.uid),
+        builder: (_) => TasksPageScreen(),
       ),
     );
   }
@@ -119,7 +101,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => const HomepageScreen(),
+        builder: (_) => HomepageScreen(),
       ),
     );
   }
@@ -173,48 +155,19 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
       return;
     }
 
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('You need to be logged in to create a circle.'),
-        ),
-      );
-      return;
-    }
-
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final userDoc = await _userService.getUserById(user.uid);
-      final userData = userDoc.data();
-
-      String username = userData?['username']?.toString().trim() ?? '';
-
-      if (username.isEmpty && user.displayName != null) {
-        username = user.displayName!.trim();
-      }
-
-      if (username.isEmpty && user.email != null) {
-        username = user.email!.split('@').first;
-      }
-
-      if (username.isEmpty) {
-        username = 'User';
-      }
-
-      final photoUrl = userData?['photoUrl']?.toString();
+      GroupModel group = GroupModel(
+          name: _circleNameController.text.trim(),
+          theme: _selectedTheme,
+          description: _descriptionController.text.trim());
 
       final createdGroupId = await _groupService.createGroupWithOwner(
-        name: _circleNameController.text.trim(),
-        description: _descriptionController.text.trim(),
-        theme: _selectedTheme,
-        createdBy: user.uid,
-        username: username,
-        photoUrl: photoUrl,
+        group: group,
+        userId: user.id!
       );
 
       debugPrint('Circle created with id: $createdGroupId');
@@ -233,7 +186,6 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
       setState(() {
         _selectedTheme = 'Sustainability';
         _showCreateForm = false;
-        _groupsFuture = _loadUserGroups();
       });
     } catch (e) {
       debugPrint('Error creating circle: $e');
@@ -279,9 +231,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
             if (_showCreateForm) {
               _closeCreateForm();
             } else {
-              setState(() {
-                _groupsFuture = _loadUserGroups();
-              });
+              setState((){});
             }
             return;
           }
@@ -331,8 +281,8 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
 
           const SizedBox(height: 30),
 
-          FutureBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
-            future: _groupsFuture,
+          StreamBuilder<List<GroupModel>>(
+            stream: _groups,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const _LoadingCard();
@@ -346,9 +296,9 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
                 );
               }
 
-              final groups = snapshot.data ?? [];
+              final groups = snapshot.data;
 
-              if (groups.isEmpty) {
+              if (groups == null) {
                 return _NoGroupsCard(
                   onCreate: _openCreateForm,
                   onJoin: _openJoinPage,
@@ -371,12 +321,12 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
 
                   for (int i = 0; i < groups.length; i++) ...[
                     _GroupCard(
-                      groupDoc: groups[i],
+                      group: groups[i],
                       icon: _themeIcon(
-                        groups[i].data()['theme']?.toString() ?? '',
+                        groups[i].theme,
                       ),
                       color: _themeColor(
-                        groups[i].data()['theme']?.toString() ?? '',
+                        groups[i].theme,
                       ),
                     ),
                     if (i != groups.length - 1) const SizedBox(height: 12),
@@ -1093,23 +1043,21 @@ class _NoGroupsCard extends StatelessWidget {
 }
 
 class _GroupCard extends StatelessWidget {
-  final QueryDocumentSnapshot<Map<String, dynamic>> groupDoc;
+  final GroupModel group;
   final IconData icon;
   final Color color;
 
   const _GroupCard({
-    required this.groupDoc,
+    required this.group,
     required this.icon,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final data = groupDoc.data();
-
-    final name = data['name']?.toString() ?? 'Unnamed circle';
-    final theme = data['theme']?.toString() ?? '';
-    final description = data['description']?.toString() ?? '';
+    final name = group.name;
+    final theme = group.theme;
+    final description = group.description;
 
     return Material(
       color: Colors.white.withValues(alpha: 0.94),
@@ -1121,7 +1069,7 @@ class _GroupCard extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (_) => GroupPageScreen(
-                groupId: groupDoc.id,
+                groupId: group.id!,
               ),
             ),
           );

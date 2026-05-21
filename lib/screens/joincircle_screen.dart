@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projesof/services/group_service.dart';
+import '../app_state.dart';
 
 class JoinGroupScreen extends StatefulWidget {
-  final FirebaseAuth? auth;
 
   const JoinGroupScreen({
     super.key,
-    this.auth,
   });
 
   @override
@@ -20,8 +18,9 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
   bool _success = false;
   bool _loading = false;
 
+  final user = AppState.currentUser!;
+
   void _join() async {
-    final user = (widget.auth ?? FirebaseAuth.instance).currentUser;
     final code = _controller.text;
 
     if (code.trim().isEmpty) return;
@@ -35,7 +34,7 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
     try {
       await GroupService().joinGroupByCode(
         code: code,
-        userId: user!.uid,
+        user: user,
       );
 
       setState(() {

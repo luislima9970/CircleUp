@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projesof/screens/tasks_screen.dart';
 import 'package:projesof/services/group_service.dart';
 
+import '../app_state.dart';
+import '../models/group_model.dart';
+import '../services/task_service.dart';
 import 'profile_screen.dart';
 import 'createcircle_screen.dart';
 import 'group_page.dart';
 
 class HomepageScreen extends StatelessWidget {
-  final GroupService? groupService;
-  const HomepageScreen({super.key, this.groupService});
+  const HomepageScreen({super.key});
 
   void _openCirclesPage(BuildContext context) {
     Navigator.push(
@@ -22,11 +23,10 @@ class HomepageScreen extends StatelessWidget {
   }
 
   void _openTasksPage(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => TasksPageScreen(userId: user!.uid),
+        builder: (_) => TasksPageScreen(),
       ),
     );
   }
@@ -83,11 +83,11 @@ class HomepageScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const _HomeHeader(),
+                    _HomeHeader(),
 
                     const SizedBox(height: 26),
 
-                    _TodayProgressCard(groupService: groupService),
+                    _TodayProgressCard(),
 
                     const SizedBox(height: 30),
 
@@ -97,7 +97,7 @@ class HomepageScreen extends StatelessWidget {
 
                     const SizedBox(height: 14),
 
-                    _UserGroupsList(groupService: groupService),
+                    _UserGroupsList(),
                   ],
                 ),
               ),
@@ -128,7 +128,8 @@ class HomepageScreen extends StatelessWidget {
           }
 
           if (index == 3) {
-            _openProfilePage(context);          }
+            _openProfilePage(context);
+          }
         },
         items: const [
           BottomNavigationBarItem(
@@ -153,149 +154,115 @@ class HomepageScreen extends StatelessWidget {
   }
 }
 
-class _HomeHeader extends StatefulWidget {
-  const _HomeHeader();
+class _HomeHeader extends StatelessWidget {
 
-  @override
-  State<_HomeHeader> createState() => _HomeHeaderState();
-}
+  _HomeHeader();
 
-class _HomeHeaderState extends State<_HomeHeader> {
-  late final Future<String> _usernameFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _usernameFuture = _getUsername();
-  }
-
-  Future<String> _getUsername() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        return '';
-      }
-
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      final data = doc.data();
-
-      if (data == null) {
-        return '';
-      }
-
-      final username = data['username']?.toString().trim();
-
-      if (username == null || username.isEmpty) {
-        return '';
-      }
-
-      return username;
-    } catch (e) {
-      debugPrint('Error loading username: $e');
-      return '';
-    }
-  }
+  final user = AppState.currentUser!;
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<String>(
-      future: _usernameFuture,
-      builder: (context, snapshot) {
-        final username = snapshot.data ?? '';
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    username.isEmpty ? 'Hello' : 'Hello, $username',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1C2A33),
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Ready for today’s challenges?',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF7A8A94),
-                    ),
-                  ),
-                ],
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                user.username.isEmpty ? 'Hello' : 'Hello, ${user.username}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1C2A33),
+                  height: 1.1,
+                ),
               ),
-            ),
-            const SizedBox(width: 14),
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x14000000),
-                    blurRadius: 18,
-                    offset: Offset(0, 8),
-                  ),
-                ],
+              const SizedBox(height: 8),
+              const Text(
+                'Ready for today’s challenges?',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Color(0xFF7A8A94),
+                ),
               ),
-              child: const Icon(
-                Icons.person_rounded,
-                color: Color(0xFF2A8CFF),
+            ],
+          ),
+        ),
+        const SizedBox(width: 14),
+        Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x14000000),
+                blurRadius: 18,
+                offset: Offset(0, 8),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          ),
+          child: const Icon(
+            Icons.person_rounded,
+            color: Color(0xFF2A8CFF),
+          ),
+        ),
+      ],
     );
   }
 }
 
 class _TodayProgressCard extends StatefulWidget {
-  final GroupService? groupService; 
-  const _TodayProgressCard({this.groupService});
+
+  _TodayProgressCard();
+
+  final user = AppState.currentUser!;
 
   @override
-  State<_TodayProgressCard> createState() => _TodayProgressCardState();
+  State<_TodayProgressCard> createState() =>
+      _TodayProgressCardState();
 }
 
-class _TodayProgressCardState extends State<_TodayProgressCard> {
-  late final GroupService _groupService;
-  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+class _TodayProgressCardState
+    extends State<_TodayProgressCard> {
 
+  late final GroupService _groupService;
+  late final TaskService _taskService;
+
+  final user = AppState.currentUser!;
   late final Future<_TodayProgressData> _progressFuture;
 
   @override
   void initState() {
     super.initState();
-    _groupService = widget.groupService ?? GroupService();
+
+    _groupService = GroupService();
+    _taskService = TaskService();
+
     _progressFuture = _loadTodayProgress();
   }
 
   String _todayKey() {
     final now = DateTime.now();
 
-    final year = now.year.toString().padLeft(4, '0');
-    final month = now.month.toString().padLeft(2, '0');
-    final day = now.day.toString().padLeft(2, '0');
+    final year =
+    now.year.toString().padLeft(4, '0');
+
+    final month =
+    now.month.toString().padLeft(2, '0');
+
+    final day =
+    now.day.toString().padLeft(2, '0');
 
     return '$year-$month-$day';
   }
 
   int _parseReward(dynamic reward) {
+
     if (reward is int) {
       return reward;
     }
@@ -311,64 +278,66 @@ class _TodayProgressCardState extends State<_TodayProgressCard> {
     return 0;
   }
 
-  Future<int> _getActiveTasksCount(String groupId) async {
-    final snapshot = await _firestore
-        .collection('groups')
-        .doc(groupId)
-        .collection('tasks')
-        .where('isActive', isEqualTo: true)
-        .get();
+  Future<int> _getActiveTasksCount(
+      String groupId,
+      ) async {
 
-    return snapshot.docs.length;
+    final tasks =
+    _taskService.getActiveTasks(
+      groupId: groupId,
+    );
+
+    return tasks.length;
   }
 
-  Future<int> _getTodayEarnedPoints({
+  Future<int> _getTodayEarnedPoints({ //!!!
     required String groupId,
-    required String userId,
   }) async {
+    final user = AppState.currentUser!;
     final today = _todayKey();
 
-    final snapshot = await _firestore
+    final snapshot =
+    await FirebaseFirestore.instance
         .collection('groups')
         .doc(groupId)
         .collection('taskCompletions')
-        .where('userId', isEqualTo: userId)
-        .where('completedDate', isEqualTo: today)
+        .where('userId', isEqualTo: user.id,)
+        .where('completedDate', isEqualTo: today,)
         .get();
 
     int total = 0;
 
     for (final doc in snapshot.docs) {
+
       final data = doc.data();
-      total += _parseReward(data['reward']);
+
+      total +=
+          _parseReward(data['reward']);
     }
 
     return total;
   }
 
-  Future<_TodayProgressData> _loadTodayProgress() async {
+  Future<_TodayProgressData>
+  _loadTodayProgress() async {
+
     try {
-      final user = FirebaseAuth.instance.currentUser;
 
-      if (user == null) {
-        return const _TodayProgressData(
-          groupsCount: 0,
-          activeTasksCount: 0,
-          todayPoints: 0,
-        );
-      }
-
-      final groups = await _groupService.getGroupsForUser(user.uid);
+      final groups = await _groupService.getGroupsForUser(user.id).first;
 
       int activeTasksCount = 0;
       int todayPoints = 0;
 
       for (final group in groups) {
-        activeTasksCount += await _getActiveTasksCount(group.id);
 
-        todayPoints += await _getTodayEarnedPoints(
-          groupId: group.id,
-          userId: user.uid,
+        activeTasksCount +=
+        await _getActiveTasksCount(
+          group.id!,
+        );
+
+        todayPoints +=
+        await _getTodayEarnedPoints(
+          groupId: group.id!,
         );
       }
 
@@ -578,8 +547,8 @@ class _ProgressStatBox extends StatelessWidget {
 }
 
 class _UserGroupsList extends StatefulWidget {
-  final GroupService? groupService;
-  const _UserGroupsList({this.groupService});
+
+  const _UserGroupsList();
 
   @override
   State<_UserGroupsList> createState() => _UserGroupsListState();
@@ -588,30 +557,20 @@ class _UserGroupsList extends StatefulWidget {
 class _UserGroupsListState extends State<_UserGroupsList> {
   late final GroupService _groupService;
 
-  late final Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+  final user = AppState.currentUser!;
+  late final Future<List<GroupModel>>
   _groupsFuture;
 
   @override
   void initState() {
     super.initState();
-    _groupService = widget.groupService ?? GroupService(); 
-    _groupsFuture = _loadUserGroups();
-  }
-
-  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
-  _loadUserGroups() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return [];
-      return _groupService.getGroupsForUser(user.uid);
-    } catch (_) {
-      return [];
-    }
+    _groupService = GroupService();
+    _groupsFuture = _groupService.getGroupsForUser(user.id).first;
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
+    return FutureBuilder<List<GroupModel>>(
       future: _groupsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -639,7 +598,7 @@ class _UserGroupsListState extends State<_UserGroupsList> {
         return Column(
           children: [
             for (int i = 0; i < groups.length; i++) ...[
-              _GroupCard(groupDoc: groups[i]),
+              _GroupCard(group: groups[i]),
               if (i != groups.length - 1) const SizedBox(height: 12),
             ],
           ],
@@ -650,10 +609,10 @@ class _UserGroupsListState extends State<_UserGroupsList> {
 }
 
 class _GroupCard extends StatelessWidget {
-  final QueryDocumentSnapshot<Map<String, dynamic>> groupDoc;
+  final GroupModel group;
 
   const _GroupCard({
-    required this.groupDoc,
+    required this.group,
   });
 
   IconData _themeIcon(String theme) {
@@ -690,14 +649,8 @@ class _GroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = groupDoc.data();
-
-    final name = data['name']?.toString() ?? 'Unnamed group';
-    final theme = data['theme']?.toString() ?? '';
-    final description = data['description']?.toString() ?? '';
-
-    final color = _themeColor(theme);
-    final icon = _themeIcon(theme);
+    final color = _themeColor(group.theme);
+    final icon = _themeIcon(group.theme);
 
     return Material(
       color: Colors.white.withValues(alpha: 0.94),
@@ -709,7 +662,7 @@ class _GroupCard extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (_) => GroupPageScreen(
-                groupId: groupDoc.id,
+                groupId: group.id!,
               ),
             ),
           );
@@ -751,7 +704,7 @@ class _GroupCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name,
+                      group.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -760,10 +713,10 @@ class _GroupCard extends StatelessWidget {
                         color: Color(0xFF1C2A33),
                       ),
                     ),
-                    if (theme.isNotEmpty) ...[
+                    if (group.theme.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
-                        theme,
+                        group.theme,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -772,10 +725,10 @@ class _GroupCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (description.isNotEmpty) ...[
+                    if (group.description.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
-                        description,
+                        group.description,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

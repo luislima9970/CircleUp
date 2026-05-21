@@ -7,6 +7,8 @@ import 'package:projesof/screens/login_screen.dart';
 import 'package:projesof/screens/tasks_screen.dart';
 import 'package:projesof/services/group_service.dart';
 
+import '../app_state.dart';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -16,9 +18,12 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final GroupService _groupService = GroupService();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  final _firestore = FirebaseFirestore.instance;
+
+  final user = AppState.currentUser!;
   late Future<_ProfileData> _profileFuture;
+
 
   @override
   void initState() {
@@ -68,34 +73,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<_ProfileData> _loadProfileData() async {
-    final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) {
-      return const _ProfileData.empty();
-    }
-
-    final userDoc = await _firestore.collection('users').doc(user.uid).get();
-    final userData = userDoc.data();
-
-    final username = userData?['username']?.toString().trim();
-    final email = userData?['email']?.toString().trim();
-    final phrase = userData?['profilePhrase']?.toString().trim();
-
-    final groups = await _groupService.getGroupsForUser(user.uid);
+    final groups = await _groupService.getGroupsForUser(user.id).first;
 
     int totalPoints = 0;
     int completedTasks = 0;
     int dailyCompletedTasks = 0;
+    int streak = 0;
 
     final completedDates = <String>{};
 
     for (final group in groups) {
 
-      final completionsSnapshot = await _firestore
+      final completionsSnapshot = await _firestore //!!!
           .collection('groups')
           .doc(group.id)
           .collection('taskCompletions')
-          .where('userId', isEqualTo: user.uid)
+          .where('userId', isEqualTo: user.id)
           .get();
 
       completedTasks += completionsSnapshot.docs.length;
@@ -117,18 +111,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     }
 
+    streak = _calculateStreak(completedDates);
+
+    //update user???
+
     return _ProfileData(
-      username: username == null || username.isEmpty ? 'User' : username,
-      email: email == null || email.isEmpty ? user.email ?? '' : email,
-      phrase: phrase == null || phrase.isEmpty
-          ? 'Turning small actions into daily impact.'
-          : phrase,
+      phrase: //phrase == null || phrase.isEmpty ?
+           'Turning small actions into daily impact.' //??
+          //: phrase
+      ,
       groupsCount: groups.length,
       completedTasks: completedTasks,
       dailyCompletedTasks: dailyCompletedTasks,
       dailyTarget: groups.length,
-      totalPoints: totalPoints,
-      streak: _calculateStreak(completedDates),
     );
   }
 
@@ -159,7 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (_) => const HomepageScreen(),
+        builder: (_) => HomepageScreen(),
       ),
           (route) => false,
     );
@@ -176,16 +171,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _openTasksPage(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      return;
-    }
-
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (_) => TasksPageScreen(userId: user.uid),
+        builder: (_) => TasksPageScreen(),
       ),
           (route) => false,
     );
@@ -267,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                   }
 
-                  final profile = snapshot.data ?? const _ProfileData.empty();
+                  final profile = snapshot.data ?? _ProfileData.empty();
 
                   final progress = profile.dailyTarget == 0
                       ? 0.0
@@ -281,10 +270,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _ProfileHeaderCard(
-                          username: profile.username,
-                          handle: _handle(profile.username),
+                          username: user.username,
+                          handle: _handle(user.username),
                           phrase: profile.phrase,
-                          initial: _initial(profile.username),
+                          initial: _initial(user.username),
                           onEdit: () {},
                         ),
 
@@ -295,7 +284,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Expanded(
                               child: _ProfileStatCard(
                                 icon: Icons.stars_rounded,
-                                value: profile.totalPoints.toString(),
+                                value: user.totalPoints.toString(),
                                 label: 'Points',
                               ),
                             ),
@@ -303,9 +292,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Expanded(
                               child: _ProfileStatCard(
                                 icon: Icons.local_fire_department_rounded,
-                                value: profile.streak == 1
+                                value: user.maxStreak == 1
                                     ? '1 day'
-                                    : '${profile.streak} days',
+                                    : '${user.maxStreak} days',
                                 label: 'Streak',
                               ),
                             ),
@@ -405,38 +394,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 class _ProfileData {
-  final String username;
-  final String email;
   final String phrase;
   final int groupsCount;
   final int completedTasks;
   final int dailyCompletedTasks;
   final int dailyTarget;
-  final int totalPoints;
-  final int streak;
 
   const _ProfileData({
-    required this.username,
-    required this.email,
     required this.phrase,
     required this.groupsCount,
     required this.completedTasks,
     required this.dailyCompletedTasks,
     required this.dailyTarget,
-    required this.totalPoints,
-    required this.streak,
   });
 
-  const _ProfileData.empty()
-      : username = 'User',
-        email = '',
-        phrase = 'Turning small actions into daily impact.',
+      const _ProfileData.empty()
+      :phrase = 'Turning small actions into daily impact.',
         groupsCount = 0,
         completedTasks = 0,
         dailyCompletedTasks = 0,
-        dailyTarget = 0,
-        totalPoints = 0,
-        streak = 0;
+        dailyTarget = 0;
 }
 
 class _ProfileHeaderCard extends StatelessWidget {

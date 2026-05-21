@@ -1,5 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/models/user_model.dart';
+import 'package:projesof/services/user_service.dart';
 import 'register_screen.dart';
 import 'package:projesof/services/auth_service.dart';
 import 'homepage_screen.dart';
@@ -18,6 +21,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   late final AuthService _authService;
+  late final UserService _userService;
 
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -28,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    _userService = UserService();
     _authService = widget.authService ?? AuthService();
   }
 
@@ -49,6 +54,9 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
       );
 
+      UserModel? user = await _userService.getUserById(_authService.getCurrentUid());
+      AppState.setCurrentUser(user!);
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -57,10 +65,12 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
+
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => const HomepageScreen(),
+          builder: (_) => HomepageScreen(),
         ),
       );
     } on FirebaseAuthException catch (e) {
@@ -233,7 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     }
 
                                     final emailRegex = RegExp(
-                                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                      r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$',
                                     );
 
                                     if (!emailRegex.hasMatch(value.trim())) {

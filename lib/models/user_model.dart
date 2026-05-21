@@ -15,8 +15,8 @@ class UserModel {
     required this.username,
     required this.email,
     this.photoUrl,
-    required this.totalPoints,
-    required this.maxStreak,
+    this.totalPoints = 0,
+    this.maxStreak = 0,
     Timestamp? createdAt,
   }) : createdAt = createdAt ?? Timestamp.now();
 

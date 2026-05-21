@@ -2,9 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projesof/models/group_model.dart';
 import 'package:projesof/models/member_model.dart';
 import 'package:projesof/models/task_model.dart';
+import 'package:projesof/models/user_model.dart';
 import 'package:projesof/services/task_service.dart';
 
 class GroupService {
+  final TaskService _taskService = TaskService();
   final _groups = FirebaseFirestore.instance.collection('groups');
 
   static final Map<String, List<TaskModel>> _tasksByTheme = {
@@ -185,19 +187,19 @@ class GroupService {
 
   Future<void> addMemberToGroup({
     required String groupId,
-    required String userId
+    required UserModel user
   }) async {
     final memberRef = _groups
         .doc(groupId)
         .collection('members')
-        .doc(userId);
+        .doc(user.id);
 
     final memberSnap = await memberRef.get();
 
     if (memberSnap.exists) {
       throw Exception('Already joined');
     }
-    await memberRef.set(MemberModel(userId: userId).toFirestore());
+    await memberRef.set(MemberModel(userId: user.id!, username: user.username, photoUrl: user.photoUrl).toFirestore());
   }
 
   Future<void> removeMemberFromGroup({
@@ -225,12 +227,13 @@ class GroupService {
     );
   }
 
-  Stream<List<MemberModel>> getGroupMembers({
-    required String groupId
-  }) {
+  Stream<List<MemberModel>> getLeaderboard(
+      String groupId,
+      ) {
     return _groups
         .doc(groupId)
         .collection('members')
+        .orderBy('points', descending: true)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -240,23 +243,6 @@ class GroupService {
         );
       }).toList();
     });
-  }
-
-  Future<List<MemberModel>> getLeaderboard(
-      String groupId,
-      ) async {
-    final snapshot = await _groups
-        .doc(groupId)
-        .collection('members')
-        .orderBy('points', descending: true)
-        .get();
-
-    return snapshot.docs.map((doc) {
-      return MemberModel.fromFirestore(
-        doc.data(),
-        doc.id,
-      );
-    }).toList();
   }
 
   Future<void> updateMemberPoints({
@@ -301,35 +287,75 @@ class GroupService {
     });
   }
 
-  Future<List<GroupModel>> getGroupsForUser(
-      String uid,
-      ) async {
-    final groupsSnapshot = await _groups.get();
+  Stream<List<GroupModel>> getGroupsForUser(
+      String? uid,
+      ) {
 
-    final List<GroupModel> userGroups = [];
+    return _groups.snapshots().asyncMap(
+          (groupsSnapshot) async {
 
-    for (final groupDoc in groupsSnapshot.docs) {
-      final memberDoc = await groupDoc.reference
-          .collection('members')
-          .doc(uid)
-          .get();
+        final List<GroupModel> userGroups = [];
+        if (uid == null) return userGroups;
 
-      if (memberDoc.exists) {
-        userGroups.add(
-          GroupModel.fromFirestore(
-            groupDoc.data(),
-            groupDoc.id,
-          ),
-        );
-      }
-    }
+        for (final groupDoc in groupsSnapshot.docs) {
 
-    return userGroups;
+          final memberDoc = await groupDoc.reference
+              .collection('members')
+              .doc(uid)
+              .get();
+
+          if (memberDoc.exists) {
+
+            userGroups.add(
+              GroupModel.fromFirestore(
+                groupDoc.data(),
+                groupDoc.id,
+              ),
+            );
+          }
+        }
+
+        return userGroups;
+      },
+    );
+  }
+
+  Stream<List<GroupModel>> getGroupsForUserWithTasks(
+      String? uid,
+      ) {
+
+    return _groups.snapshots().asyncMap(
+          (groupsSnapshot) async {
+
+        final List<GroupModel> userGroups = [];
+        if (uid == null) return userGroups;
+
+        for (final groupDoc in groupsSnapshot.docs) {
+
+          final memberDoc = await groupDoc.reference
+              .collection('members')
+              .doc(uid)
+              .get();
+
+          if (memberDoc.exists && !(await _taskService.getActiveTasks(groupId: groupDoc.id).isEmpty)) {
+
+            userGroups.add(
+              GroupModel.fromFirestore(
+                groupDoc.data(),
+                groupDoc.id,
+              ),
+            );
+          }
+        }
+
+        return userGroups;
+      },
+    );
   }
 
   Future<void> joinGroupByCode({
     required String code,
-    required String userId,
+    required UserModel user,
   }) async {
     final cleanedCode = code.trim().toUpperCase();
 
@@ -345,6 +371,6 @@ class GroupService {
     final groupDoc = query.docs.first;
     final groupId = groupDoc.id;
 
-    addMemberToGroup(groupId: groupId, userId: userId);
+    addMemberToGroup(groupId: groupId, user: user);
   }
 }
