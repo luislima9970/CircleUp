@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:projesof/models/group_model.dart';
 import 'package:projesof/models/submission_model.dart';
 import 'package:projesof/models/task_model.dart';
-import 'package:projesof/screens/createcircle_screen.dart';
 import 'package:projesof/screens/task_detail_screen.dart';
-import 'package:projesof/screens/profile_screen.dart';
 import 'package:projesof/services/submission_service.dart';
 import 'package:projesof/services/task_service.dart';
-
-import '../app_state.dart';
-import '../services/group_service.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/services/group_service.dart';
+import 'package:projesof/widgets/background_circle.dart';
+import 'package:projesof/widgets/bottom_navbar.dart';
 
 class TasksPageScreen extends StatefulWidget {
 
@@ -23,21 +22,6 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
   final GroupService _groupService = GroupService();
   final user = AppState.currentUser!;
 
-  void _openCirclesPage(BuildContext context) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const CreateCircleScreen()),
-    );
-  }
-
-  void _openProfilePage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const ProfileScreen(),
-      ),
-    );
-  }
   Color _themeColor(String theme) {
     if (theme == 'Fitness') return const Color(0xFF2A8CFF);
     if (theme == 'Wellness') return const Color(0xFFFFB84D);
@@ -83,7 +67,7 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
                   const Positioned(
                     top: -90,
                     right: -70,
-                    child: _BackgroundCircle(
+                    child: BackgroundCircle(
                       size: 210,
                       color: Color(0x332A8CFF),
                     ),
@@ -91,7 +75,7 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
                   const Positioned(
                     bottom: -100,
                     left: -80,
-                    child: _BackgroundCircle(
+                    child: BackgroundCircle(
                       size: 230,
                       color: Color(0x3343D17A),
                     ),
@@ -123,37 +107,9 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
         },
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar:
+      BottomNavbar(
         currentIndex: 2,
-        selectedItemColor: const Color(0xFF2A8CFF),
-        unselectedItemColor: const Color(0xFF95A39A),
-        showUnselectedLabels: true,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        onTap: (index) {
-          if (index == 0) Navigator.pop(context);
-          if (index == 1) _openCirclesPage(context);
-          if (index == 2) return;
-          if (index == 3) {
-            _openProfilePage(context);
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.groups_outlined),
-            label: 'Circles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.checklist_rtl),
-            label: 'Tasks',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }
@@ -264,7 +220,8 @@ class _GroupTasksCard extends StatelessWidget {
                     padding: const EdgeInsets.all(14),
                     child: Column(
                       children: [
-                        for (final task in tasks!) ...[
+                        if (tasks != null)
+                        for (final task in tasks) ...[
                           _TaskTile(
                             task: task,
                             color: color,
@@ -416,22 +373,6 @@ class _LoadingPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: CircularProgressIndicator(color: Color(0xFF2A8CFF)),
-    );
-  }
-}
-
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

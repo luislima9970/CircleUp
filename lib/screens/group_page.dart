@@ -3,13 +3,13 @@ import 'package:flutter/services.dart';
 import 'package:projesof/models/group_model.dart';
 import 'package:projesof/models/member_model.dart';
 import 'package:projesof/models/task_model.dart';
-import 'package:projesof/screens/tasks_screen.dart';
 import 'package:projesof/screens/task_detail_screen.dart';
-import 'package:projesof/screens/profile_screen.dart';
 import 'package:projesof/services/task_service.dart';
-
-import '../app_state.dart';
-import '../services/group_service.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/services/group_service.dart';
+import 'package:projesof/widgets/background_circle.dart';
+import 'package:projesof/widgets/bottom_navbar.dart';
+import 'package:projesof/widgets/loading_card.dart';
 
 class GroupPageScreen extends StatefulWidget {
   final String groupId;
@@ -47,24 +47,6 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
     setState(() {
       _isLoading = false;
     });
-  }
-
-  void _openProfilePage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const ProfileScreen(),
-      ),
-    );
-  }
-
-  void _openTasksPage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TasksPageScreen(),
-      ),
-    );
   }
 
   Future<void> _confirmLeaveGroup() async {
@@ -152,7 +134,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const _LoadingPage();
+      return const LoadingCard();
     }
 
     if (_group == null) {
@@ -193,7 +175,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
                       const Positioned(
                         top: -90,
                         right: -70,
-                        child: _BackgroundCircle(
+                        child: BackgroundCircle(
                           size: 210,
                           color: Color(0x332A8CFF),
                         ),
@@ -201,7 +183,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
                       const Positioned(
                         bottom: -100,
                         left: -80,
-                        child: _BackgroundCircle(
+                        child: BackgroundCircle(
                           size: 230,
                           color: Color(0x3343D17A),
                         ),
@@ -270,49 +252,9 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
           );
         }
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar:
+      BottomNavbar(
         currentIndex: 1,
-        selectedItemColor: const Color(0xFF2A8CFF),
-        unselectedItemColor: const Color(0xFF95A39A),
-        showUnselectedLabels: true,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pop(context);
-          }
-
-          if (index == 1) {
-            return;
-          }
-
-          if (index == 2) {
-            _openTasksPage(context);
-          }
-
-          if (index == 3) {
-            _openProfilePage(context);
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.groups_outlined),
-            label: 'Circles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.checklist_rtl),
-            label: 'Tasks',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }
@@ -1165,21 +1107,6 @@ class _EmptyContentCard extends StatelessWidget {
   }
 }
 
-class _LoadingPage extends StatelessWidget {
-  const _LoadingPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF2A8CFF),
-        ),
-      ),
-    );
-  }
-}
-
 class _ErrorPage extends StatelessWidget {
   final String message;
 
@@ -1203,27 +1130,6 @@ class _ErrorPage extends StatelessWidget {
   }
 }
 
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-}
 class _JoinCodeCard extends StatefulWidget {
   final String joinCode;
   final Color color;

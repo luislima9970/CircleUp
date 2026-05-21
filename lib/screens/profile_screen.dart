@@ -1,13 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:projesof/screens/createcircle_screen.dart';
-import 'package:projesof/screens/homepage_screen.dart';
 import 'package:projesof/screens/login_screen.dart';
-import 'package:projesof/screens/tasks_screen.dart';
 import 'package:projesof/services/group_service.dart';
-
-import '../app_state.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/widgets/background_circle.dart';
+import 'package:projesof/widgets/bottom_navbar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -150,36 +148,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return '@$cleanUsername';
   }
 
-  void _openHomePage(BuildContext context) {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => HomepageScreen(),
-      ),
-          (route) => false,
-    );
-  }
-
-  void _openCirclesPage(BuildContext context) {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const CreateCircleScreen(),
-      ),
-          (route) => false,
-    );
-  }
-
-  void _openTasksPage(BuildContext context) {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TasksPageScreen(),
-      ),
-          (route) => false,
-    );
-  }
-
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
 
@@ -220,7 +188,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const Positioned(
                 top: -90,
                 right: -70,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 210,
                   color: Color(0x332A8CFF),
                 ),
@@ -228,7 +196,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const Positioned(
                 bottom: -100,
                 left: -80,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 230,
                   color: Color(0x3343D17A),
                 ),
@@ -344,50 +312,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar:
+      BottomNavbar(
         currentIndex: 3,
-        selectedItemColor: const Color(0xFF2A8CFF),
-        unselectedItemColor: const Color(0xFF95A39A),
-        showUnselectedLabels: true,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        onTap: (index) {
-          if (index == 0) {
-            _openHomePage(context);
-          }
-
-          if (index == 1) {
-            _openCirclesPage(context);
-          }
-
-          if (index == 2) {
-            _openTasksPage(context);
-          }
-
-          if (index == 3) {
-            return;
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.groups_outlined),
-            label: 'Circles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.checklist_rtl),
-            label: 'Tasks',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_rounded),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }
@@ -828,28 +755,6 @@ class _LogoutCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
       ),
     );
   }

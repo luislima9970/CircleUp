@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projesof/models/group_model.dart';
-import 'package:projesof/models/user_model.dart';
-import 'package:projesof/screens/tasks_screen.dart';
-
 import 'package:projesof/services/group_service.dart';
-
-import '../app_state.dart';
-import 'homepage_screen.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/widgets/bottom_navbar.dart';
+import 'package:projesof/widgets/background_circle.dart';
+import 'package:projesof/widgets/loading_card.dart';
 import 'group_page.dart';
 import 'joincircle_screen.dart';
-import 'profile_screen.dart';
 
 class CreateCircleScreen extends StatefulWidget {
   final bool startInCreateMode;
@@ -75,33 +71,6 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => JoinGroupScreen(),
-      ),
-    );
-  }
-
-  void _openTasksPage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TasksPageScreen(),
-      ),
-    );
-  }
-
-  void _openProfilePage() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const ProfileScreen(),
-      ),
-    );
-  }
-
-  void _goToHome() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => HomepageScreen(),
       ),
     );
   }
@@ -213,55 +182,9 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
       body: _PageBackground(
         child: _showCreateForm ? _buildCreateForm() : _buildCirclesPage(),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar:
+      BottomNavbar(
         currentIndex: 1,
-        selectedItemColor: const Color(0xFF2A8CFF),
-        unselectedItemColor: const Color(0xFF95A39A),
-        showUnselectedLabels: true,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        onTap: (index) {
-          if (index == 0) {
-            _goToHome();
-          }
-
-          if (index == 1) {
-            if (_showCreateForm) {
-              _closeCreateForm();
-            } else {
-              setState((){});
-            }
-            return;
-          }
-
-          if (index == 2) {
-            _openTasksPage(context);
-          }
-
-          if (index == 3) {
-            _openProfilePage();
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.groups_outlined),
-            label: 'Circles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.checklist_rtl),
-            label: 'Tasks',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }
@@ -276,7 +199,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
           _TopBar(
             title: 'Circles',
             subtitle: 'Manage your groups and challenges',
-            onBack: _goToHome,
+            onBack: () => Navigator.pop(context),
           ),
 
           const SizedBox(height: 30),
@@ -285,7 +208,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
             stream: _groups,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const _LoadingCard();
+                return const LoadingCard();
               }
 
               if (snapshot.hasError) {
@@ -729,7 +652,7 @@ class _PageBackground extends StatelessWidget {
               const Positioned(
                 top: -90,
                 right: -70,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 210,
                   color: Color(0x332A8CFF),
                 ),
@@ -738,7 +661,7 @@ class _PageBackground extends StatelessWidget {
               const Positioned(
                 bottom: -100,
                 left: -80,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 230,
                   color: Color(0x3343D17A),
                 ),
@@ -1208,51 +1131,6 @@ class _MessageCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: const Color(0xFFE5EEF5),
-        ),
-      ),
-      child: const Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF2A8CFF),
-        ),
-      ),
-    );
-  }
-}
-
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
       ),
     );
   }

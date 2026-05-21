@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:projesof/models/submission_model.dart';
 import 'package:projesof/services/image_upload_service.dart';
 import 'package:projesof/services/submission_service.dart';
-
-import '../app_state.dart';
-import '../models/task_model.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/models/task_model.dart';
+import 'package:projesof/widgets/background_circle.dart';
 
 class SubmissionScreen extends StatefulWidget {
   final String groupId;
@@ -178,7 +178,7 @@ class _SubmissionScreenState
               Positioned(
                 top: -90,
                 right: -70,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 210,
                   color: Color.fromARGB(51, 42, 140, 255),
                 ),
@@ -186,7 +186,7 @@ class _SubmissionScreenState
               Positioned(
                 bottom: -100,
                 left: -80,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 230,
                   color: Color.fromARGB(51, 67, 209, 122),
                 ),
@@ -774,21 +774,5 @@ class _SubmissionScreenState
       default:
         return Icons.eco_rounded;
     }
-  }
-}
-
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-    );
   }
 }

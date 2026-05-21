@@ -4,6 +4,7 @@ import 'package:projesof/models/user_model.dart';
 import 'package:projesof/screens/login_screen.dart';
 import 'package:projesof/services/auth_service.dart';
 import 'package:projesof/services/user_service.dart';
+import 'package:projesof/widgets/background_circle.dart';
 
 class RegisterScreen extends StatefulWidget {
   final AuthService? authService;
@@ -128,7 +129,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const Positioned(
                 top: -80,
                 right: -60,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 190,
                   color: Color(0x332A8CFF),
                 ),
@@ -137,7 +138,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const Positioned(
                 bottom: -90,
                 left: -70,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 220,
                   color: Color(0x3343D17A),
                 ),
@@ -518,28 +519,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           color: Colors.red,
           width: 2,
         ),
-      ),
-    );
-  }
-}
-
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
       ),
     );
   }

@@ -1,44 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:projesof/screens/tasks_screen.dart';
 import 'package:projesof/services/group_service.dart';
-
-import '../app_state.dart';
-import '../models/group_model.dart';
-import '../services/task_service.dart';
-import 'profile_screen.dart';
-import 'createcircle_screen.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/models/group_model.dart';
+import 'package:projesof/services/task_service.dart';
+import 'package:projesof/widgets/background_circle.dart';
+import 'package:projesof/widgets/bottom_navbar.dart';
+import 'package:projesof/widgets/loading_card.dart';
 import 'group_page.dart';
 
 class HomepageScreen extends StatelessWidget {
   const HomepageScreen({super.key});
-
-  void _openCirclesPage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const CreateCircleScreen(),
-      ),
-    );
-  }
-
-  void _openTasksPage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TasksPageScreen(),
-      ),
-    );
-  }
-
-  void _openProfilePage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const ProfileScreen(),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +36,7 @@ class HomepageScreen extends StatelessWidget {
               const Positioned(
                 top: -90,
                 right: -70,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 210,
                   color: Color(0x332A8CFF),
                 ),
@@ -72,7 +44,7 @@ class HomepageScreen extends StatelessWidget {
               const Positioned(
                 bottom: -100,
                 left: -80,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 230,
                   color: Color(0x3343D17A),
                 ),
@@ -105,50 +77,9 @@ class HomepageScreen extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar:
+      BottomNavbar(
         currentIndex: 0,
-        selectedItemColor: const Color(0xFF2A8CFF),
-        unselectedItemColor: const Color(0xFF95A39A),
-        showUnselectedLabels: true,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        onTap: (index) {
-          if (index == 0) {
-            return;
-          }
-
-          if (index == 1) {
-            _openCirclesPage(context);
-          }
-
-          if (index == 2) {
-            _openTasksPage(context);
-          }
-
-          if (index == 3) {
-            _openProfilePage(context);
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.groups_outlined),
-            label: 'Circles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.checklist_rtl),
-            label: 'Tasks',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }
@@ -574,7 +505,7 @@ class _UserGroupsListState extends State<_UserGroupsList> {
       future: _groupsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const _LoadingCard();
+          return const LoadingCard();
         }
 
         if (snapshot.hasError) {
@@ -844,55 +775,4 @@ class _EmptyStateCard extends StatelessWidget {
   }
 }
 
-class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(26),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: const Color(0xFFE5EEF5),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: const Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF2A8CFF),
-        ),
-      ),
-    );
-  }
-}
-
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-}

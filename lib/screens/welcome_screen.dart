@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:projesof/widgets/background_circle.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
 
@@ -27,7 +28,7 @@ class WelcomeScreen extends StatelessWidget {
               Positioned(
                 top: -80,
                 right: -60,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 190,
                   color: Color(0x332A8CFF),
                 ),
@@ -36,7 +37,7 @@ class WelcomeScreen extends StatelessWidget {
               Positioned(
                 bottom: -90,
                 left: -70,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 220,
                   color: Color(0x3343D17A),
                 ),
@@ -213,28 +214,6 @@ class WelcomeScreen extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
       ),
     );
   }
