@@ -3,13 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:projesof/models/group_model.dart';
 import 'package:projesof/models/member_model.dart';
 import 'package:projesof/models/task_model.dart';
+import 'package:projesof/screens/profile_screen.dart';
 import 'package:projesof/screens/task_detail_screen.dart';
 import 'package:projesof/services/task_service.dart';
 import 'package:projesof/app_state.dart';
 import 'package:projesof/services/group_service.dart';
+import 'package:projesof/services/user_service.dart';
 import 'package:projesof/widgets/background_circle.dart';
 import 'package:projesof/widgets/bottom_navbar.dart';
 import 'package:projesof/widgets/loading_card.dart';
+import 'package:projesof/models/user_model.dart';
+import 'public_profile_screen.dart';
 
 class GroupPageScreen extends StatefulWidget {
   final String groupId;
@@ -217,6 +221,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
                             _MembersCard(
                               members: members ?? [],
                               color: color,
+                              groupId: _group!.id!,
                             ),
                             const SizedBox(height: 24),
                             _TabSelector(
@@ -548,11 +553,15 @@ class _InlineStat extends StatelessWidget {
 class _MembersCard extends StatelessWidget {
   final List<MemberModel?> members;
   final Color color;
+  final String groupId;
 
-  const _MembersCard({
+  _MembersCard({
     required this.members,
     required this.color,
+    required this.groupId,
   });
+
+  final user = AppState.currentUser!;
 
   String _initials(String username) {
     final clean = username.trim();
@@ -614,16 +623,13 @@ class _MembersCard extends StatelessWidget {
                 itemCount: members.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
-                  return CircleAvatar(
-                    radius: 21,
-                    backgroundColor: color.withValues(alpha: 0.12),
-                    child: Text(
-                      _initials(members[index]!.username),
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
+                  return _MemberAvatar(
+                    userId: members[index]!.userId,
+                    username: members[index]!.username,
+                    fallbackPhotoUrl: members[index]?.photoUrl ?? '',
+                    groupId: groupId,
+                    color: color,
+                    initials: _initials(user.username),
                   );
                 },
               ),
@@ -631,6 +637,79 @@ class _MembersCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _MemberAvatar extends StatelessWidget {
+  final String userId;
+  final String username;
+  final String fallbackPhotoUrl;
+  final String groupId;
+  final Color color;
+  final String initials;
+
+  _MemberAvatar({
+    required this.userId,
+    required this.username,
+    required this.fallbackPhotoUrl,
+    required this.groupId,
+    required this.color,
+    required this.initials,
+  });
+
+  final UserService _userService = UserService();
+
+  void _openProfile(BuildContext context) {
+    final user = AppState.currentUser!;
+
+    if (user.id == userId) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const ProfileScreen(),
+        ),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PublicProfileScreen(
+          userId: userId,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<UserModel?>(
+      future: _userService.getUserById(userId),
+      builder: (context, snapshot) {
+        final userData = snapshot.data;
+
+        return GestureDetector(
+          onTap: () => _openProfile(context),
+          child: CircleAvatar(
+            radius: 21,
+            backgroundColor: color.withValues(alpha: 0.12),
+            backgroundImage: userData!.photoUrl == null ? null : NetworkImage(userData.photoUrl!),
+            child: userData.photoUrl == null
+                ? Text(
+              userData.username.trim().isEmpty
+                  ? '?'
+                  : userData.username.trim()[0].toUpperCase(),
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w900,
+              ),
+            )
+                : null,
+          ),
+        );
+      },
     );
   }
 }
@@ -970,6 +1049,16 @@ class _LeaderboardRow extends StatelessWidget {
     required this.color,
   });
 
+  String _initial(String name) {
+    final trimmed = name.trim();
+
+    if (trimmed.isEmpty) {
+      return '?';
+    }
+
+    return trimmed[0].toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -990,6 +1079,22 @@ class _LeaderboardRow extends StatelessWidget {
               fontWeight: FontWeight.w900,
             ),
           ),
+        ),
+        const SizedBox(width: 10),
+        CircleAvatar(
+          radius: 19,
+          backgroundColor: color.withValues(alpha: 0.12),
+          backgroundImage: member.photoUrl == null ? null : NetworkImage(member.photoUrl!),
+          child: member.photoUrl == null
+              ? Text(
+            _initial(member.username),
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w900,
+              fontSize: 13,
+            ),
+          )
+              : null,
         ),
         const SizedBox(width: 12),
         Expanded(

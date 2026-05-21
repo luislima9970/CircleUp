@@ -287,6 +287,26 @@ class GroupService {
     });
   }
 
+  Future<void> updateMemberInfoInGroups({
+    required String uid,
+    String? username,
+    String? photoUrl,
+    String? phrase,
+  }) async {
+    final data = <String, dynamic>{};
+    if (username != null) data['username'] = username;
+    if (photoUrl != null) data['photoUrl'] = photoUrl;
+    if (phrase != null) data['phrase'] = phrase;
+    final groups = await getGroupsForUser(uid).first;
+    for (final group in groups) {
+      await _groups
+          .doc(group.id)
+          .collection('members')
+          .doc(uid)
+          .update(data);
+    }
+  }
+
   Stream<List<GroupModel>> getGroupsForUser(
       String? uid,
       ) {

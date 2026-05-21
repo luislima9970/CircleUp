@@ -4,15 +4,17 @@ class MemberModel {
   final String userId;
   final String username;
   final String? photoUrl;
-  int points;
-  int streak;
-  String role;
+  final String phrase;
+  final int points;
+  final int streak;
+  final String role;
   final Timestamp joinedAt;
 
   MemberModel({
     required this.userId,
     required this.username,
     this.photoUrl,
+    this.phrase = '',
     this.points = 0,
     this.streak = 0,
     this.role = 'member',
@@ -27,6 +29,7 @@ class MemberModel {
         userId: docId,
         username: data['username'] ?? 'User',
         photoUrl: data['photoUrl'] ?? '',
+        phrase: data['phrase'] ?? '',
         points: data['points'] ?? 0,
         streak: data['streak'] ?? 0,
         role: data['role'] ?? '',
@@ -38,6 +41,7 @@ class MemberModel {
     return {
       'username': username,
       'photoUrl': photoUrl,
+      'phrase': phrase,
       'points': points,
       'streak': streak,
       'role': role,

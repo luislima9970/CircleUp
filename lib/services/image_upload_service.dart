@@ -134,6 +134,93 @@ class ImageUploadService {
     }
   }
 
+  Future<String?> uploadProfileImage({
+    required File imageFile,
+    required String userId,
+  }) async {
+    late final String fileName;
+    late final SettableMetadata metadata;
+
+    try {
+      if (!await imageFile.exists()) {
+        debugPrint('Erro: Arquivo de imagem de perfil não existe');
+        return null;
+      }
+
+      final fileSize = await imageFile.length();
+      debugPrint('Tamanho da imagem de perfil: $fileSize bytes');
+
+      if (fileSize == 0) {
+        debugPrint('Erro: Imagem de perfil está vazia');
+        return null;
+      }
+
+      if (fileSize > 10 * 1024 * 1024) {
+        debugPrint('Erro: Imagem de perfil muito grande ($fileSize bytes)');
+        return null;
+      }
+
+      fileName =
+      'profile_images/$userId/${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      debugPrint('Fazendo upload da foto de perfil para: $fileName');
+
+      metadata = SettableMetadata(
+        contentType: 'image/jpeg',
+        customMetadata: {
+          'uploadedBy': userId,
+          'type': 'profile',
+        },
+      );
+
+      final uploadTask = _storage.ref(fileName).putFile(imageFile, metadata);
+
+      uploadTask.snapshotEvents.listen(
+            (TaskSnapshot snapshot) {
+          debugPrint(
+            'Progresso do upload da foto de perfil: ${snapshot.bytesTransferred}/${snapshot.totalBytes}',
+          );
+        },
+        onError: (error) {
+          debugPrint('Upload profile image snapshot error: $error');
+        },
+      );
+
+      final taskSnapshot = await uploadTask;
+      debugPrint('Upload da foto de perfil concluído, obtendo URL...');
+
+      final downloadUrl = await taskSnapshot.ref.getDownloadURL();
+      debugPrint('URL da foto de perfil obtida: $downloadUrl');
+
+      return downloadUrl;
+    } catch (e, stackTrace) {
+      debugPrint('Erro detalhado ao fazer upload da foto de perfil: $e');
+      debugPrint('Stack trace: $stackTrace');
+      debugPrint('Tipo do erro: ${e.runtimeType}');
+
+      if (e is FirebaseException) {
+        debugPrint('Código do erro Firebase: ${e.code}');
+        debugPrint('Mensagem do erro Firebase: ${e.message}');
+        debugPrint('Plugin do erro Firebase: ${e.plugin}');
+
+        if (e.code == 'object-not-found') {
+          final bucket = _storage.bucket;
+          debugPrint(
+            'Tentando bucket alternativo para foto de perfil. Bucket atual: $bucket',
+          );
+
+          return await _retryWithAlternateBucket(
+            fileName: fileName,
+            imageFile: imageFile,
+            metadata: metadata,
+          );
+        }
+      }
+
+      return null;
+    }
+  }
+
   Future<String?> _retryWithAlternateBucket({
     required String fileName,
     required File imageFile,

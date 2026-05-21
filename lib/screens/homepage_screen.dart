@@ -8,6 +8,7 @@ import 'package:projesof/widgets/background_circle.dart';
 import 'package:projesof/widgets/bottom_navbar.dart';
 import 'package:projesof/widgets/loading_card.dart';
 import 'group_page.dart';
+import 'user_search_screen.dart';
 
 class HomepageScreen extends StatelessWidget {
   const HomepageScreen({super.key});
@@ -91,6 +92,15 @@ class _HomeHeader extends StatelessWidget {
 
   final user = AppState.currentUser!;
 
+  void _openUserSearch(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const UserSearchScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -122,24 +132,30 @@ class _HomeHeader extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 14),
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            color: Colors.white,
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          child: InkWell(
+            onTap: () => _openUserSearch(context),
             borderRadius: BorderRadius.circular(18),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x14000000),
-                blurRadius: 18,
-                offset: Offset(0, 8),
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x14000000),
+                    blurRadius: 18,
+                    offset: Offset(0, 8),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: const Icon(
-            Icons.person_rounded,
-            color: Color(0xFF2A8CFF),
+              child: const Icon(
+                Icons.search_rounded,
+                color: Color(0xFF2A8CFF),
+              ),
+            ),
           ),
         ),
       ],
@@ -149,9 +165,7 @@ class _HomeHeader extends StatelessWidget {
 
 class _TodayProgressCard extends StatefulWidget {
 
-  _TodayProgressCard();
-
-  final user = AppState.currentUser!;
+  const _TodayProgressCard();
 
   @override
   State<_TodayProgressCard> createState() =>

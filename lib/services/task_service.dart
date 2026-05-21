@@ -94,6 +94,52 @@ class TaskService {
     });
   }
 
+  Stream<List<TaskModel>> getCompletedTasksForUserInGroup({
+    required String groupId,
+    required String userId
+  }) {
+
+    return _groups
+        .doc(groupId)
+        .collection('tasks')
+        .where('isActive', isEqualTo: true)
+        .snapshots()
+        .asyncMap((snapshot) async {
+
+      final List<TaskModel> tasks = [];
+
+      for (final taskDoc in snapshot.docs) {
+        final submission = await _submissionService.getSubmissionByUser(groupId: groupId, taskId: taskDoc.id, userId: userId);
+        if (submission?.status == 'APPROVED') tasks.add(TaskModel.fromFirestore(taskDoc.data(), taskDoc.id));
+      }
+      return tasks;
+    });
+  }
+
+  Future<List<TaskModel>> getCompletedTasksForUser(
+      String? uid,
+      ) async {
+
+    final List<TaskModel> tasks = [];
+        if (uid == null) return tasks;
+        final groups = await _groups.get();
+        for (final groupDoc in groups.docs) {
+
+          final memberDoc = await groupDoc.reference
+              .collection('members')
+              .doc(uid)
+              .get();
+
+          if (memberDoc.exists) {
+            tasks.addAll(
+                await getCompletedTasksForUserInGroup(groupId: groupDoc.id, userId: uid).first
+            );
+          }
+        }
+
+        return tasks;
+  }
+
   Future<void> updateTask({
     required String groupId,
     required String taskId,

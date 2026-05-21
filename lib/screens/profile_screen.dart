@@ -1,11 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:projesof/screens/login_screen.dart';
 import 'package:projesof/services/group_service.dart';
 import 'package:projesof/app_state.dart';
+import 'package:projesof/services/task_service.dart';
+import 'package:projesof/services/user_service.dart';
 import 'package:projesof/widgets/background_circle.dart';
 import 'package:projesof/widgets/bottom_navbar.dart';
+import '../models/group_model.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -16,8 +19,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final GroupService _groupService = GroupService();
-
-  final _firestore = FirebaseFirestore.instance;
+  final TaskService _taskService = TaskService();
 
   final user = AppState.currentUser!;
   late Future<_ProfileData> _profileFuture;
@@ -29,99 +31,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _profileFuture = _loadProfileData();
   }
 
-  int _parseReward(dynamic reward) {
-    if (reward is int) return reward;
-    if (reward is num) return reward.toInt();
-    if (reward is String) return int.tryParse(reward) ?? 0;
-    return 0;
-  }
-
-  String _dateKey(DateTime date) {
-    final year = date.year.toString().padLeft(4, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-
-    return '$year-$month-$day';
-  }
-
-  bool _isToday(String dateKey) {
-    final date = DateTime.tryParse(dateKey);
-
-    if (date == null) {
-      return false;
-    }
-
-    final now = DateTime.now();
-
-    return date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
-  }
-
-  int _calculateStreak(Set<String> completedDates) {
-    int streak = 0;
-    DateTime currentDate = DateTime.now();
-
-    while (completedDates.contains(_dateKey(currentDate))) {
-      streak++;
-      currentDate = currentDate.subtract(const Duration(days: 1));
-    }
-
-    return streak;
-  }
-
   Future<_ProfileData> _loadProfileData() async {
-
-    final groups = await _groupService.getGroupsForUser(user.id).first;
-
-    int totalPoints = 0;
-    int completedTasks = 0;
-    int dailyCompletedTasks = 0;
-    int streak = 0;
-
-    final completedDates = <String>{};
-
-    for (final group in groups) {
-
-      final completionsSnapshot = await _firestore //!!!
-          .collection('groups')
-          .doc(group.id)
-          .collection('taskCompletions')
-          .where('userId', isEqualTo: user.id)
-          .get();
-
-      completedTasks += completionsSnapshot.docs.length;
-
-      for (final completion in completionsSnapshot.docs) {
-        final data = completion.data();
-
-        totalPoints += _parseReward(data['reward']);
-
-        final completedDate = data['completedDate']?.toString();
-
-        if (completedDate != null && completedDate.isNotEmpty) {
-          completedDates.add(completedDate);
-
-          if (_isToday(completedDate)) {
-            dailyCompletedTasks++;
-          }
-        }
-      }
-    }
-
-    streak = _calculateStreak(completedDates);
-
-    //update user???
-
     return _ProfileData(
-      phrase: //phrase == null || phrase.isEmpty ?
-           'Turning small actions into daily impact.' //??
-          //: phrase
-      ,
-      groupsCount: groups.length,
-      completedTasks: completedTasks,
-      dailyCompletedTasks: dailyCompletedTasks,
-      dailyTarget: groups.length,
+      groups: await _groupService.getGroupsForUser(user.id).first,
+      completedTasks: (await _taskService.getCompletedTasksForUser(user.id)).length,
     );
   }
 
@@ -135,19 +48,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return trimmed[0].toUpperCase();
   }
 
-  String _handle(String username) {
-    final cleanUsername = username
-        .toLowerCase()
-        .trim()
-        .replaceAll(RegExp(r'\s+'), '');
 
-    if (cleanUsername.isEmpty) {
-      return '@circleup';
+  Future<void> _openEditProfile() async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(),
+      ),
+    );
+
+    if (updated == true && mounted) {
+      setState(() {
+        _profileFuture = _loadProfileData();
+      });
     }
-
-    return '@$cleanUsername';
   }
-
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
 
@@ -224,12 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                   }
 
-                  final profile = snapshot.data ?? _ProfileData.empty();
-
-                  final progress = profile.dailyTarget == 0
-                      ? 0.0
-                      : (profile.dailyCompletedTasks / profile.dailyTarget)
-                      .clamp(0.0, 1.0);
+                  final profileData = snapshot.data ?? _ProfileData(groups: [], completedTasks: 0);
 
                   return SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
@@ -238,11 +148,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _ProfileHeaderCard(
-                          username: user.username,
-                          handle: _handle(user.username),
-                          phrase: profile.phrase,
                           initial: _initial(user.username),
-                          onEdit: () {},
+                          onEdit: () => _openEditProfile(),
                         ),
 
                         const SizedBox(height: 22),
@@ -270,7 +177,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Expanded(
                               child: _ProfileStatCard(
                                 icon: Icons.groups_rounded,
-                                value: profile.groupsCount.toString(),
+                                value: profileData.groups.length.toString(),
                                 label: 'Groups',
                               ),
                             ),
@@ -290,12 +197,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         const SizedBox(height: 16),
 
-                        _WeeklyActivityCard(
-                          completed: profile.dailyCompletedTasks,
-                          target: profile.dailyTarget,
-                          progress: progress,
-                          completedTasks: profile.completedTasks,
-                          groupsCount: profile.groupsCount,
+                        _ActivityCard(
+                          completedTasks: profileData.completedTasks,
+                          groupsCount: profileData.groups.length,
                         ),
 
                         const SizedBox(height: 18),
@@ -321,42 +225,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 }
 
 class _ProfileData {
-  final String phrase;
-  final int groupsCount;
+  final List<GroupModel> groups;
   final int completedTasks;
-  final int dailyCompletedTasks;
-  final int dailyTarget;
 
   const _ProfileData({
-    required this.phrase,
-    required this.groupsCount,
+    required this.groups,
     required this.completedTasks,
-    required this.dailyCompletedTasks,
-    required this.dailyTarget,
   });
-
-      const _ProfileData.empty()
-      :phrase = 'Turning small actions into daily impact.',
-        groupsCount = 0,
-        completedTasks = 0,
-        dailyCompletedTasks = 0,
-        dailyTarget = 0;
 }
 
 class _ProfileHeaderCard extends StatelessWidget {
-  final String username;
-  final String handle;
-  final String phrase;
   final String initial;
   final VoidCallback onEdit;
 
-  const _ProfileHeaderCard({
-    required this.username,
-    required this.handle,
-    required this.phrase,
+  _ProfileHeaderCard({
     required this.initial,
     required this.onEdit,
   });
+
+  final user = AppState.currentUser!;
 
   @override
   Widget build(BuildContext context) {
@@ -389,28 +276,33 @@ class _ProfileHeaderCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 108,
-            height: 108,
+            width: 112,
+            height: 112,
+            padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.95),
+              color: Colors.white.withValues(alpha: 0.35),
               shape: BoxShape.circle,
             ),
-            child: Center(
-              child: Text(
+            child: CircleAvatar(
+              backgroundColor: Colors.white,
+              backgroundImage: user.photoUrl == null ? null : NetworkImage(user.photoUrl!),
+              child: user.photoUrl == null
+                  ? Text(
                 initial,
                 style: const TextStyle(
                   color: Color(0xFF2A8CFF),
                   fontSize: 40,
                   fontWeight: FontWeight.w900,
                 ),
-              ),
+              )
+                  : null,
             ),
           ),
 
           const SizedBox(height: 18),
 
           Text(
-            username,
+            user.username,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
@@ -420,23 +312,10 @@ class _ProfileHeaderCard extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 4),
-
-          Text(
-            handle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xEFFFFFFF),
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-
           const SizedBox(height: 18),
 
           Text(
-            phrase,
+            user.phrase,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xEFFFFFFF),
@@ -537,25 +416,17 @@ class _ProfileStatCard extends StatelessWidget {
   }
 }
 
-class _WeeklyActivityCard extends StatelessWidget {
-  final int completed;
-  final int target;
-  final double progress;
+class _ActivityCard extends StatelessWidget {
   final int completedTasks;
   final int groupsCount;
 
-  const _WeeklyActivityCard({
-    required this.completed,
-    required this.target,
-    required this.progress,
+  const _ActivityCard({
     required this.completedTasks,
     required this.groupsCount,
   });
 
   @override
   Widget build(BuildContext context) {
-    final taskWord = target == 1 ? 'task' : 'tasks';
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
@@ -576,38 +447,6 @@ class _WeeklyActivityCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Daily activity',
-            style: TextStyle(
-              color: Color(0xFF1C2A33),
-              fontSize: 21,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          Text(
-            'You completed $completed out of $target $taskWord today!',
-            style: const TextStyle(
-              color: Color(0xFF7A8A94),
-              fontSize: 15,
-              height: 1.4,
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          ClipRRect(
-            borderRadius: BorderRadius.circular(99),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 14,
-              backgroundColor: const Color(0xFFE8F0EA),
-              color: const Color(0xFF43D17A),
-            ),
-          ),
-
           const SizedBox(height: 20),
 
           Row(
