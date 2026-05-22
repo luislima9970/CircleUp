@@ -1,14 +1,16 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:projesof/models/group_model.dart';
+import 'package:projesof/services/group_service.dart';
+import 'package:projesof/services/task_service.dart';
+import 'package:projesof/models/user_model.dart';
+import 'package:projesof/services/user_service.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userId;
-  final String? groupId;
 
   const PublicProfileScreen({
     super.key,
     required this.userId,
-    this.groupId,
   });
 
   @override
@@ -17,38 +19,14 @@ class PublicProfileScreen extends StatefulWidget {
 
 class _PublicProfileScreenState extends State<PublicProfileScreen> {
   late Future<_PublicProfileData> _profileFuture;
+  final UserService _userService = UserService();
+  final GroupService _groupService = GroupService();
+  final TaskService _taskService = TaskService();
 
   @override
   void initState() {
     super.initState();
     _profileFuture = _loadProfile();
-  }
-
-  int _parseReward(dynamic reward) {
-    if (reward is int) return reward;
-    if (reward is num) return reward.toInt();
-    if (reward is String) return int.tryParse(reward) ?? 0;
-    return 0;
-  }
-
-  String _dateKey(DateTime date) {
-    final year = date.year.toString().padLeft(4, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-
-    return '$year-$month-$day';
-  }
-
-  int _calculateStreak(Set<String> completedDates) {
-    int streak = 0;
-    DateTime currentDate = DateTime.now();
-
-    while (completedDates.contains(_dateKey(currentDate))) {
-      streak++;
-      currentDate = currentDate.subtract(const Duration(days: 1));
-    }
-
-    return streak;
   }
 
   String _initial(String username) {
@@ -61,151 +39,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     return trimmed[0].toUpperCase();
   }
 
-  Future<List<_PublicProfileGroupData>> _loadUserGroups(
-      FirebaseFirestore firestore,
-      ) async {
-    final groups = <_PublicProfileGroupData>[];
-    final seenGroupIds = <String>{};
-
-    try {
-      final allGroupsSnapshot = await firestore.collection('groups').get();
-
-      for (final groupDoc in allGroupsSnapshot.docs) {
-        final groupId = groupDoc.id;
-
-        if (seenGroupIds.contains(groupId)) {
-          continue;
-        }
-
-        bool isMember = false;
-
-        try {
-          final directMemberDoc = await firestore
-              .collection('groups')
-              .doc(groupId)
-              .collection('members')
-              .doc(widget.userId)
-              .get();
-
-          if (directMemberDoc.exists) {
-            isMember = true;
-          }
-        } catch (e) {
-          debugPrint('Could not check direct member doc for $groupId: $e');
-        }
-
-        if (!isMember) {
-          try {
-            final memberQuery = await firestore
-                .collection('groups')
-                .doc(groupId)
-                .collection('members')
-                .where('userId', isEqualTo: widget.userId)
-                .limit(1)
-                .get();
-
-            if (memberQuery.docs.isNotEmpty) {
-              isMember = true;
-            }
-          } catch (e) {
-            debugPrint('Could not query member field for $groupId: $e');
-          }
-        }
-
-        if (!isMember) {
-          continue;
-        }
-
-        seenGroupIds.add(groupId);
-
-        final groupData = groupDoc.data();
-
-        final groupName = groupData['name']?.toString() ?? 'Unnamed group';
-        final groupTheme = groupData['theme']?.toString() ?? '';
-
-        groups.add(
-          _PublicProfileGroupData(
-            id: groupId,
-            name: groupName,
-            theme: groupTheme,
-          ),
-        );
-      }
-
-      groups.sort((a, b) {
-        if (widget.groupId != null) {
-          if (a.id == widget.groupId) return -1;
-          if (b.id == widget.groupId) return 1;
-        }
-
-        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-      });
-
-      return groups;
-    } catch (e) {
-      debugPrint('Could not load all public profile groups: $e');
-      return [];
-    }
-  }
-
   Future<_PublicProfileData> _loadProfile() async {
-    final firestore = FirebaseFirestore.instance;
-
-    final userDoc = await firestore.collection('users').doc(widget.userId).get();
-    final userData = userDoc.data() ?? {};
-
-    final username =
-    userData['username']?.toString().trim().isNotEmpty == true
-        ? userData['username'].toString().trim()
-        : 'User';
-
-    final phrase =
-    userData['profilePhrase']?.toString().trim().isNotEmpty == true
-        ? userData['profilePhrase'].toString().trim()
-        : 'Turning small actions into daily impact.';
-
-    final photoUrl =
-    userData['photoUrl']?.toString().trim().isNotEmpty == true
-        ? userData['photoUrl'].toString().trim()
-        : '';
-
-    final groups = await _loadUserGroups(firestore);
-
-    int totalPoints = 0;
-    int completedTasks = 0;
-    final completedDates = <String>{};
-
-    try {
-      final completionsSnapshot = await firestore
-          .collectionGroup('taskCompletions')
-          .where('userId', isEqualTo: widget.userId)
-          .get();
-
-      completedTasks = completionsSnapshot.docs.length;
-
-      for (final completion in completionsSnapshot.docs) {
-        final data = completion.data();
-
-        totalPoints += _parseReward(data['reward']);
-
-        final completedDate = data['completedDate']?.toString();
-
-        if (completedDate != null && completedDate.isNotEmpty) {
-          completedDates.add(completedDate);
-        }
-      }
-    } catch (e) {
-      debugPrint('Could not load public profile completions: $e');
-    }
-
     return _PublicProfileData(
-      username: username,
-      phrase: phrase,
-      photoUrl: photoUrl,
-      groups: groups,
-      completedTasks: completedTasks,
-      totalPoints: totalPoints,
-      streak: _calculateStreak(completedDates),
+      profile: (await _userService.getUserById(widget.userId))!,
+      groups: await _groupService.getGroupsForUser(widget.userId).first,
+      completedTasks: (await _taskService.getCompletedTasksForUser(widget.userId)).length,
     );
   }
 
@@ -287,7 +125,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     );
                   }
 
-                  final profile = snapshot.data!;
+                  final profileData = snapshot.data!;
 
                   return SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
@@ -303,10 +141,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         const SizedBox(height: 24),
 
                         _PublicProfileHeaderCard(
-                          username: profile.username,
-                          phrase: profile.phrase,
-                          initial: _initial(profile.username),
-                          photoUrl: profile.photoUrl,
+                          profile: profileData.profile,
+                          initial: _initial(profileData.profile.username),
                         ),
 
                         const SizedBox(height: 22),
@@ -316,7 +152,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             Expanded(
                               child: _ProfileStatCard(
                                 icon: Icons.stars_rounded,
-                                value: profile.totalPoints.toString(),
+                                value: profileData.profile.totalPoints.toString(),
                                 label: 'Points',
                               ),
                             ),
@@ -324,9 +160,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             Expanded(
                               child: _ProfileStatCard(
                                 icon: Icons.local_fire_department_rounded,
-                                value: profile.streak == 1
+                                value: profileData.profile.maxStreak == 1
                                     ? '1 day'
-                                    : '${profile.streak} days',
+                                    : '${profileData.profile.maxStreak} days',
                                 label: 'Streak',
                               ),
                             ),
@@ -334,7 +170,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                             Expanded(
                               child: _ProfileStatCard(
                                 icon: Icons.groups_rounded,
-                                value: profile.groups.length.toString(),
+                                value: profileData.groups.length.toString(),
                                 label: 'Groups',
                               ),
                             ),
@@ -344,13 +180,13 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         const SizedBox(height: 22),
 
                         _CompletedChallengesCard(
-                          completedTasks: profile.completedTasks,
+                          completedTasks: profileData.completedTasks,
                         ),
 
                         const SizedBox(height: 22),
 
                         _GroupsCard(
-                          groups: profile.groups,
+                          groups: profileData.groups,
                           themeColor: _themeColor,
                           themeIcon: _themeIcon,
                         ),
@@ -368,34 +204,14 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 }
 
 class _PublicProfileData {
-  final String username;
-  final String phrase;
-  final String photoUrl;
-  final List<_PublicProfileGroupData> groups;
+  final UserModel profile;
+  final List<GroupModel> groups;
   final int completedTasks;
-  final int totalPoints;
-  final int streak;
 
   const _PublicProfileData({
-    required this.username,
-    required this.phrase,
-    required this.photoUrl,
+    required this.profile,
     required this.groups,
     required this.completedTasks,
-    required this.totalPoints,
-    required this.streak,
-  });
-}
-
-class _PublicProfileGroupData {
-  final String id;
-  final String name;
-  final String theme;
-
-  const _PublicProfileGroupData({
-    required this.id,
-    required this.name,
-    required this.theme,
   });
 }
 
@@ -451,16 +267,12 @@ class _TopBar extends StatelessWidget {
 }
 
 class _PublicProfileHeaderCard extends StatelessWidget {
-  final String username;
-  final String phrase;
+  final UserModel profile;
   final String initial;
-  final String photoUrl;
 
   const _PublicProfileHeaderCard({
-    required this.username,
-    required this.phrase,
-    required this.initial,
-    required this.photoUrl,
+    required this.profile,
+    required this.initial
   });
 
   @override
@@ -503,8 +315,8 @@ class _PublicProfileHeaderCard extends StatelessWidget {
             ),
             child: CircleAvatar(
               backgroundColor: Colors.white,
-              backgroundImage: photoUrl.isEmpty ? null : NetworkImage(photoUrl),
-              child: photoUrl.isEmpty
+              backgroundImage: profile.photoUrl == null || profile.photoUrl!.isEmpty ? null : NetworkImage(profile.photoUrl!),
+              child: profile.photoUrl == null || profile.photoUrl!.isEmpty
                   ? Text(
                 initial,
                 style: const TextStyle(
@@ -520,7 +332,7 @@ class _PublicProfileHeaderCard extends StatelessWidget {
           const SizedBox(height: 18),
 
           Text(
-            username,
+            profile.username,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
@@ -533,7 +345,7 @@ class _PublicProfileHeaderCard extends StatelessWidget {
           const SizedBox(height: 16),
 
           Text(
-            phrase,
+            profile.phrase,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xEFFFFFFF),
@@ -623,7 +435,7 @@ class _CompletedChallengesCard extends StatelessWidget {
 }
 
 class _GroupsCard extends StatelessWidget {
-  final List<_PublicProfileGroupData> groups;
+  final List<GroupModel> groups;
   final Color Function(String theme) themeColor;
   final IconData Function(String theme) themeIcon;
 
@@ -744,7 +556,7 @@ class _GroupsCard extends StatelessWidget {
 }
 
 class _GroupMiniRow extends StatelessWidget {
-  final _PublicProfileGroupData group;
+  final GroupModel group;
   final Color color;
   final IconData icon;
 

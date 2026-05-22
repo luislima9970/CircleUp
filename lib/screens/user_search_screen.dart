@@ -1,7 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:projesof/models/user_model.dart';
+import 'package:projesof/services/user_service.dart';
 
+import '../app_state.dart';
 import 'public_profile_screen.dart';
 
 class UserSearchScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class UserSearchScreen extends StatefulWidget {
 
 class _UserSearchScreenState extends State<UserSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final UserService _userService = UserService();
 
   String _query = '';
 
@@ -42,7 +44,7 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final user = AppState.currentUser!;
 
     return Scaffold(
       backgroundColor: const Color(0xFFEFFAF3),
@@ -105,10 +107,8 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
 
                     const SizedBox(height: 22),
 
-                    StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                      stream: FirebaseFirestore.instance
-                          .collection('users')
-                          .snapshots(),
+                    FutureBuilder<List<UserModel>>(
+                      future: _userService.searchOtherUsersByPrefix(_query, user.id!),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -123,38 +123,11 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
                           );
                         }
 
-                        final docs = snapshot.data?.docs ?? [];
-
-                        final users = docs.where((doc) {
-                          if (doc.id == currentUserId) {
-                            return false;
-                          }
-
-                          if (_query.isEmpty) {
-                            return false;
-                          }
-
-                          final data = doc.data();
-
-                          final username =
-                              data['username']?.toString().toLowerCase() ?? '';
-
-                          return username.contains(_query);
-                        }).toList();
+                        final users = snapshot.data ?? [];
 
                         users.sort((a, b) {
-                          final aUsername = a
-                              .data()['username']
-                              ?.toString()
-                              .toLowerCase() ??
-                              '';
-
-                          final bUsername = b
-                              .data()['username']
-                              ?.toString()
-                              .toLowerCase() ??
-                              '';
-
+                          final aUsername = a.username.toLowerCase();
+                          final bUsername = b.username.toLowerCase();
                           return aUsername.compareTo(bUsername);
                         });
 
@@ -179,11 +152,9 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
                           children: [
                             for (int i = 0; i < users.length; i++) ...[
                               _UserResultCard(
-                                userId: users[i].id,
-                                data: users[i].data(),
+                                result: users[i],
                                 initial: _initial(
-                                  users[i].data()['username']?.toString() ??
-                                      'User',
+                                  users[i].username,
                                 ),
                               ),
                               if (i != users.length - 1)
@@ -264,26 +235,16 @@ class _SearchBox extends StatelessWidget {
 }
 
 class _UserResultCard extends StatelessWidget {
-  final String userId;
-  final Map<String, dynamic> data;
+  final UserModel result;
   final String initial;
 
   const _UserResultCard({
-    required this.userId,
-    required this.data,
+    required this.result,
     required this.initial,
   });
 
   @override
   Widget build(BuildContext context) {
-    final username = data['username']?.toString() ?? 'User';
-
-    final phrase = data['profilePhrase']?.toString().trim().isNotEmpty == true
-        ? data['profilePhrase'].toString().trim()
-        : 'Turning small actions into daily impact.';
-
-    final photoUrl = data['photoUrl']?.toString().trim() ?? '';
-
     return Material(
       color: Colors.white.withValues(alpha: 0.96),
       borderRadius: BorderRadius.circular(24),
@@ -294,7 +255,7 @@ class _UserResultCard extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (_) => PublicProfileScreen(
-                userId: userId,
+                userId: result.id!,
               ),
             ),
           );
@@ -321,8 +282,8 @@ class _UserResultCard extends StatelessWidget {
                 radius: 28,
                 backgroundColor: const Color(0xFFEAF4FF),
                 backgroundImage:
-                photoUrl.isEmpty ? null : NetworkImage(photoUrl),
-                child: photoUrl.isEmpty
+                result.photoUrl == null || result.photoUrl!.isEmpty ? null : NetworkImage(result.photoUrl!),
+                child: result.photoUrl == null || result.photoUrl!.isEmpty
                     ? Text(
                   initial,
                   style: const TextStyle(
@@ -341,7 +302,7 @@ class _UserResultCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      username,
+                      result.username,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -352,7 +313,7 @@ class _UserResultCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      phrase,
+                      result.phrase,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projesof/services/group_service.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/widgets/background_circle.dart';
+import 'package:projesof/widgets/bottom_navbar.dart';
 
 class JoinGroupScreen extends StatefulWidget {
-  final FirebaseAuth? auth;
 
   const JoinGroupScreen({
     super.key,
-    this.auth,
   });
 
   @override
@@ -20,8 +20,9 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
   bool _success = false;
   bool _loading = false;
 
+  final user = AppState.currentUser!;
+
   void _join() async {
-    final user = (widget.auth ?? FirebaseAuth.instance).currentUser;
     final code = _controller.text;
 
     if (code.trim().isEmpty) return;
@@ -35,7 +36,7 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
     try {
       await GroupService().joinGroupByCode(
         code: code,
-        userId: user!.uid,
+        user: user,
       );
 
       setState(() {
@@ -72,7 +73,7 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
               const Positioned(
                 top: -90,
                 right: -70,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 210,
                   color: Color(0x332A8CFF),
                 ),
@@ -80,7 +81,7 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
               const Positioned(
                 bottom: -100,
                 left: -80,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 230,
                   color: Color(0x3343D17A),
                 ),
@@ -263,26 +264,9 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
+      bottomNavigationBar:
+      BottomNavbar(
+        currentIndex: 1,
       ),
     );
   }

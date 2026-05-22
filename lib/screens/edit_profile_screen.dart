@@ -1,20 +1,15 @@
 import 'dart:io';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:projesof/services/group_service.dart';
 import 'package:projesof/services/image_upload_service.dart';
+import 'package:projesof/services/user_service.dart';
+import 'package:projesof/app_state.dart';
 
 class EditProfileScreen extends StatefulWidget {
-  final String username;
-  final String phrase;
-  final String photoUrl;
 
   const EditProfileScreen({
     super.key,
-    required this.username,
-    required this.phrase,
-    required this.photoUrl,
   });
 
   @override
@@ -35,16 +30,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   bool _isSaving = false;
 
+  final UserService _userService = UserService();
+  final GroupService _groupService = GroupService();
   final ImageUploadService _imageUploadService = ImageUploadService();
 
   File? _selectedImage;
+
+  final user = AppState.currentUser!;
 
   @override
   void initState() {
     super.initState();
 
-    _usernameController = TextEditingController(text: widget.username);
-    _phraseController = TextEditingController(text: widget.phrase);
+    _usernameController = TextEditingController(text: user.username);
+    _phraseController = TextEditingController(text: user.phrase);
   }
 
   @override
@@ -72,8 +71,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return FileImage(_selectedImage!);
     }
 
-    if (widget.photoUrl.isNotEmpty) {
-      return NetworkImage(widget.photoUrl);
+    if (user.photoUrl != null && user.photoUrl!.isNotEmpty) {
+      return NetworkImage(user.photoUrl!);
     }
 
     return null;
@@ -109,41 +108,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     await user.reauthenticateWithCredential(credential);
   }
 
-  Future<void> _updateMemberDocuments({
-    required String uid,
-    required String username,
-    String? photoUrl,
-  }) async {
-    try {
-      final memberDocs = await FirebaseFirestore.instance
-          .collectionGroup('members')
-          .where('userId', isEqualTo: uid)
-          .get();
-
-      for (final memberDoc in memberDocs.docs) {
-        await memberDoc.reference.set(
-          {
-            'username': username,
-            if (photoUrl != null) 'photoUrl': photoUrl,
-          },
-          SetOptions(merge: true),
-        );
-      }
-    } catch (e) {
-      debugPrint('Could not update member documents: $e');
-    }
-  }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      return;
-    }
+    final firebaseUser = FirebaseAuth.instance.currentUser;
 
     final username = _usernameController.text.trim();
     final phrase = _phraseController.text.trim();
@@ -167,8 +138,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     try {
       if (wantsToChangePassword) {
-        await _reauthenticate(user);
-        await user.updatePassword(newPassword);
+        await _reauthenticate(firebaseUser!);
+        await firebaseUser.updatePassword(newPassword);
       }
 
       String? uploadedPhotoUrl;
@@ -176,35 +147,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       if (_selectedImage != null) {
         uploadedPhotoUrl = await _imageUploadService.uploadProfileImage(
           imageFile: _selectedImage!,
-          userId: user.uid,
+          userId: user.id!,
         );
 
         if (uploadedPhotoUrl == null) {
           throw Exception('Could not upload profile image.');
         }
 
-        await user.updatePhotoURL(uploadedPhotoUrl);
+        await firebaseUser?.updatePhotoURL(uploadedPhotoUrl);
+        await _userService.updatePhotoUrl(uid: user.id!, photoUrl: uploadedPhotoUrl);
       }
 
-      await user.updateDisplayName(username);
+      await firebaseUser?.updateDisplayName(username);
 
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
-        {
-          'username': username,
-          'profilePhrase': phrase,
-          'email': user.email,
-          if (uploadedPhotoUrl != null) 'photoUrl': uploadedPhotoUrl,
-        },
-        SetOptions(merge: true),
-      );
+      await _userService.updateUsername(uid: user.id!, username: username);
 
-      await _updateMemberDocuments(
-        uid: user.uid,
-        username: username,
-        photoUrl: uploadedPhotoUrl,
-      );
 
-      await user.reload();
+      await _groupService.updateMemberInfoInGroups(
+          uid: user.id!,
+          username: username,
+          photoUrl: uploadedPhotoUrl,
+          phrase: phrase);
+
+      await firebaseUser!.reload();
 
       if (!mounted) {
         return;

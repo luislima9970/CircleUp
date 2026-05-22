@@ -1,33 +1,55 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projesof/models/user_model.dart';
 
 class UserService {
-  final FirebaseFirestore _firestore;
-
-  UserService({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
+  final _users = FirebaseFirestore.instance.collection('users');
 
   Future<void> createUser({
-    required String uid,
-    required String username,
-    required String email,
-    String? photoUrl,
+    required UserModel user,
   }) async {
-    await _firestore.collection('users').doc(uid).set({
-      'username': username,
-      'email': email,
-      'photoUrl': photoUrl,
-      'createdAt': Timestamp.now(),
-    });
+    await _users.add(user.toFirestore());
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> getUserById(String uid) async {
-    return await _firestore.collection('users').doc(uid).get();
+  Future<UserModel?> getUserById(String? userId) async {
+    if (userId == null) return null;
+    final doc = await _users.doc(userId).get();
+
+    if (!doc.exists) return null;
+
+    return UserModel.fromFirestore(
+      doc.data()!,
+      doc.id,
+    );
+  }
+
+  Future<List<UserModel>> searchOtherUsersByPrefix(
+      String query,
+      String userId
+      ) async {
+
+    final snapshot =
+    await FirebaseFirestore.instance
+        .collection('users')
+        .where('username', isGreaterThanOrEqualTo: query,)
+        .where('username', isLessThan: '$query\uf8ff',)
+        .where('id', isNotEqualTo: userId)
+        .get();
+
+    return snapshot.docs
+        .map(
+          (doc) => UserModel.fromFirestore(
+        doc.data(),
+        doc.id,
+      ),
+    )
+        .toList();
   }
 
   Future<void> updateUsername({
     required String uid,
     required String username,
   }) async {
-    await _firestore.collection('users').doc(uid).update({
+    await _users.doc(uid).update({
       'username': username,
     });
   }
@@ -36,12 +58,12 @@ class UserService {
     required String uid,
     required String photoUrl,
   }) async {
-    await _firestore.collection('users').doc(uid).update({
+    await _users.doc(uid).update({
       'photoUrl': photoUrl,
     });
   }
 
   Future<void> deleteUser(String uid) async {
-    await _firestore.collection('users').doc(uid).delete();
+    await _users.doc(uid).delete();
   }
 }

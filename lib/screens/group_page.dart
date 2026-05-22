@@ -1,11 +1,18 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-import 'tasks_screen.dart';
-import 'task_detail_screen.dart';
-import 'profile_screen.dart';
+import 'package:projesof/models/group_model.dart';
+import 'package:projesof/models/member_model.dart';
+import 'package:projesof/models/task_model.dart';
+import 'package:projesof/screens/profile_screen.dart';
+import 'package:projesof/screens/task_detail_screen.dart';
+import 'package:projesof/services/task_service.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/services/group_service.dart';
+import 'package:projesof/services/user_service.dart';
+import 'package:projesof/widgets/background_circle.dart';
+import 'package:projesof/widgets/bottom_navbar.dart';
+import 'package:projesof/widgets/loading_card.dart';
+import 'package:projesof/models/user_model.dart';
 import 'public_profile_screen.dart';
 
 class GroupPageScreen extends StatefulWidget {
@@ -22,24 +29,28 @@ class GroupPageScreen extends StatefulWidget {
 
 class _GroupPageScreenState extends State<GroupPageScreen> {
   int _selectedTab = 0;
+  final GroupService _groupService = GroupService();
+  final TaskService _taskService = TaskService();
+  GroupModel? _group;
+  final user = AppState.currentUser!;
 
-  void _openProfilePage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const ProfileScreen(),
-      ),
-    );
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadData();
   }
 
-  void _openTasksPage(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TasksPageScreen(userId: user!.uid),
-      ),
+  Future<void> _loadData() async {
+    _group = await _groupService.getGroupById(
+      widget.groupId,
     );
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   Future<void> _confirmLeaveGroup() async {
@@ -77,31 +88,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
   }
 
   Future<void> _leaveGroup() async {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) {
-      return;
-    }
-
-    final membersRef = FirebaseFirestore.instance
-        .collection('groups')
-        .doc(widget.groupId)
-        .collection('members');
-
-    final directMemberDoc = await membersRef.doc(user.uid).get();
-
-    if (directMemberDoc.exists) {
-      await membersRef.doc(user.uid).delete();
-    } else {
-      final query = await membersRef
-          .where('userId', isEqualTo: user.uid)
-          .limit(1)
-          .get();
-
-      for (final doc in query.docs) {
-        await doc.reference.delete();
-      }
-    }
+    _groupService.removeMemberFromGroup(groupId: _group!.id!, uid: user.id!);
 
     if (!mounted) {
       return;
@@ -150,217 +137,129 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const LoadingCard();
+    }
+
+    if (_group == null) {
+      return const _ErrorPage(
+        message: 'This group does not exist.',
+      );
+    }
     return Scaffold(
-      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance
-            .collection('groups')
-            .doc(widget.groupId)
-            .snapshots(),
-        builder: (context, groupSnapshot) {
-          if (groupSnapshot.connectionState == ConnectionState.waiting) {
-            return const _LoadingPage();
-          }
+      body: StreamBuilder<List<MemberModel>>(
+        stream: _groupService.getLeaderboard(_group!.id!),
+        builder: (context, membersSnapshot) {
+          final members = membersSnapshot.data;
 
-          if (groupSnapshot.hasError) {
-            return const _ErrorPage(
-              message: 'Could not load this group.',
-            );
-          }
+          final color = _themeColor(_group!.theme);
+          final icon = _themeIcon(_group!.theme);
 
-          final groupDoc = groupSnapshot.data;
+          return StreamBuilder<List<TaskModel>>(
+            stream: _taskService.getActiveTasks(groupId: _group!.id!),
+            builder: (context, tasksSnapshot) {
+              final tasks = tasksSnapshot.data;
 
-          if (groupDoc == null || !groupDoc.exists) {
-            return const _ErrorPage(
-              message: 'This group does not exist.',
-            );
-          }
-
-          final groupData = groupDoc.data() ?? {};
-          final joinCode = groupData['joinCode']?.toString() ?? '';
-
-          return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: FirebaseFirestore.instance
-                .collection('groups')
-                .doc(widget.groupId)
-                .collection('members')
-                .snapshots(),
-              builder: (context, membersSnapshot) {
-                final members = membersSnapshot.data?.docs ?? [];
-
-                final name = groupData['name']?.toString() ?? 'Unnamed group';
-                final theme = groupData['theme']?.toString() ?? '';
-                final description = groupData['description']?.toString() ?? '';
-
-                final color = _themeColor(theme);
-                final icon = _themeIcon(theme);
-
-                return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                  stream: FirebaseFirestore.instance
-                      .collection('groups')
-                      .doc(widget.groupId)
-                      .collection('tasks')
-                      .snapshots(),
-                  builder: (context, tasksSnapshot) {
-                    final tasks = tasksSnapshot.data?.docs ?? [];
-
-                    final activeTasks = tasks.where((task) {
-                      final data = task.data();
-                      return data['isActive'] == true;
-                    }).toList();
-
-                    return Container(
-                      width: double.infinity,
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFFEAF4FF),
-                            Color(0xFFF8FCFF),
-                            Color(0xFFEFFAF3),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+              return Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFFEAF4FF),
+                      Color(0xFFF8FCFF),
+                      Color(0xFFEFFAF3),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                child: SafeArea(
+                  child: Stack(
+                    children: [
+                      const Positioned(
+                        top: -90,
+                        right: -70,
+                        child: BackgroundCircle(
+                          size: 210,
+                          color: Color(0x332A8CFF),
                         ),
                       ),
-                      child: SafeArea(
-                        child: Stack(
+                      const Positioned(
+                        bottom: -100,
+                        left: -80,
+                        child: BackgroundCircle(
+                          size: 230,
+                          color: Color(0x3343D17A),
+                        ),
+                      ),
+                      SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(24, 22, 24, 100),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Positioned(
-                              top: -90,
-                              right: -70,
-                              child: _BackgroundCircle(
-                                size: 210,
-                                color: Color(0x332A8CFF),
-                              ),
+                            _TopBar(
+                              onBack: () => Navigator.pop(context),
+                              onLeave: _confirmLeaveGroup,
                             ),
-                            const Positioned(
-                              bottom: -100,
-                              left: -80,
-                              child: _BackgroundCircle(
-                                size: 230,
-                                color: Color(0x3343D17A),
-                              ),
+                            const SizedBox(height: 24),
+                            _GroupSummaryCard(
+                              group: _group!,
+                              memberCount: members?.length ?? 0,
+                              taskCount: tasks?.length ?? 0,
+                              pendingCount: 0,
+                              color: color,
+                              icon: icon,
                             ),
-                            SingleChildScrollView(
-                              physics: const BouncingScrollPhysics(),
-                              padding: const EdgeInsets.fromLTRB(24, 22, 24, 100),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _TopBar(
-                                    onBack: () => Navigator.pop(context),
-                                    onLeave: _confirmLeaveGroup,
-                                  ),
 
-                                  const SizedBox(height: 24),
-
-                                  _GroupSummaryCard(
-                                    name: name,
-                                    theme: theme,
-                                    description: description,
-                                    memberCount: members.length,
-                                    taskCount: activeTasks.length,
-                                    pendingCount: 0,
-                                    color: color,
-                                    icon: icon,
-                                  ),
-
-                                  const SizedBox(height: 24),
-
-                                  _JoinCodeCard(
-                                    joinCode: joinCode,
-                                    color: color,
-                                  ),
-
-                                  const SizedBox(height: 24),
-
-                                  _MembersCard(
-                                    members: members,
-                                    color: color,
-                                    groupId: widget.groupId,
-                                  ),
-
-                                  const SizedBox(height: 24),
-
-                                  _TabSelector(
-                                    selectedIndex: _selectedTab,
-                                    color: color,
-                                    onChanged: (index) {
-                                      setState(() {
-                                        _selectedTab = index;
-                                      });
-                                    },
-                                  ),
-
-                                  const SizedBox(height: 16),
-
-                                  if (_selectedTab == 0)
-                                    _TasksTab(
-                                      groupId: widget.groupId,
-                                      tasks: activeTasks,
-                                      color: color,
-                                      theme: theme,
-                                    )
-                                  else
-                                    _LeaderboardTab(
-                                      members: members,
-                                      color: color,
-                                    ),
-                                ],
-                              ),
+                            const SizedBox(height: 24),
+                            _JoinCodeCard(
+                              joinCode: _group!.joinCode,
+                              color: color,
                             ),
+                            const SizedBox(height: 24),
+                            _MembersCard(
+                              members: members ?? [],
+                              color: color,
+                              groupId: _group!.id!,
+                            ),
+                            const SizedBox(height: 24),
+                            _TabSelector(
+                              selectedIndex: _selectedTab,
+                              color: color,
+                              onChanged: (index) {
+                                setState(() {
+                                  _selectedTab = index;
+                                });
+                                },
+                            ),
+                            const SizedBox(height: 16),
+                            if (_selectedTab == 0)
+                              _TasksTab(
+                                groupId: _group!.id!,
+                                tasks: tasks ?? [],
+                                color: color,
+                                theme: _group!.theme,
+                              )
+                            else
+                              _LeaderboardTab(
+                                members: members ?? [],
+                                color: color,
+                              ),
                           ],
                         ),
                       ),
-                    );
-                  },
-                );
-              }
+                    ],
+                  ),
+                ),
+              );
+            },
           );
-        },
+        }
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar:
+      BottomNavbar(
         currentIndex: 1,
-        selectedItemColor: const Color(0xFF2A8CFF),
-        unselectedItemColor: const Color(0xFF95A39A),
-        showUnselectedLabels: true,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pop(context);
-          }
-
-          if (index == 1) {
-            return;
-          }
-
-          if (index == 2) {
-            _openTasksPage(context);
-          }
-
-          if (index == 3) {
-            _openProfilePage(context);
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.groups_outlined),
-            label: 'Circles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.checklist_rtl),
-            label: 'Tasks',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }
@@ -445,9 +344,7 @@ class _TopBar extends StatelessWidget {
 }
 
 class _GroupSummaryCard extends StatelessWidget {
-  final String name;
-  final String theme;
-  final String description;
+  final GroupModel group;
   final int memberCount;
   final int taskCount;
   final int pendingCount;
@@ -455,9 +352,7 @@ class _GroupSummaryCard extends StatelessWidget {
   final IconData icon;
 
   const _GroupSummaryCard({
-    required this.name,
-    required this.theme,
-    required this.description,
+    required this.group,
     required this.memberCount,
     required this.taskCount,
     required this.pendingCount,
@@ -508,7 +403,7 @@ class _GroupSummaryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name,
+                      group.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -520,9 +415,9 @@ class _GroupSummaryCard extends StatelessWidget {
 
                     const SizedBox(height: 5),
 
-                    if (theme.isNotEmpty)
+                    if (group.theme.isNotEmpty)
                       Text(
-                        theme,
+                        group.theme,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -532,10 +427,10 @@ class _GroupSummaryCard extends StatelessWidget {
                         ),
                       ),
 
-                    if (description.isNotEmpty) ...[
+                    if (group.description.isNotEmpty) ...[
                       const SizedBox(height: 5),
                       Text(
-                        description,
+                        group.description,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -656,15 +551,17 @@ class _InlineStat extends StatelessWidget {
 }
 
 class _MembersCard extends StatelessWidget {
-  final List<QueryDocumentSnapshot<Map<String, dynamic>>> members;
+  final List<MemberModel?> members;
   final Color color;
   final String groupId;
 
-  const _MembersCard({
+  _MembersCard({
     required this.members,
     required this.color,
     required this.groupId,
   });
+
+  final user = AppState.currentUser!;
 
   String _initials(String username) {
     final clean = username.trim();
@@ -726,20 +623,13 @@ class _MembersCard extends StatelessWidget {
                 itemCount: members.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (context, index) {
-                  final data = members[index].data();
-                  final username =
-                      data['username']?.toString() ?? 'User';
-
-                  final userId = data['userId']?.toString() ?? members[index].id;
-                  final fallbackPhotoUrl = data['photoUrl']?.toString().trim() ?? '';
-
                   return _MemberAvatar(
-                    userId: userId,
-                    username: username,
-                    fallbackPhotoUrl: fallbackPhotoUrl,
+                    userId: members[index]!.userId,
+                    username: members[index]!.username,
+                    fallbackPhotoUrl: members[index]?.photoUrl ?? '',
                     groupId: groupId,
                     color: color,
-                    initials: _initials(username),
+                    initials: _initials(user.username),
                   );
                 },
               ),
@@ -759,7 +649,7 @@ class _MemberAvatar extends StatelessWidget {
   final Color color;
   final String initials;
 
-  const _MemberAvatar({
+  _MemberAvatar({
     required this.userId,
     required this.username,
     required this.fallbackPhotoUrl,
@@ -768,10 +658,12 @@ class _MemberAvatar extends StatelessWidget {
     required this.initials,
   });
 
-  void _openProfile(BuildContext context) {
-    final currentUser = FirebaseAuth.instance.currentUser;
+  final UserService _userService = UserService();
 
-    if (currentUser != null && currentUser.uid == userId) {
+  void _openProfile(BuildContext context) {
+    final user = AppState.currentUser!;
+
+    if (user.id == userId) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -786,7 +678,6 @@ class _MemberAvatar extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => PublicProfileScreen(
           userId: userId,
-          groupId: groupId,
         ),
       ),
     );
@@ -794,36 +685,22 @@ class _MemberAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .snapshots(),
+    return FutureBuilder<UserModel?>(
+      future: _userService.getUserById(userId),
       builder: (context, snapshot) {
-        final userData = snapshot.data?.data();
-
-        final userPhotoUrl =
-            userData?['photoUrl']?.toString().trim() ?? '';
-
-        final photoUrl =
-        userPhotoUrl.isNotEmpty ? userPhotoUrl : fallbackPhotoUrl;
-
-        final displayUsername =
-        userData?['username']?.toString().trim().isNotEmpty == true
-            ? userData!['username'].toString().trim()
-            : username;
+        final userData = snapshot.data;
 
         return GestureDetector(
           onTap: () => _openProfile(context),
           child: CircleAvatar(
             radius: 21,
             backgroundColor: color.withValues(alpha: 0.12),
-            backgroundImage: photoUrl.isEmpty ? null : NetworkImage(photoUrl),
-            child: photoUrl.isEmpty
+            backgroundImage: userData!.photoUrl == null || userData.photoUrl!.isEmpty ? null : NetworkImage(userData.photoUrl!),
+            child: userData.photoUrl == null || userData.photoUrl!.isEmpty
                 ? Text(
-              displayUsername.trim().isEmpty
+              userData.username.trim().isEmpty
                   ? '?'
-                  : displayUsername.trim()[0].toUpperCase(),
+                  : userData.username.trim()[0].toUpperCase(),
               style: TextStyle(
                 color: color,
                 fontWeight: FontWeight.w900,
@@ -923,7 +800,7 @@ class _TabButton extends StatelessWidget {
 
 class _TasksTab extends StatelessWidget {
   final String groupId;
-  final List<QueryDocumentSnapshot<Map<String, dynamic>>> tasks;
+  final List<TaskModel> tasks;
   final Color color;
   final String theme;
 
@@ -950,7 +827,7 @@ class _TasksTab extends StatelessWidget {
         for (int i = 0; i < tasks.length; i++) ...[
           _GroupTaskCard(
             groupId: groupId,
-            taskDoc: tasks[i],
+            task: tasks[i],
             color: color,
             theme: theme,
           ),
@@ -963,45 +840,19 @@ class _TasksTab extends StatelessWidget {
 
 class _GroupTaskCard extends StatelessWidget {
   final String groupId;
-  final QueryDocumentSnapshot<Map<String, dynamic>> taskDoc;
+  final TaskModel task;
   final Color color;
   final String theme;
 
   const _GroupTaskCard({
     required this.groupId,
-    required this.taskDoc,
+    required this.task,
     required this.color,
     required this.theme,
   });
 
-  int _parseReward(dynamic reward) {
-    if (reward is int) {
-      return reward;
-    }
-
-    if (reward is num) {
-      return reward.toInt();
-    }
-
-    if (reward is String) {
-      return int.tryParse(reward) ?? 0;
-    }
-
-    return 0;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final data = taskDoc.data();
-
-    final title = data['title']?.toString() ?? 'Untitled task';
-
-    final description = data['objective']?.toString().trim().isNotEmpty == true
-        ? data['objective'].toString()
-        : data['description']?.toString() ?? '';
-
-    final reward = _parseReward(data['reward']);
-
     return Material(
       color: Colors.white.withValues(alpha: 0.94),
       borderRadius: BorderRadius.circular(24),
@@ -1013,9 +864,7 @@ class _GroupTaskCard extends StatelessWidget {
             MaterialPageRoute(
               builder: (_) => TaskDetailScreen(
                 groupId: groupId,
-                taskId: taskDoc.id,
-                taskTitle: title,
-                taskDescription: description,
+                task: task,
                 themeColor: theme,
               ),
             ),
@@ -1061,7 +910,7 @@ class _GroupTaskCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      task.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -1071,10 +920,10 @@ class _GroupTaskCard extends StatelessWidget {
                       ),
                     ),
 
-                    if (description.isNotEmpty) ...[
+                    if (task.objective.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Text(
-                        description,
+                        task.objective,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -1097,7 +946,7 @@ class _GroupTaskCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        '$reward pts',
+                        '${task.reward} pts',
                         style: TextStyle(
                           color: color,
                           fontSize: 12,
@@ -1124,7 +973,7 @@ class _GroupTaskCard extends StatelessWidget {
 }
 
 class _LeaderboardTab extends StatelessWidget {
-  final List<QueryDocumentSnapshot<Map<String, dynamic>>> members;
+  final List<MemberModel?> members;
   final Color color;
 
   const _LeaderboardTab({
@@ -1134,16 +983,7 @@ class _LeaderboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sortedMembers = [...members];
-
-    sortedMembers.sort((a, b) {
-      final aPoints = (a.data()['points'] as num?)?.toInt() ?? 0;
-      final bPoints = (b.data()['points'] as num?)?.toInt() ?? 0;
-
-      return bPoints.compareTo(aPoints);
-    });
-
-    if (sortedMembers.isEmpty) {
+    if (members.isEmpty) {
       return _EmptyContentCard(
         icon: Icons.leaderboard_rounded,
         title: 'No leaderboard yet',
@@ -1184,13 +1024,13 @@ class _LeaderboardTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          for (int i = 0; i < sortedMembers.length; i++) ...[
+          for (int i = 0; i < members.length; i++) ...[
             _LeaderboardRow(
               position: i + 1,
-              member: sortedMembers[i],
+              member: members[i]!,
               color: color,
             ),
-            if (i != sortedMembers.length - 1) const Divider(height: 24),
+            if (i != members.length - 1) const Divider(height: 24),
           ],
         ],
       ),
@@ -1200,7 +1040,7 @@ class _LeaderboardTab extends StatelessWidget {
 
 class _LeaderboardRow extends StatelessWidget {
   final int position;
-  final QueryDocumentSnapshot<Map<String, dynamic>> member;
+  final MemberModel member;
   final Color color;
 
   const _LeaderboardRow({
@@ -1221,117 +1061,76 @@ class _LeaderboardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final memberData = member.data();
-
-    final fallbackUsername = memberData['username']?.toString() ?? 'User';
-    final fallbackPhotoUrl =
-        memberData['photoUrl']?.toString().trim() ?? '';
-
-    final points = (memberData['points'] as num?)?.toInt() ?? 0;
-    final streak = (memberData['streak'] as num?)?.toInt() ?? 0;
-
-    final userId =
-    memberData['userId']?.toString().trim().isNotEmpty == true
-        ? memberData['userId'].toString().trim()
-        : member.id;
-
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .snapshots(),
-      builder: (context, snapshot) {
-        final userData = snapshot.data?.data();
-
-        final username =
-        userData?['username']?.toString().trim().isNotEmpty == true
-            ? userData!['username'].toString().trim()
-            : fallbackUsername;
-
-        final photoUrl =
-        userData?['photoUrl']?.toString().trim().isNotEmpty == true
-            ? userData!['photoUrl'].toString().trim()
-            : fallbackPhotoUrl;
-
-        return Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(
+            '#$position',
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        CircleAvatar(
+          radius: 19,
+          backgroundColor: color.withValues(alpha: 0.12),
+          backgroundImage: member.photoUrl == null || member.photoUrl!.isEmpty ? null : NetworkImage(member.photoUrl!),
+          child: member.photoUrl == null || member.photoUrl!.isEmpty
+              ? Text(
+            _initial(member.username),
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w900,
+              fontSize: 13,
+            ),
+          )
+              : null,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                member.username,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1C2A33),
+                ),
               ),
-              child: Text(
-                '#$position',
-                style: TextStyle(
-                  color: color,
+              const SizedBox(height: 3),
+              Text(
+                '${member.streak} day streak',
+                style: const TextStyle(
                   fontSize: 12,
-                  fontWeight: FontWeight.w900,
+                  color: Color(0xFF7A8A94),
                 ),
               ),
-            ),
-
-            const SizedBox(width: 10),
-
-            CircleAvatar(
-              radius: 19,
-              backgroundColor: color.withValues(alpha: 0.12),
-              backgroundImage: photoUrl.isEmpty ? null : NetworkImage(photoUrl),
-              child: photoUrl.isEmpty
-                  ? Text(
-                _initial(username),
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
-                ),
-              )
-                  : null,
-            ),
-
-            const SizedBox(width: 12),
-
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    username,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1C2A33),
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    streak == 1
-                        ? '1 day streak'
-                        : '$streak day streak',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF7A8A94),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            Text(
-              '$points pts',
-              style: TextStyle(
-                color: color,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ],
-        );
-      },
+            ],
+          ),
+        ),
+        Text(
+          '${member.points} pts',
+          style: TextStyle(
+            color: color,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1413,21 +1212,6 @@ class _EmptyContentCard extends StatelessWidget {
   }
 }
 
-class _LoadingPage extends StatelessWidget {
-  const _LoadingPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF2A8CFF),
-        ),
-      ),
-    );
-  }
-}
-
 class _ErrorPage extends StatelessWidget {
   final String message;
 
@@ -1451,27 +1235,6 @@ class _ErrorPage extends StatelessWidget {
   }
 }
 
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-}
 class _JoinCodeCard extends StatefulWidget {
   final String joinCode;
   final Color color;

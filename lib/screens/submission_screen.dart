@@ -1,30 +1,22 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:projesof/models/submission_model.dart';
 import 'package:projesof/services/image_upload_service.dart';
 import 'package:projesof/services/submission_service.dart';
-import 'package:projesof/services/user_service.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/models/task_model.dart';
+import 'package:projesof/widgets/background_circle.dart';
 
 class SubmissionScreen extends StatefulWidget {
   final String groupId;
-  final String taskId;
-  final String taskTitle;
-  final String taskDescription;
+  final TaskModel task;
   final String themeColor;
-  final SubmissionService? submissionService;
-  final UserService? userService;
-  final ImageUploadService? imageUploadService;
 
   const SubmissionScreen({
     super.key,
     required this.groupId,
-    required this.taskId,
-    this.taskTitle = 'Recycle Plastic Bottles',
-    this.taskDescription = 'Collect and recycle at least 5 plastic bottles this week to help reduce plastic waste in our environment.',
+    required this.task,
     this.themeColor = 'Sustainability',
-    this.submissionService,
-    this.userService,
-    this.imageUploadService,
   });
 
   @override
@@ -35,8 +27,10 @@ class SubmissionScreen extends StatefulWidget {
 class _SubmissionScreenState
     extends State<SubmissionScreen> {
   ImageUploadService? _imageUploadService;
-  late final SubmissionService _submissionService;
-  late final UserService _userService;
+  final SubmissionService _submissionService = SubmissionService();
+
+  late final TaskModel _task = widget.task;
+  final user = AppState.currentUser!;
 
   File? _selectedImage;
   bool _isLoading = false;
@@ -46,23 +40,18 @@ class _SubmissionScreenState
   @override
   void initState() {
     super.initState();
-    _submissionService = widget.submissionService ?? SubmissionService();
-    _userService = widget.userService ?? UserService();
     try {
-      _imageUploadService = widget.imageUploadService ?? ImageUploadService();
+      _imageUploadService = ImageUploadService();
     } catch (_) {}
     _hasSubmittedFuture = _checkIfUserHasSubmitted();
   }
 
   Future<bool> _checkIfUserHasSubmitted() async {
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return false;
-
       return await _submissionService.hasUserSubmittedForTask(
         groupId: widget.groupId,
-        taskId: widget.taskId,
-        authorId: user.uid,
+        taskId: _task.id!,
+        authorId: user.id!,
       );
     } catch (_) {
       return false;
@@ -127,17 +116,11 @@ class _SubmissionScreenState
     });
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('User not authenticated');
-      }
-      final userDoc = await _userService.getUserById(user.uid);
-      final username = (userDoc.get('username') as String?) ?? 'Unknown';
       final imageUrl = await _imageUploadService?.uploadImage(
         imageFile: _selectedImage!,
         groupId: widget.groupId,
-        taskId: widget.taskId,
-        userId: user.uid,
+        taskId: _task.id!,
+        userId: user.id!,
       );
 
       if (imageUrl == null) {
@@ -147,10 +130,8 @@ class _SubmissionScreenState
       // Create submission
       await _submissionService.createSubmission(
         groupId: widget.groupId,
-        taskId: widget.taskId,
-        authorId: user.uid,
-        authorUsername: username,
-        proofUrl: imageUrl,
+        taskId: _task.id!,
+        submission: SubmissionModel(userId: user.id!, photoUrl: imageUrl),
       );
 
       if (mounted) {
@@ -197,7 +178,7 @@ class _SubmissionScreenState
               Positioned(
                 top: -90,
                 right: -70,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 210,
                   color: Color.fromARGB(51, 42, 140, 255),
                 ),
@@ -205,7 +186,7 @@ class _SubmissionScreenState
               Positioned(
                 bottom: -100,
                 left: -80,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 230,
                   color: Color.fromARGB(51, 67, 209, 122),
                 ),
@@ -413,7 +394,7 @@ class _SubmissionScreenState
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      widget.taskTitle,
+                                      _task.title,
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700,
@@ -439,7 +420,7 @@ class _SubmissionScreenState
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            widget.taskDescription,
+                            _task.objective,
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF1C2A33),
@@ -793,21 +774,5 @@ class _SubmissionScreenState
       default:
         return Icons.eco_rounded;
     }
-  }
-}
-
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-    );
   }
 }

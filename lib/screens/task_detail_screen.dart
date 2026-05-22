@@ -1,22 +1,21 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:projesof/models/submission_model.dart';
 import 'package:projesof/screens/submission_screen.dart';
 import 'package:projesof/screens/validation_screen.dart';
+import 'package:projesof/services/submission_service.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/models/task_model.dart';
+import 'package:projesof/widgets/background_circle.dart';
 
 class TaskDetailScreen extends StatefulWidget {
   final String groupId;
-  final String taskId;
-  final String taskTitle;
-  final String taskDescription;
+  final TaskModel task;
   final String themeColor;
 
   const TaskDetailScreen({
     super.key,
     required this.groupId,
-    required this.taskId,
-    required this.taskTitle,
-    required this.taskDescription,
+    required this.task,
     required this.themeColor,
   });
 
@@ -25,22 +24,12 @@ class TaskDetailScreen extends StatefulWidget {
 }
 
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
-  String? get userId {
-    try {
-      return FirebaseAuth.instance.currentUser?.uid;
-    } catch (_) {
-      return null;
-    }
-  }
+  final SubmissionService _submissionService = SubmissionService();
+  final user = AppState.currentUser!;
+  late final TaskModel _task = widget.task;
 
   @override
   Widget build(BuildContext context) {
-    if (userId == null) {
-      return const Scaffold(
-        body: Center(child: Text('User not authenticated')),
-      );
-    }
-
     return Scaffold(
       backgroundColor: const Color(0xFFEFFAF3),
       body: Container(
@@ -59,7 +48,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               Positioned(
                 top: -90,
                 right: -70,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 210,
                   color: Color.fromARGB(51, 42, 140, 255),
                 ),
@@ -67,7 +56,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               Positioned(
                 bottom: -100,
                 left: -80,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 230,
                   color: Color.fromARGB(51, 67, 209, 122),
                 ),
@@ -166,7 +155,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      widget.taskTitle,
+                                      _task.title,
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700,
@@ -189,7 +178,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            widget.taskDescription,
+                            _task.objective,
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF1C2A33),
@@ -201,15 +190,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     ),
                     const SizedBox(height: 28),
                     // User's Submission
-                    StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                      stream: FirebaseFirestore.instance
-                          .collection('groups')
-                          .doc(widget.groupId)
-                          .collection('tasks')
-                          .doc(widget.taskId)
-                          .collection('submissions')
-                          .doc(userId)
-                          .snapshots(),
+                    FutureBuilder<SubmissionModel?>(
+                      future: _submissionService.getSubmissionByUser(
+                          groupId: widget.groupId,
+                          taskId: _task.id!,
+                          userId: user.id!),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -218,9 +203,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                           );
                         }
 
-                        final hasSubmission =
-                            snapshot.hasData && snapshot.data!.exists;
-                        final submissionData = snapshot.data?.data() ?? {};
+                        final submission = snapshot.data;
+                        final hasSubmission = submission != null;
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,10 +284,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                             MaterialPageRoute(
                                               builder: (_) => SubmissionScreen(
                                                 groupId: widget.groupId,
-                                                taskId: widget.taskId,
-                                                taskTitle: widget.taskTitle,
-                                                taskDescription:
-                                                    widget.taskDescription,
+                                                task: _task,
                                                 themeColor: widget.themeColor,
                                               ),
                                             ),
@@ -370,10 +351,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                           ),
                                           decoration: BoxDecoration(
                                             color:
-                                                submissionData['status'] ==
+                                                submission.status ==
                                                     'APPROVED'
                                                 ? const Color(0xFFDFF5E3)
-                                                : submissionData['status'] ==
+                                                : submission.status ==
                                                       'REJECTED'
                                                 ? const Color(0xFFFFE5E5)
                                                 : const Color(0xFFE4F4EA),
@@ -382,10 +363,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                             ),
                                           ),
                                           child: Text(
-                                            submissionData['status'] ==
+                                            submission.status ==
                                                     'APPROVED'
                                                 ? 'Approved'
-                                                : submissionData['status'] ==
+                                                : submission.status ==
                                                       'REJECTED'
                                                 ? 'Rejected'
                                                 : 'Pending',
@@ -393,10 +374,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                               fontSize: 12,
                                               fontWeight: FontWeight.w700,
                                               color:
-                                                  submissionData['status'] ==
+                                                  submission.status ==
                                                       'APPROVED'
                                                   ? const Color(0xFF2F7F3F)
-                                                  : submissionData['status'] ==
+                                                  : submission.status ==
                                                         'REJECTED'
                                                   ? const Color(0xFFD93030)
                                                   : const Color(0xFF6B7B89),
@@ -406,11 +387,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                       ],
                                     ),
                                     const SizedBox(height: 12),
-                                    if (submissionData['proofUrl'] != null)
+                                    if (submission.photoUrl != null)
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(12),
                                         child: Image.network(
-                                          submissionData['proofUrl'],
+                                          submission.photoUrl!,
                                           width: double.infinity,
                                           height: 200,
                                           fit: BoxFit.cover,
@@ -420,7 +401,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                     Row(
                                       children: [
                                         Text(
-                                          '${submissionData['validVotes'] ?? 0} upvotes',
+                                          '${submission.validVotes} upvotes',
                                           style: const TextStyle(
                                             fontSize: 14,
                                             color: Color(0xFF43D17A),
@@ -429,7 +410,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                         ),
                                         const SizedBox(width: 16),
                                         Text(
-                                          '${submissionData['invalidVotes'] ?? 0} downvotes',
+                                          '${submission.invalidVotes} downvotes',
                                           style: const TextStyle(
                                             fontSize: 14,
                                             color: Color(0xFFD63031),
@@ -456,15 +437,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                      stream: FirebaseFirestore.instance
-                          .collection('groups')
-                          .doc(widget.groupId)
-                          .collection('tasks')
-                          .doc(widget.taskId)
-                          .collection('submissions')
-                          .where('status', isEqualTo: 'PENDING')
-                          .snapshots(),
+                    StreamBuilder<List<SubmissionModel>>(
+                      stream: _submissionService.getSubmissionsForTaskWithStatus(
+                          groupId: widget.groupId,
+                          taskId: _task.id!,
+                          status: 'PENDING'),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -472,11 +449,13 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                             child: CircularProgressIndicator(),
                           );
                         }
-
-                        final submissions = snapshot.data?.docs ?? [];
-                        final otherSubmissions = submissions
-                            .where((s) => s.id != userId)
-                            .toList();
+                        final submissions = snapshot.data;
+                        final List<SubmissionModel> otherSubmissions = [];
+                        if (submissions != null) {
+                          for (final submission in submissions) {
+                            if (submission.userId != user.id) otherSubmissions.add(submission);
+                          }
+                        }
 
                         if (otherSubmissions.isEmpty) {
                           return Container(
@@ -525,7 +504,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
                         return Column(
                           children: otherSubmissions.map((submission) {
-                            final data = submission.data();
                             return GestureDetector(
                               onTap: () {
                                 Navigator.push(
@@ -533,10 +511,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                   MaterialPageRoute(
                                     builder: (_) => ValidationScreen(
                                       groupId: widget.groupId,
-                                      taskId: widget.taskId,
-                                      submissionId: submission.id,
-                                      taskTitle: widget.taskTitle,
-                                      taskDescription: widget.taskDescription,
+                                      task: _task,
+                                      authorId: submission.userId,
                                       themeColor: widget.themeColor,
                                     ),
                                   ),
@@ -583,7 +559,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            data['authorUsername'] ?? 'Unknown',
+                                            submission.userId,
                                             style: const TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w700,
@@ -594,7 +570,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                           Row(
                                             children: [
                                               Text(
-                                                '${data['validVotes'] ?? 0} upvotes',
+                                                '${submission.validVotes} upvotes',
                                                 style: const TextStyle(
                                                   fontSize: 12,
                                                   color: Color(0xFF43D17A),
@@ -603,7 +579,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                               ),
                                               const SizedBox(width: 12),
                                               Text(
-                                                '${data['invalidVotes'] ?? 0} downvotes',
+                                                '${submission.invalidVotes} downvotes',
                                                 style: const TextStyle(
                                                   fontSize: 12,
                                                   color: Color(0xFFD63031),
@@ -659,21 +635,5 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       default:
         return Icons.eco_rounded;
     }
-  }
-}
-
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({required this.size, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-    );
   }
 }
