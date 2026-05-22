@@ -278,8 +278,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                     SizedBox(
                                       width: double.infinity,
                                       child: ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.push(
+                                        onPressed: () async {
+                                          await Navigator.push(
                                             context,
                                             MaterialPageRoute(
                                               builder: (_) => SubmissionScreen(
@@ -289,6 +289,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                               ),
                                             ),
                                           );
+                                          if (mounted) setState(() {});
                                         },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: _getThemeColor(),

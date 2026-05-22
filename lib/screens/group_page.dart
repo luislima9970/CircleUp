@@ -155,10 +155,10 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
           final color = _themeColor(_group!.theme);
           final icon = _themeIcon(_group!.theme);
 
-          return StreamBuilder<List<TaskModel>>(
-            stream: _taskService.getActiveTasks(groupId: _group!.id!),
+          return StreamBuilder<TaskModel?>(
+            stream: _taskService.getDailyTask(groupId: _group!.id!),
             builder: (context, tasksSnapshot) {
-              final tasks = tasksSnapshot.data;
+              final dailyTask = tasksSnapshot.data;
 
               return Container(
                 width: double.infinity,
@@ -206,7 +206,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
                             _GroupSummaryCard(
                               group: _group!,
                               memberCount: members?.length ?? 0,
-                              taskCount: tasks?.length ?? 0,
+                              taskCount: dailyTask != null ? 1 : 0,
                               pendingCount: 0,
                               color: color,
                               icon: icon,
@@ -237,7 +237,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
                             if (_selectedTab == 0)
                               _TasksTab(
                                 groupId: _group!.id!,
-                                tasks: tasks ?? [],
+                                task: dailyTask,
                                 color: color,
                                 theme: _group!.theme,
                               )
@@ -800,20 +800,20 @@ class _TabButton extends StatelessWidget {
 
 class _TasksTab extends StatelessWidget {
   final String groupId;
-  final List<TaskModel> tasks;
+  final TaskModel? task;
   final Color color;
   final String theme;
 
   const _TasksTab({
     required this.groupId,
-    required this.tasks,
+    required this.task,
     required this.color,
     required this.theme,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (tasks.isEmpty) {
+    if (task == null) {
       return _EmptyContentCard(
         icon: Icons.checklist_rtl_rounded,
         title: 'No tasks yet',
@@ -822,18 +822,11 @@ class _TasksTab extends StatelessWidget {
       );
     }
 
-    return Column(
-      children: [
-        for (int i = 0; i < tasks.length; i++) ...[
-          _GroupTaskCard(
-            groupId: groupId,
-            task: tasks[i],
-            color: color,
-            theme: theme,
-          ),
-          if (i != tasks.length - 1) const SizedBox(height: 12),
-        ],
-      ],
+    return _GroupTaskCard(
+      groupId: groupId,
+      task: task!,
+      color: color,
+      theme: theme,
     );
   }
 }
