@@ -40,7 +40,7 @@ class _TasksPageScreenState extends State<TasksPageScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: StreamBuilder<List<GroupModel>>(
-        stream: _groupService.getGroupsForUserWithTasks(user.id),
+        stream: _groupService.getGroupsForUser(user.id),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const _LoadingPage();
@@ -133,18 +133,27 @@ class _GroupTasksCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TaskService taskService = TaskService();
+    final SubmissionService submissionService = SubmissionService();
     final color = themeColor(group.theme);
     final icon = themeIcon(group.theme);
     final user = AppState.currentUser!;
 
-    return StreamBuilder<List<TaskModel>>(
-          stream: taskService.getRemainingTasksForUserInGroup(groupId: group.id!, userId: user.id!),
-          builder: (context, taskSnapshot) {
-            final tasks = taskSnapshot.data;
+    return StreamBuilder<TaskModel?>(
+      stream: taskService.getDailyTask(groupId: group.id!),
+      builder: (context, taskSnapshot) {
+        final task = taskSnapshot.data;
+        if (task == null) return const SizedBox();
 
-            final remainingTasks = tasks?.length;
-
-            if (remainingTasks == 0) {
+        return FutureBuilder<SubmissionModel?>(
+          future: submissionService.getSubmissionByUser(
+            groupId: group.id!,
+            taskId: task.id!,
+            userId: user.id!,
+          ),
+          builder: (context, submissionSnapshot) {
+            // Hide the group card if the task is already submitted
+            if (submissionSnapshot.connectionState == ConnectionState.done &&
+                submissionSnapshot.data != null) {
               return const SizedBox();
             }
 
@@ -185,9 +194,7 @@ class _GroupTasksCard extends StatelessWidget {
                           ),
                           child: Icon(icon, color: Colors.black),
                         ),
-
                         const SizedBox(width: 12),
-
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,7 +209,7 @@ class _GroupTasksCard extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '$remainingTasks tasks remaining',
+                                "Today's task",
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.black.withValues(alpha: 0.7),
@@ -215,22 +222,13 @@ class _GroupTasksCard extends StatelessWidget {
                       ],
                     ),
                   ),
-
                   Padding(
                     padding: const EdgeInsets.all(14),
-                    child: Column(
-                      children: [
-                        if (tasks != null)
-                        for (final task in tasks) ...[
-                          _TaskTile(
-                            task: task,
-                            color: color,
-                            groupId: group.id!,
-                            theme: group.theme,
-                          ),
-                          if (task != tasks.last) const SizedBox(height: 10),
-                        ],
-                      ],
+                    child: _TaskTile(
+                      task: task,
+                      color: color,
+                      groupId: group.id!,
+                      theme: group.theme,
                     ),
                   ),
                 ],
@@ -238,6 +236,8 @@ class _GroupTasksCard extends StatelessWidget {
             );
           },
         );
+      },
+    );
   }
 }
 

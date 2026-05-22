@@ -136,7 +136,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
 
       final createdGroupId = await _groupService.createGroupWithOwner(
         group: group,
-        userId: user.id!
+        user: user,
       );
 
       debugPrint('Circle created with id: $createdGroupId');
