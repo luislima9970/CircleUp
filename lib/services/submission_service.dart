@@ -14,7 +14,7 @@ class SubmissionService {
         .doc(groupId)
         .collection('tasks')
         .doc(taskId)
-        .collection('submission')
+        .collection('submissions')
         .doc(submission.userId);
 
     final submissionSnap = await submissionRef.get();
@@ -124,6 +124,23 @@ class SubmissionService {
         .collection('submissions')
         .doc(userId)
         .delete();
+  }
+
+  Future<void> incrementVoteCount({
+    required String groupId,
+    required String taskId,
+    required String authorId,
+    required bool isValid,
+  }) async {
+    await _groups
+        .doc(groupId)
+        .collection('tasks')
+        .doc(taskId)
+        .collection('submissions')
+        .doc(authorId)
+        .update(isValid
+            ? {'validVotes': FieldValue.increment(1)}
+            : {'invalidVotes': FieldValue.increment(1)});
   }
 
   Future<void> voteSubmission({

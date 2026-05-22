@@ -3,6 +3,7 @@ import 'package:projesof/models/submission_model.dart';
 import 'package:projesof/models/task_model.dart';
 import 'package:projesof/models/user_model.dart';
 import 'package:projesof/models/vote_model.dart';
+import 'package:projesof/services/group_service.dart';
 import 'package:projesof/services/submission_service.dart';
 import 'package:projesof/services/user_service.dart';
 import 'package:projesof/app_state.dart';
@@ -30,18 +31,31 @@ class ValidationScreen extends StatefulWidget {
 class _ValidationScreenState
     extends State<ValidationScreen> {
   final SubmissionService _submissionService = SubmissionService();
+  final GroupService _groupService = GroupService();
   final UserService _userService = UserService();
   bool _isLoading = false;
   String? _errorMessage;
   late Future<SubmissionModel?> _submissionFuture;
   final user = AppState.currentUser!;
   late final TaskModel _task;
+  VoteModel? _myVote;
 
   @override
   void initState() {
     super.initState();
     _task = widget.task;
     _submissionFuture = _submissionService.getSubmissionByUser(groupId: widget.groupId, taskId: _task.id!, userId: widget.authorId);
+    _loadMyVote();
+  }
+
+  Future<void> _loadMyVote() async {
+    final vote = await _submissionService.getVoteByUser(
+      groupId: widget.groupId,
+      taskId: _task.id!,
+      authorId: widget.authorId,
+      voterId: user.id!,
+    );
+    if (mounted) setState(() => _myVote = vote);
   }
 
   Color _getThemeColor() {
@@ -69,12 +83,16 @@ class _ValidationScreenState
   }
 
   Future<void> _submitVote(String vote) async {
+    if (_myVote != null) return;
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
+      final isValid = vote == 'VALID';
+
       await _submissionService.voteSubmission(
         groupId: widget.groupId,
         taskId: _task.id!,
@@ -83,18 +101,36 @@ class _ValidationScreenState
         vote: VoteModel(voterId: user.id!, vote: vote),
       );
 
+      await _submissionService.incrementVoteCount(
+        groupId: widget.groupId,
+        taskId: _task.id!,
+        authorId: widget.authorId,
+        isValid: isValid,
+      );
+
+      // Author: +3 per upvote, -3 per downvote
+      await _groupService.incrementMemberPoints(
+        groupId: widget.groupId,
+        uid: widget.authorId,
+        delta: isValid ? 3 : -3,
+      );
+
+      // Voter: +2 per upvote, +1 per downvote
+      await _groupService.incrementMemberPoints(
+        groupId: widget.groupId,
+        uid: user.id!,
+        delta: isValid ? 2 : 1,
+      );
+
       if (mounted) {
+        setState(() => _myVote = VoteModel(voterId: user.id!, vote: vote));
         await _refreshSubmissionData();
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              vote == 'VALID'
-                  ? 'Vote recorded: Accepted'
-                  : 'Vote recorded: Rejected',
-            ),
+            content: Text(isValid ? 'Vote recorded: Approved' : 'Vote recorded: Rejected'),
             backgroundColor: _getThemeColor(),
           ),
         );
@@ -185,8 +221,6 @@ class _ValidationScreenState
                       ),
                     );
                   }
-
-                  String? currentVote;
 
                   return FutureBuilder<UserModel?>(
                       future: _userService.getUserById(widget.authorId),
@@ -482,7 +516,7 @@ class _ValidationScreenState
                                       ],
                                     ),
                                     const SizedBox(height: 20),
-                                    if (currentVote != null)
+                                    if (_myVote != null)
                                       Container(
                                         width: double.infinity,
                                         padding: const EdgeInsets.all(14),
@@ -496,7 +530,7 @@ class _ValidationScreenState
                                         child: Row(
                                           children: [
                                             Icon(
-                                              currentVote == 'VALID'
+                                              _myVote?.vote == 'VALID'
                                                   ? Icons.thumb_up_alt_rounded
                                                   : Icons.thumb_down_alt_rounded,
                                               color: _getThemeColor(),
@@ -504,7 +538,7 @@ class _ValidationScreenState
                                             const SizedBox(width: 12),
                                             Expanded(
                                               child: Text(
-                                                'You have already voted: ${currentVote == 'VALID' ? 'Approve' : 'Reject'}.',
+                                                'You have already voted: ${_myVote?.vote == 'VALID' ? 'Approve' : 'Reject'}.',
                                                 style: const TextStyle(
                                                   fontSize: 14,
                                                   color: Color(0xFF1C2A33),
@@ -521,10 +555,7 @@ class _ValidationScreenState
                                             child: ElevatedButton(
                                               onPressed: _isLoading
                                                   ? null
-                                                  : () => {
-                                                _submitVote('VALID'),
-                                              currentVote = 'VALID'
-                                              },
+                                                  : () => _submitVote('VALID'),
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor: const Color(
                                                   0xFF43D17A,
@@ -562,10 +593,7 @@ class _ValidationScreenState
                                             child: OutlinedButton(
                                               onPressed: _isLoading
                                                   ? null
-                                                  : () => {
-                                                _submitVote('INVALID'),
-                                                currentVote = 'INVALID'
-                                              },
+                                                  : () => _submitVote('INVALID'),
                                               style: OutlinedButton.styleFrom(
                                                 side: const BorderSide(
                                                   color: Color(0xFFD63031),

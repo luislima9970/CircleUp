@@ -202,6 +202,22 @@ class TaskService {
     });
   }
 
+  Stream<TaskModel?> getDailyTask({required String groupId}) {
+    return _groups
+        .doc(groupId)
+        .collection('tasks')
+        .orderBy('createdAt')
+        .snapshots()
+        .map((snapshot) {
+      if (snapshot.docs.isEmpty) return null;
+      final utcDay = DateTime.now().toUtc().millisecondsSinceEpoch ~/
+          Duration.millisecondsPerDay;
+      final index = utcDay % snapshot.docs.length;
+      final doc = snapshot.docs[index];
+      return TaskModel.fromFirestore(doc.data(), doc.id);
+    });
+  }
+
   Future<void> deleteTask({
     required String groupId,
     required String taskId,
