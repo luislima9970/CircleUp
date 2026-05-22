@@ -5,6 +5,7 @@ import 'package:projesof/models/task_model.dart';
 import 'package:projesof/models/user_model.dart';
 import 'package:projesof/services/task_service.dart';
 
+
 class GroupService {
   final TaskService _taskService = TaskService();
   final _groups = FirebaseFirestore.instance.collection('groups');
@@ -134,19 +135,19 @@ class GroupService {
 
   Future<String> createGroupWithOwner({
     required GroupModel group,
-    required String userId,
+    required UserModel user,
   }) async {
     final groupRef = await _groups.add(group.toFirestore());
 
     await groupRef
         .collection('members')
-        .doc(userId)
-        .set({
-      'userId': userId,
-      'points': 0,
-      'streak': 0,
-      'role': 'owner'
-    });
+        .doc(user.id)
+        .set(MemberModel(
+          userId: user.id!,
+          username: user.username,
+          photoUrl: user.photoUrl,
+          role: 'owner',
+        ).toFirestore());
 
     final taskService = TaskService();
     final tasks = _tasksByTheme[group.theme.toLowerCase()] ?? [];

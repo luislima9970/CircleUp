@@ -29,6 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -49,14 +50,17 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    setState(() => _isLoading = true);
+
     try {
       await _authService.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
-      UserModel? user = await _userService.getUserById(_authService.getCurrentUid());
-      AppState.setCurrentUser(user!);
+      final UserModel? user = await _userService.getUserById(_authService.getCurrentUid());
+      if (user == null) throw Exception('User profile not found. Please contact support.');
+      AppState.setCurrentUser(user);
 
       if (!mounted) return;
 
@@ -76,6 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
+      setState(() => _isLoading = false);
 
       String message = 'Error logging in.';
 
@@ -96,6 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      setState(() => _isLoading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -308,38 +314,48 @@ class _LoginScreenState extends State<LoginScreen> {
                                   width: double.infinity,
                                   height: 54,
                                   child: ElevatedButton(
-                                    onPressed: _submit,
+                                    onPressed: _isLoading ? null : _submit,
                                     style: ElevatedButton.styleFrom(
                                       padding: EdgeInsets.zero,
                                       backgroundColor: Colors.transparent,
+                                      disabledBackgroundColor: Colors.transparent,
                                       shadowColor: Colors.transparent,
                                       foregroundColor: Colors.white,
+                                      disabledForegroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
                                       ),
                                       elevation: 0,
                                     ),
                                     child: Ink(
-                                      decoration: const BoxDecoration(
+                                      decoration: BoxDecoration(
                                         gradient: LinearGradient(
-                                          colors: [
-                                            Color(0xFF2A8CFF),
-                                            Color(0xFF43D17A),
-                                          ],
+                                          colors: _isLoading
+                                              ? [const Color(0xFFB7C4CC), const Color(0xFFB7C4CC)]
+                                              : [const Color(0xFF2A8CFF), const Color(0xFF43D17A)],
                                         ),
-                                        borderRadius: BorderRadius.all(
+                                        borderRadius: const BorderRadius.all(
                                           Radius.circular(16),
                                         ),
                                       ),
-                                      child: const Center(
-                                        child: Text(
-                                          'Log In',
-                                          style: TextStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
+                                      child: Center(
+                                        child: _isLoading
+                                            ? const SizedBox(
+                                                width: 22,
+                                                height: 22,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2.4,
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : const Text(
+                                                'Log In',
+                                                style: TextStyle(
+                                                  fontSize: 17,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
                                       ),
                                     ),
                                   ),

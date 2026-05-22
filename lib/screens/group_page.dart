@@ -5,6 +5,8 @@ import 'package:projesof/models/member_model.dart';
 import 'package:projesof/models/task_model.dart';
 import 'package:projesof/screens/profile_screen.dart';
 import 'package:projesof/screens/task_detail_screen.dart';
+import 'package:projesof/models/submission_model.dart';
+import 'package:projesof/services/submission_service.dart';
 import 'package:projesof/services/task_service.dart';
 import 'package:projesof/app_state.dart';
 import 'package:projesof/services/group_service.dart';
@@ -690,23 +692,31 @@ class _MemberAvatar extends StatelessWidget {
       builder: (context, snapshot) {
         final userData = snapshot.data;
 
+        if (userData == null) {
+          return GestureDetector(
+            onTap: () => _openProfile(context),
+            child: CircleAvatar(
+              radius: 21,
+              backgroundColor: color.withValues(alpha: 0.12),
+              child: Text('?', style: TextStyle(color: color, fontWeight: FontWeight.w900)),
+            ),
+          );
+        }
+
+        final hasPhoto = userData.photoUrl != null && userData.photoUrl!.isNotEmpty;
+
         return GestureDetector(
           onTap: () => _openProfile(context),
           child: CircleAvatar(
             radius: 21,
             backgroundColor: color.withValues(alpha: 0.12),
-            backgroundImage: userData!.photoUrl == null || userData.photoUrl!.isEmpty ? null : NetworkImage(userData.photoUrl!),
-            child: userData.photoUrl == null || userData.photoUrl!.isEmpty
-                ? Text(
-              userData.username.trim().isEmpty
-                  ? '?'
-                  : userData.username.trim()[0].toUpperCase(),
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w900,
-              ),
-            )
-                : null,
+            backgroundImage: hasPhoto ? NetworkImage(userData.photoUrl!) : null,
+            child: hasPhoto
+                ? null
+                : Text(
+                    userData.username.trim().isEmpty ? '?' : userData.username.trim()[0].toUpperCase(),
+                    style: TextStyle(color: color, fontWeight: FontWeight.w900),
+                  ),
           ),
         );
       },
@@ -822,11 +832,24 @@ class _TasksTab extends StatelessWidget {
       );
     }
 
-    return _GroupTaskCard(
-      groupId: groupId,
-      task: task!,
-      color: color,
-      theme: theme,
+    final userId = AppState.currentUser!.id!;
+
+    return FutureBuilder<SubmissionModel?>(
+      future: SubmissionService().getSubmissionByUser(
+        groupId: groupId,
+        taskId: task!.id!,
+        userId: userId,
+      ),
+      builder: (context, snapshot) {
+        final submitted = snapshot.data != null;
+        return _GroupTaskCard(
+          groupId: groupId,
+          task: task!,
+          color: color,
+          theme: theme,
+          submitted: submitted,
+        );
+      },
     );
   }
 }
@@ -836,12 +859,14 @@ class _GroupTaskCard extends StatelessWidget {
   final TaskModel task;
   final Color color;
   final String theme;
+  final bool submitted;
 
   const _GroupTaskCard({
     required this.groupId,
     required this.task,
     required this.color,
     required this.theme,
+    this.submitted = false,
   });
 
   @override
@@ -886,12 +911,14 @@ class _GroupTaskCard extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
+                  color: submitted
+                      ? const Color(0xFF43D17A).withValues(alpha: 0.15)
+                      : color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Icon(
-                  Icons.checklist_rounded,
-                  color: color,
+                  submitted ? Icons.check_circle_rounded : Icons.checklist_rounded,
+                  color: submitted ? const Color(0xFF43D17A) : color,
                   size: 28,
                 ),
               ),
@@ -906,10 +933,13 @@ class _GroupTaskCard extends StatelessWidget {
                       task.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF1C2A33),
+                        color: submitted
+                            ? const Color(0xFF7A8A94)
+                            : const Color(0xFF1C2A33),
+                        decoration: submitted ? TextDecoration.lineThrough : null,
                       ),
                     ),
 
@@ -929,23 +959,48 @@ class _GroupTaskCard extends StatelessWidget {
 
                     const SizedBox(height: 10),
 
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        '${task.reward} pts',
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            '${task.reward} pts',
+                            style: TextStyle(
+                              color: color,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         ),
-                      ),
+                        if (submitted) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF43D17A).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: const Text(
+                              'Submitted',
+                              style: TextStyle(
+                                color: Color(0xFF43D17A),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -1044,16 +1099,22 @@ class _LeaderboardRow extends StatelessWidget {
 
   String _initial(String name) {
     final trimmed = name.trim();
-
-    if (trimmed.isEmpty) {
-      return '?';
-    }
-
+    if (trimmed.isEmpty) return '?';
     return trimmed[0].toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
+    return FutureBuilder<UserModel?>(
+      future: UserService().getUserById(member.userId),
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+        final displayName = (user?.username.trim().isNotEmpty == true)
+            ? user!.username
+            : member.username;
+        final photoUrl = user?.photoUrl ?? member.photoUrl ?? '';
+        final hasPhoto = photoUrl.isNotEmpty;
+
     return Row(
       children: [
         Container(
@@ -1077,10 +1138,10 @@ class _LeaderboardRow extends StatelessWidget {
         CircleAvatar(
           radius: 19,
           backgroundColor: color.withValues(alpha: 0.12),
-          backgroundImage: member.photoUrl == null || member.photoUrl!.isEmpty ? null : NetworkImage(member.photoUrl!),
-          child: member.photoUrl == null || member.photoUrl!.isEmpty
+          backgroundImage: hasPhoto ? NetworkImage(photoUrl) : null,
+          child: !hasPhoto
               ? Text(
-            _initial(member.username),
+            _initial(displayName),
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w900,
@@ -1095,7 +1156,7 @@ class _LeaderboardRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                member.username,
+                displayName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -1124,6 +1185,8 @@ class _LeaderboardRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+      },
     );
   }
 }

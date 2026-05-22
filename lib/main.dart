@@ -3,6 +3,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:projesof/screens/welcome_screen.dart';
 import 'firebase_options.dart';
 
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -20,6 +23,7 @@ class MyApp extends StatelessWidget {
       title: 'CircleUP',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(colorSchemeSeed: Colors.deepPurple),
+      navigatorObservers: [routeObserver],
       home: const WelcomeScreen(),
     );
   }
