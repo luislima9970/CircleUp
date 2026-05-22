@@ -71,7 +71,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return FileImage(_selectedImage!);
     }
 
-    if (user.photoUrl != null) {
+    if (user.photoUrl != null && user.photoUrl!.isNotEmpty) {
       return NetworkImage(user.photoUrl!);
     }
 

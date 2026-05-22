@@ -22,6 +22,29 @@ class UserService {
     );
   }
 
+  Future<List<UserModel>> searchOtherUsersByPrefix(
+      String query,
+      String userId
+      ) async {
+
+    final snapshot =
+    await FirebaseFirestore.instance
+        .collection('users')
+        .where('username', isGreaterThanOrEqualTo: query,)
+        .where('username', isLessThan: '$query\uf8ff',)
+        .where('id', isNotEqualTo: userId)
+        .get();
+
+    return snapshot.docs
+        .map(
+          (doc) => UserModel.fromFirestore(
+        doc.data(),
+        doc.id,
+      ),
+    )
+        .toList();
+  }
+
   Future<void> updateUsername({
     required String uid,
     required String username,

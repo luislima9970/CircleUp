@@ -695,8 +695,8 @@ class _MemberAvatar extends StatelessWidget {
           child: CircleAvatar(
             radius: 21,
             backgroundColor: color.withValues(alpha: 0.12),
-            backgroundImage: userData!.photoUrl == null ? null : NetworkImage(userData.photoUrl!),
-            child: userData.photoUrl == null
+            backgroundImage: userData!.photoUrl == null || userData.photoUrl!.isEmpty ? null : NetworkImage(userData.photoUrl!),
+            child: userData.photoUrl == null || userData.photoUrl!.isEmpty
                 ? Text(
               userData.username.trim().isEmpty
                   ? '?'
@@ -1084,8 +1084,8 @@ class _LeaderboardRow extends StatelessWidget {
         CircleAvatar(
           radius: 19,
           backgroundColor: color.withValues(alpha: 0.12),
-          backgroundImage: member.photoUrl == null ? null : NetworkImage(member.photoUrl!),
-          child: member.photoUrl == null
+          backgroundImage: member.photoUrl == null || member.photoUrl!.isEmpty ? null : NetworkImage(member.photoUrl!),
+          child: member.photoUrl == null || member.photoUrl!.isEmpty
               ? Text(
             _initial(member.username),
             style: TextStyle(

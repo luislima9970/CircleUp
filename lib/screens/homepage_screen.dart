@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projesof/services/group_service.dart';
 import 'package:projesof/app_state.dart';
 import 'package:projesof/models/group_model.dart';
@@ -60,7 +59,7 @@ class HomepageScreen extends StatelessWidget {
 
                     const SizedBox(height: 26),
 
-                    _TodayProgressCard(),
+                    _ProgressCard(),
 
                     const SizedBox(height: 30),
 
@@ -163,23 +162,23 @@ class _HomeHeader extends StatelessWidget {
   }
 }
 
-class _TodayProgressCard extends StatefulWidget {
+class _ProgressCard extends StatefulWidget {
 
-  const _TodayProgressCard();
+  const _ProgressCard();
 
   @override
-  State<_TodayProgressCard> createState() =>
-      _TodayProgressCardState();
+  State<_ProgressCard> createState() =>
+      _ProgressCardState();
 }
 
-class _TodayProgressCardState
-    extends State<_TodayProgressCard> {
+class _ProgressCardState
+    extends State<_ProgressCard> {
 
   late final GroupService _groupService;
   late final TaskService _taskService;
 
   final user = AppState.currentUser!;
-  late final Future<_TodayProgressData> _progressFuture;
+  late final Future<_ProgressData> _progressFuture;
 
   @override
   void initState() {
@@ -188,141 +187,39 @@ class _TodayProgressCardState
     _groupService = GroupService();
     _taskService = TaskService();
 
-    _progressFuture = _loadTodayProgress();
+    _progressFuture = _loadProgress();
   }
 
-  String _todayKey() {
-    final now = DateTime.now();
-
-    final year =
-    now.year.toString().padLeft(4, '0');
-
-    final month =
-    now.month.toString().padLeft(2, '0');
-
-    final day =
-    now.day.toString().padLeft(2, '0');
-
-    return '$year-$month-$day';
-  }
-
-  int _parseReward(dynamic reward) {
-
-    if (reward is int) {
-      return reward;
-    }
-
-    if (reward is num) {
-      return reward.toInt();
-    }
-
-    if (reward is String) {
-      return int.tryParse(reward) ?? 0;
-    }
-
-    return 0;
-  }
-
-  Future<int> _getActiveTasksCount(
-      String groupId,
-      ) async {
-
-    final tasks =
-    _taskService.getActiveTasks(
-      groupId: groupId,
+  Future<_ProgressData>
+  _loadProgress() async {
+    return _ProgressData(
+        groups: await _groupService.getGroupsForUser(user.id).first,
+        activeTasksCount: (await _taskService.getRemainingTasksForUser(user.id)).length
     );
-
-    return tasks.length;
-  }
-
-  Future<int> _getTodayEarnedPoints({ //!!!
-    required String groupId,
-  }) async {
-    final user = AppState.currentUser!;
-    final today = _todayKey();
-
-    final snapshot =
-    await FirebaseFirestore.instance
-        .collection('groups')
-        .doc(groupId)
-        .collection('taskCompletions')
-        .where('userId', isEqualTo: user.id,)
-        .where('completedDate', isEqualTo: today,)
-        .get();
-
-    int total = 0;
-
-    for (final doc in snapshot.docs) {
-
-      final data = doc.data();
-
-      total +=
-          _parseReward(data['reward']);
-    }
-
-    return total;
-  }
-
-  Future<_TodayProgressData>
-  _loadTodayProgress() async {
-
-    try {
-
-      final groups = await _groupService.getGroupsForUser(user.id).first;
-
-      int activeTasksCount = 0;
-      int todayPoints = 0;
-
-      for (final group in groups) {
-
-        activeTasksCount +=
-        await _getActiveTasksCount(
-          group.id!,
-        );
-
-        todayPoints +=
-        await _getTodayEarnedPoints(
-          groupId: group.id!,
-        );
-      }
-
-      return _TodayProgressData(
-        groupsCount: groups.length,
-        activeTasksCount: activeTasksCount,
-        todayPoints: todayPoints,
-      );
-    } catch (_) {
-      return const _TodayProgressData(
-        groupsCount: 0,
-        activeTasksCount: 0,
-        todayPoints: 0,
-      );
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_TodayProgressData>(
+    return FutureBuilder<_ProgressData>(
       future: _progressFuture,
       builder: (context, snapshot) {
         final isLoading = snapshot.connectionState == ConnectionState.waiting;
 
         final progress = snapshot.data ??
-            const _TodayProgressData(
-              groupsCount: 0,
+            const _ProgressData(
+              groups: [],
               activeTasksCount: 0,
-              todayPoints: 0,
             );
 
         String message;
 
         if (isLoading) {
           message = 'Loading your progress...';
-        } else if (progress.groupsCount == 0) {
+        } else if (progress.groups.isEmpty) {
           message = 'Create or join a group to start completing challenges.';
-        } else if (progress.todayPoints > 0) {
+        } else if (user.totalPoints > 0) {
           message =
-          'You earned ${progress.todayPoints} point${progress.todayPoints == 1 ? '' : 's'} today. Keep going!';
+          'You earned ${user.totalPoints} point${user.totalPoints == 1 ? '' : 's'} in total. Keep going!';
         } else if (progress.activeTasksCount > 0) {
           message =
           'You have ${progress.activeTasksCount} active task${progress.activeTasksCount == 1 ? '' : 's'} waiting for you.';
@@ -364,7 +261,7 @@ class _TodayProgressCardState
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
-                      "Today's Progress",
+                      "Your Progress",
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 21,
@@ -401,7 +298,7 @@ class _TodayProgressCardState
                 children: [
                   Expanded(
                     child: _ProgressStatBox(
-                      value: progress.groupsCount.toString(),
+                      value: progress.groups.length.toString(),
                       label: 'Groups',
                     ),
                   ),
@@ -415,7 +312,7 @@ class _TodayProgressCardState
                   const SizedBox(width: 10),
                   Expanded(
                     child: _ProgressStatBox(
-                      value: progress.todayPoints.toString(),
+                      value: user.totalPoints.toString(),
                       label: 'Points',
                     ),
                   ),
@@ -429,15 +326,13 @@ class _TodayProgressCardState
   }
 }
 
-class _TodayProgressData {
-  final int groupsCount;
+class _ProgressData {
+  final List<GroupModel> groups;
   final int activeTasksCount;
-  final int todayPoints;
 
-  const _TodayProgressData({
-    required this.groupsCount,
+  const _ProgressData({
+    required this.groups,
     required this.activeTasksCount,
-    required this.todayPoints,
   });
 }
 

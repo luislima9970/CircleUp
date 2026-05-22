@@ -35,6 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _ProfileData(
       groups: await _groupService.getGroupsForUser(user.id).first,
       completedTasks: (await _taskService.getCompletedTasksForUser(user.id)).length,
+      activeTasks: (await _taskService.getRemainingTasksForUser(user.id)).length
     );
   }
 
@@ -139,7 +140,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                   }
 
-                  final profileData = snapshot.data ?? _ProfileData(groups: [], completedTasks: 0);
+                  final profileData = snapshot.data ?? _ProfileData(groups: [], completedTasks: 0, activeTasks: 0);
 
                   return SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
@@ -199,7 +200,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         _ActivityCard(
                           completedTasks: profileData.completedTasks,
-                          groupsCount: profileData.groups.length,
+                          activeTasks: profileData.activeTasks,
                         ),
 
                         const SizedBox(height: 18),
@@ -227,10 +228,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 class _ProfileData {
   final List<GroupModel> groups;
   final int completedTasks;
+  final int activeTasks;
 
   const _ProfileData({
     required this.groups,
     required this.completedTasks,
+    required this.activeTasks
   });
 }
 
@@ -285,8 +288,8 @@ class _ProfileHeaderCard extends StatelessWidget {
             ),
             child: CircleAvatar(
               backgroundColor: Colors.white,
-              backgroundImage: user.photoUrl == null ? null : NetworkImage(user.photoUrl!),
-              child: user.photoUrl == null
+              backgroundImage: user.photoUrl == null || user.photoUrl!.isEmpty ? null : NetworkImage(user.photoUrl!),
+              child: user.photoUrl == null || user.photoUrl!.isEmpty
                   ? Text(
                 initial,
                 style: const TextStyle(
@@ -315,7 +318,7 @@ class _ProfileHeaderCard extends StatelessWidget {
           const SizedBox(height: 18),
 
           Text(
-            user.phrase,
+            user.phrase.isEmpty ? "test phrase, n me lembro da default" : user.phrase,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xEFFFFFFF),
@@ -418,11 +421,11 @@ class _ProfileStatCard extends StatelessWidget {
 
 class _ActivityCard extends StatelessWidget {
   final int completedTasks;
-  final int groupsCount;
+  final int activeTasks;
 
   const _ActivityCard({
     required this.completedTasks,
-    required this.groupsCount,
+    required this.activeTasks,
   });
 
   @override
@@ -447,21 +450,19 @@ class _ActivityCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 20),
-
           Row(
             children: [
               Expanded(
                 child: _SmallSummaryBox(
                   value: completedTasks.toString(),
-                  label: 'Challenges done',
+                  label: 'Tasks completed',
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _SmallSummaryBox(
-                  value: groupsCount.toString(),
-                  label: 'Active groups',
+                  value: activeTasks.toString(),
+                  label: 'Active tasks',
                 ),
               ),
             ],

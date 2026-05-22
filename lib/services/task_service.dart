@@ -140,6 +140,30 @@ class TaskService {
         return tasks;
   }
 
+  Future<List<TaskModel>> getRemainingTasksForUser(
+      String? uid,
+      ) async {
+
+    final List<TaskModel> tasks = [];
+    if (uid == null) return tasks;
+    final groups = await _groups.get();
+    for (final groupDoc in groups.docs) {
+
+      final memberDoc = await groupDoc.reference
+          .collection('members')
+          .doc(uid)
+          .get();
+
+      if (memberDoc.exists) {
+        tasks.addAll(
+            await getRemainingTasksForUserInGroup(groupId: groupDoc.id, userId: uid).first
+        );
+      }
+    }
+
+    return tasks;
+  }
+
   Future<void> updateTask({
     required String groupId,
     required String taskId,

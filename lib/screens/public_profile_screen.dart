@@ -315,8 +315,8 @@ class _PublicProfileHeaderCard extends StatelessWidget {
             ),
             child: CircleAvatar(
               backgroundColor: Colors.white,
-              backgroundImage: profile.photoUrl == null ? null : NetworkImage(profile.photoUrl!),
-              child: profile.photoUrl == null
+              backgroundImage: profile.photoUrl == null || profile.photoUrl!.isEmpty ? null : NetworkImage(profile.photoUrl!),
+              child: profile.photoUrl == null || profile.photoUrl!.isEmpty
                   ? Text(
                 initial,
                 style: const TextStyle(
