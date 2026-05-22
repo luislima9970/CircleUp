@@ -7,7 +7,7 @@ class UserService {
   Future<void> createUser({
     required UserModel user,
   }) async {
-    await _users.add(user.toFirestore());
+    await _users.doc(user.id).set(user.toFirestore());
   }
 
   Future<UserModel?> getUserById(String? userId) async {

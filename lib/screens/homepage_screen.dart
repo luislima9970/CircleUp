@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:projesof/main.dart';
 import 'package:projesof/services/group_service.dart';
+import 'package:projesof/services/submission_service.dart';
 import 'package:projesof/app_state.dart';
 import 'package:projesof/models/group_model.dart';
 import 'package:projesof/services/task_service.dart';
@@ -171,155 +173,194 @@ class _ProgressCard extends StatefulWidget {
       _ProgressCardState();
 }
 
-class _ProgressCardState
-    extends State<_ProgressCard> {
-
-  late final GroupService _groupService;
-  late final TaskService _taskService;
-
+class _ProgressCardState extends State<_ProgressCard> with RouteAware {
+  final _groupService = GroupService();
+  final _taskService = TaskService();
+  final _submissionService = SubmissionService();
   final user = AppState.currentUser!;
-  late final Future<_ProgressData> _progressFuture;
+
+  Future<_ProgressData>? _progressFuture;
+  String _lastGroupsKey = '';
 
   @override
-  void initState() {
-    super.initState();
-
-    _groupService = GroupService();
-    _taskService = TaskService();
-
-    _progressFuture = _loadProgress();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
   }
 
-  Future<_ProgressData>
-  _loadProgress() async {
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  @override
+  void didPopNext() {
+    // Home screen is visible again — force a fresh computation.
+    setState(() => _lastGroupsKey = '');
+  }
+
+  Future<_ProgressData> _computeProgress(List<GroupModel> groups) async {
+    int totalPoints = 0;
+    int pendingTasksCount = 0;
+
+    for (final group in groups) {
+      // Sum real-time points from each member document.
+      final member = await _groupService.getMember(
+        groupId: group.id!,
+        userId: user.id!,
+      );
+      totalPoints += member?.points ?? 0;
+
+      // Count groups where today's task hasn't been submitted yet.
+      final dailyTask =
+          await _taskService.getDailyTask(groupId: group.id!).first;
+      if (dailyTask != null) {
+        final submission = await _submissionService.getSubmissionByUser(
+          groupId: group.id!,
+          taskId: dailyTask.id!,
+          userId: user.id!,
+        );
+        if (submission == null) pendingTasksCount++;
+      }
+    }
+
     return _ProgressData(
-        groups: await _groupService.getGroupsForUser(user.id).first,
-        activeTasksCount: (await _taskService.getRemainingTasksForUser(user.id)).length
+      groups: groups,
+      totalPoints: totalPoints,
+      pendingTasksCount: pendingTasksCount,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_ProgressData>(
-      future: _progressFuture,
-      builder: (context, snapshot) {
-        final isLoading = snapshot.connectionState == ConnectionState.waiting;
+    return StreamBuilder<List<GroupModel>>(
+      stream: _groupService.getGroupsForUser(user.id),
+      builder: (context, groupSnapshot) {
+        final groups = groupSnapshot.data ?? [];
+        final isLoadingGroups =
+            groupSnapshot.connectionState == ConnectionState.waiting;
 
-        final progress = snapshot.data ??
-            const _ProgressData(
-              groups: [],
-              activeTasksCount: 0,
-            );
-
-        String message;
-
-        if (isLoading) {
-          message = 'Loading your progress...';
-        } else if (progress.groups.isEmpty) {
-          message = 'Create or join a group to start completing challenges.';
-        } else if (user.totalPoints > 0) {
-          message =
-          'You earned ${user.totalPoints} point${user.totalPoints == 1 ? '' : 's'} in total. Keep going!';
-        } else if (progress.activeTasksCount > 0) {
-          message =
-          'You have ${progress.activeTasksCount} active task${progress.activeTasksCount == 1 ? '' : 's'} waiting for you.';
-        } else {
-          message = 'You are in groups, but there are no active tasks yet.';
+        // Recreate the future only when the group composition changes.
+        final groupsKey = groups.map((g) => g.id).join(',');
+        if (groupsKey != _lastGroupsKey) {
+          _lastGroupsKey = groupsKey;
+          _progressFuture = _computeProgress(groups);
         }
 
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFF2A8CFF),
-                Color(0xFF43D17A),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x242A8CFF),
-                blurRadius: 26,
-                offset: Offset(0, 14),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.local_fire_department_rounded,
-                    color: Colors.white,
-                    size: 30,
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      "Your Progress",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  if (isLoading)
-                    const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white,
-                      ),
-                    ),
-                ],
-              ),
+        return FutureBuilder<_ProgressData>(
+          future: _progressFuture,
+          builder: (context, snapshot) {
+            final isLoading = isLoadingGroups ||
+                snapshot.connectionState == ConnectionState.waiting;
+            final data = snapshot.data;
+            final totalPoints = data?.totalPoints ?? 0;
+            final pendingTasksCount = data?.pendingTasksCount ?? 0;
 
-              const SizedBox(height: 12),
+            String message;
+            if (isLoading) {
+              message = 'Loading your progress...';
+            } else if (groups.isEmpty) {
+              message =
+                  'Create or join a group to start completing challenges.';
+            } else if (totalPoints > 0) {
+              message =
+                  'You earned $totalPoints point${totalPoints == 1 ? '' : 's'} in total. Keep going!';
+            } else if (pendingTasksCount > 0) {
+              message =
+                  'You have $pendingTasksCount task${pendingTasksCount == 1 ? '' : 's'} waiting for you today.';
+            } else {
+              message = 'All done for today! Check back tomorrow.';
+            }
 
-              Text(
-                message,
-                style: const TextStyle(
-                  color: Color(0xEFFFFFFF),
-                  fontSize: 14,
-                  height: 1.4,
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2A8CFF), Color(0xFF43D17A)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ),
-
-              const SizedBox(height: 18),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _ProgressStatBox(
-                      value: progress.groups.length.toString(),
-                      label: 'Groups',
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ProgressStatBox(
-                      value: progress.activeTasksCount.toString(),
-                      label: 'Tasks',
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ProgressStatBox(
-                      value: user.totalPoints.toString(),
-                      label: 'Points',
-                    ),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x242A8CFF),
+                    blurRadius: 26,
+                    offset: Offset(0, 14),
                   ),
                 ],
               ),
-            ],
-          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.local_fire_department_rounded,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Your Progress',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      if (isLoading)
+                        const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    message,
+                    style: const TextStyle(
+                      color: Color(0xEFFFFFFF),
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ProgressStatBox(
+                          value: groups.length.toString(),
+                          label: 'Groups',
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ProgressStatBox(
+                          value: pendingTasksCount.toString(),
+                          label: 'Tasks',
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ProgressStatBox(
+                          value: totalPoints.toString(),
+                          label: 'Points',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -328,11 +369,13 @@ class _ProgressCardState
 
 class _ProgressData {
   final List<GroupModel> groups;
-  final int activeTasksCount;
+  final int totalPoints;
+  final int pendingTasksCount;
 
   const _ProgressData({
     required this.groups,
-    required this.activeTasksCount,
+    required this.totalPoints,
+    required this.pendingTasksCount,
   });
 }
 

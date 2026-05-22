@@ -225,6 +225,9 @@ class _ValidationScreenState
                   return FutureBuilder<UserModel?>(
                       future: _userService.getUserById(widget.authorId),
                       builder: (context, authorSnapshot) {
+                        if (authorSnapshot.data == null) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
                         final author = authorSnapshot.data!;
                         return SingleChildScrollView(
                           physics: const BouncingScrollPhysics(),

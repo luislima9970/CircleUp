@@ -3,6 +3,7 @@ import 'package:projesof/models/submission_model.dart';
 import 'package:projesof/screens/submission_screen.dart';
 import 'package:projesof/screens/validation_screen.dart';
 import 'package:projesof/services/submission_service.dart';
+import 'package:projesof/services/user_service.dart';
 import 'package:projesof/app_state.dart';
 import 'package:projesof/models/task_model.dart';
 import 'package:projesof/widgets/background_circle.dart';
@@ -559,12 +560,15 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Text(
-                                            submission.userId,
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w700,
-                                              color: Color(0xFF1C2A33),
+                                          FutureBuilder(
+                                            future: UserService().getUserById(submission.userId),
+                                            builder: (context, snapshot) => Text(
+                                              snapshot.data?.username ?? '...',
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w700,
+                                                color: Color(0xFF1C2A33),
+                                              ),
                                             ),
                                           ),
                                           const SizedBox(height: 4),
