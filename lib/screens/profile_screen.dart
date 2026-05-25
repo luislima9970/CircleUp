@@ -193,76 +193,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         activeTasks: 0,
                       );
 
-                  return SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(24, 22, 24, 100),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _ProfileHeaderCard(
-                          user: user,
-                          initial: _initial(user.username),
-                          onEdit: _openEditProfile,
-                        ),
+                  return FutureBuilder<int>(
+                    future: _groupService.getTotalPoints(uid: user.id!),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF2A8CFF),
+                          ),
+                        );
+                      }
 
-                        const SizedBox(height: 22),
+                      if (snapshot.hasError) {
+                        return const Center(
+                          child: Text(
+                            'Could not load points.',
+                            style: TextStyle(
+                              color: Color(0xFF1C2A33),
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        );
+                      }
 
-                        Row(
+                      final totalPoints = snapshot.data ?? 0;
+
+                      return SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(24, 22, 24, 100),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: _ProfileStatCard(
-                                icon: Icons.stars_rounded,
-                                value: user.totalPoints.toString(),
-                                label: 'Points',
+                            _ProfileHeaderCard(
+                              user: user,
+                              initial: _initial(user.username),
+                              onEdit: _openEditProfile,
+                            ),
+
+                            const SizedBox(height: 22),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _ProfileStatCard(
+                                    icon: Icons.stars_rounded,
+                                    value: totalPoints.toString(),
+                                    label: 'Points',
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _ProfileStatCard(
+                                    icon: Icons.local_fire_department_rounded,
+                                    value: user.maxStreak == 1
+                                        ? '1 day'
+                                        : '${user.maxStreak} days',
+                                    label: 'Streak',
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _ProfileStatCard(
+                                    icon: Icons.groups_rounded,
+                                    value: profileData.groups.length.toString(),
+                                    label: 'Groups',
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 30),
+
+                            const Text(
+                              'Progress Summary',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF1C2A33),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _ProfileStatCard(
-                                icon: Icons.local_fire_department_rounded,
-                                value: user.maxStreak == 1
-                                    ? '1 day'
-                                    : '${user.maxStreak} days',
-                                label: 'Streak',
-                              ),
+
+                            const SizedBox(height: 16),
+
+                            _ActivityCard(
+                              completedTasks: profileData.completedTasks,
+                              activeTasks: profileData.activeTasks,
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _ProfileStatCard(
-                                icon: Icons.groups_rounded,
-                                value: profileData.groups.length.toString(),
-                                label: 'Groups',
-                              ),
+
+                            const SizedBox(height: 18),
+
+                            _LogoutCard(
+                              onTap: _logout,
                             ),
                           ],
                         ),
-
-                        const SizedBox(height: 30),
-
-                        const Text(
-                          'Progress Summary',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFF1C2A33),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        _ActivityCard(
-                          completedTasks: profileData.completedTasks,
-                          activeTasks: profileData.activeTasks,
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        _LogoutCard(
-                          onTap: _logout,
-                        ),
-                      ],
-                    ),
-                  );
+                      );
+                    });
                 },
               ),
             ],
