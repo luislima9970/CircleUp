@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:projesof/models/submission_model.dart';
 import 'package:projesof/services/image_upload_service.dart';
-import 'package:projesof/services/group_service.dart';
 import 'package:projesof/services/submission_service.dart';
 import 'package:projesof/app_state.dart';
 import 'package:projesof/models/task_model.dart';
@@ -136,12 +135,6 @@ class _SubmissionScreenState
         groupId: widget.groupId,
         taskId: _task.id!,
         submission: SubmissionModel(userId: user.id!, photoUrl: imageUrl),
-      );
-
-      await GroupService().incrementMemberPoints(
-        groupId: widget.groupId,
-        uid: user.id!,
-        delta: _task.reward,
       );
 
       if (mounted) {
