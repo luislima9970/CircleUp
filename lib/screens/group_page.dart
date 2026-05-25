@@ -665,7 +665,7 @@ class _MemberAvatar extends StatefulWidget {
   final String initials;
   final UserService? userService;
 
-  _MemberAvatar({
+  const _MemberAvatar({
     required this.userId,
     required this.username,
     required this.fallbackPhotoUrl,
