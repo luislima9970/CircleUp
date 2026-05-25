@@ -3,6 +3,7 @@ import 'package:projesof/services/group_service.dart';
 import 'package:projesof/app_state.dart';
 import 'package:projesof/widgets/background_circle.dart';
 import 'package:projesof/widgets/bottom_navbar.dart';
+import 'package:projesof/screens/group_page.dart';
 
 class JoinGroupScreen extends StatefulWidget {
 
@@ -17,7 +18,6 @@ class JoinGroupScreen extends StatefulWidget {
 class _JoinGroupScreenState extends State<JoinGroupScreen> {
   final _controller = TextEditingController();
   String? _error;
-  bool _success = false;
   bool _loading = false;
 
   final user = AppState.currentUser!;
@@ -30,18 +30,22 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
     setState(() {
       _loading = true;
       _error = null;
-      _success = false;
     });
 
     try {
-      await GroupService().joinGroupByCode(
+      final groupId = await GroupService().joinGroupByCode(
         code: code,
         user: user,
       );
 
-      setState(() {
-        _success = true;
-      });
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => GroupPageScreen(groupId: groupId),
+          ),
+        );
+      }
     } catch (e) {
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
@@ -183,32 +187,6 @@ class _JoinGroupScreenState extends State<JoinGroupScreen> {
                                       _error!,
                                       style: const TextStyle(
                                         color: Colors.red,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-
-                          if (_success) ...[
-                            const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withValues(alpha: 0.08),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.check_circle_outline, color: Colors.green),
-                                  const SizedBox(width: 8),
-                                  const Expanded(
-                                    child: Text(
-                                      'You joined the group successfully',
-                                      style: TextStyle(
-                                        color: Colors.green,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
