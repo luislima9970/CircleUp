@@ -2,7 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projesof/models/user_model.dart';
 
 class UserService {
-  final _users = FirebaseFirestore.instance.collection('users');
+  final CollectionReference<Map<String, dynamic>> _users;
+  final FirebaseFirestore _firestore;
+
+  UserService({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance,
+        _users =
+            (firestore ?? FirebaseFirestore.instance).collection('users');
 
   Future<void> createUser({
     required UserModel user,
@@ -28,7 +34,7 @@ class UserService {
       ) async {
 
     final snapshot =
-    await FirebaseFirestore.instance
+    await _firestore
         .collection('users')
         .where('username', isGreaterThanOrEqualTo: query,)
         .where('username', isLessThan: '$query\uf8ff',)

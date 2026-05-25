@@ -11,15 +11,22 @@ import 'package:projesof/widgets/background_circle.dart';
 import 'package:projesof/widgets/bottom_navbar.dart';
 
 class TasksPageScreen extends StatefulWidget {
+  final GroupService? groupService;
 
-  const TasksPageScreen({super.key});
+  const TasksPageScreen({super.key, this.groupService});
 
   @override
   State<TasksPageScreen> createState() => _TasksPageScreenState();
 }
 
 class _TasksPageScreenState extends State<TasksPageScreen> {
-  final GroupService _groupService = GroupService();
+  late final GroupService _groupService;
+
+  @override
+  void initState() {
+    super.initState();
+    _groupService = widget.groupService ?? GroupService();
+  }
   final user = AppState.currentUser!;
 
   Color _themeColor(String theme) {

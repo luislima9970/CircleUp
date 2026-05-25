@@ -12,12 +12,14 @@ class SubmissionScreen extends StatefulWidget {
   final String groupId;
   final TaskModel task;
   final String themeColor;
+  final SubmissionService? submissionService;
 
   const SubmissionScreen({
     super.key,
     required this.groupId,
     required this.task,
     this.themeColor = 'Sustainability',
+    this.submissionService,
   });
 
   @override
@@ -28,7 +30,7 @@ class SubmissionScreen extends StatefulWidget {
 class _SubmissionScreenState
     extends State<SubmissionScreen> {
   ImageUploadService? _imageUploadService;
-  final SubmissionService _submissionService = SubmissionService();
+  late final SubmissionService _submissionService;
 
   late final TaskModel _task = widget.task;
   final user = AppState.currentUser!;
@@ -41,6 +43,7 @@ class _SubmissionScreenState
   @override
   void initState() {
     super.initState();
+    _submissionService = widget.submissionService ?? SubmissionService();
     try {
       _imageUploadService = ImageUploadService();
     } catch (_) {}

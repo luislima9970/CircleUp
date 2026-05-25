@@ -3,7 +3,11 @@ import 'package:projesof/models/vote_model.dart';
 import '../models/submission_model.dart';
 
 class SubmissionService {
-  final _groups = FirebaseFirestore.instance.collection('groups');
+  final CollectionReference<Map<String, dynamic>> _groups;
+
+  SubmissionService({FirebaseFirestore? firestore})
+      : _groups =
+            (firestore ?? FirebaseFirestore.instance).collection('groups');
 
   Future<String> createSubmission({
     required String groupId,

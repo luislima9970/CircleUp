@@ -10,10 +10,12 @@ import 'joincircle_screen.dart';
 
 class CreateCircleScreen extends StatefulWidget {
   final bool startInCreateMode;
+  final GroupService? groupService;
 
   const CreateCircleScreen({
     super.key,
     this.startInCreateMode = false,
+    this.groupService,
   });
 
   @override
@@ -21,7 +23,7 @@ class CreateCircleScreen extends StatefulWidget {
 }
 
 class _CreateCircleScreenState extends State<CreateCircleScreen> {
-  final GroupService _groupService = GroupService();
+  late final GroupService _groupService;
 
   final _formKey = GlobalKey<FormState>();
   final _circleNameController = TextEditingController();
@@ -38,7 +40,7 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
   @override
   void initState() {
     super.initState();
-
+    _groupService = widget.groupService ?? GroupService();
     _showCreateForm = widget.startInCreateMode;
     _groups = _groupService.getGroupsForUser(user.id);
   }

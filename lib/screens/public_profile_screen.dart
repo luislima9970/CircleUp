@@ -7,10 +7,16 @@ import 'package:projesof/services/user_service.dart';
 
 class PublicProfileScreen extends StatefulWidget {
   final String userId;
+  final UserService? userService;
+  final GroupService? groupService;
+  final TaskService? taskService;
 
   const PublicProfileScreen({
     super.key,
     required this.userId,
+    this.userService,
+    this.groupService,
+    this.taskService,
   });
 
   @override
@@ -19,13 +25,16 @@ class PublicProfileScreen extends StatefulWidget {
 
 class _PublicProfileScreenState extends State<PublicProfileScreen> {
   late Future<_PublicProfileData> _profileFuture;
-  final UserService _userService = UserService();
-  final GroupService _groupService = GroupService();
-  final TaskService _taskService = TaskService();
+  late final UserService _userService;
+  late final GroupService _groupService;
+  late final TaskService _taskService;
 
   @override
   void initState() {
     super.initState();
+    _userService = widget.userService ?? UserService();
+    _groupService = widget.groupService ?? GroupService();
+    _taskService = widget.taskService ?? TaskService();
     _profileFuture = _loadProfile();
   }
 

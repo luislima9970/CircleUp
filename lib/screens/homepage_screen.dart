@@ -12,7 +12,11 @@ import 'group_page.dart';
 import 'user_search_screen.dart';
 
 class HomepageScreen extends StatelessWidget {
-  const HomepageScreen({super.key});
+  final GroupService? groupService;
+  final TaskService? taskService;
+  final SubmissionService? submissionService;
+
+  const HomepageScreen({super.key, this.groupService, this.taskService, this.submissionService});
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +65,7 @@ class HomepageScreen extends StatelessWidget {
 
                     const SizedBox(height: 26),
 
-                    _ProgressCard(),
+                    _ProgressCard(groupService: groupService, taskService: taskService, submissionService: submissionService),
 
                     const SizedBox(height: 30),
 
@@ -71,7 +75,7 @@ class HomepageScreen extends StatelessWidget {
 
                     const SizedBox(height: 14),
 
-                    _UserGroupsList(),
+                    _UserGroupsList(groupService: groupService),
                   ],
                 ),
               ),
@@ -165,8 +169,11 @@ class _HomeHeader extends StatelessWidget {
 }
 
 class _ProgressCard extends StatefulWidget {
+  final GroupService? groupService;
+  final TaskService? taskService;
+  final SubmissionService? submissionService;
 
-  const _ProgressCard();
+  const _ProgressCard({this.groupService, this.taskService, this.submissionService});
 
   @override
   State<_ProgressCard> createState() =>
@@ -174,18 +181,27 @@ class _ProgressCard extends StatefulWidget {
 }
 
 class _ProgressCardState extends State<_ProgressCard> with RouteAware {
-  final _groupService = GroupService();
-  final _taskService = TaskService();
-  final _submissionService = SubmissionService();
+  late final GroupService _groupService;
+  late final TaskService _taskService;
+  late final SubmissionService _submissionService;
   final user = AppState.currentUser!;
 
   Future<_ProgressData>? _progressFuture;
   String _lastGroupsKey = '';
 
   @override
+  void initState() {
+    super.initState();
+    _groupService = widget.groupService ?? GroupService();
+    _taskService = widget.taskService ?? TaskService();
+    _submissionService = widget.submissionService ?? SubmissionService();
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    routeObserver.subscribe(this, ModalRoute.of(context)!);
+    final route = ModalRoute.of(context);
+    if (route != null) routeObserver.subscribe(this, route);
   }
 
   @override
@@ -430,8 +446,9 @@ class _ProgressStatBox extends StatelessWidget {
 }
 
 class _UserGroupsList extends StatefulWidget {
+  final GroupService? groupService;
 
-  const _UserGroupsList();
+  const _UserGroupsList({this.groupService});
 
   @override
   State<_UserGroupsList> createState() => _UserGroupsListState();
@@ -447,7 +464,7 @@ class _UserGroupsListState extends State<_UserGroupsList> {
   @override
   void initState() {
     super.initState();
-    _groupService = GroupService();
+    _groupService = widget.groupService ?? GroupService();
     _groupsFuture = _groupService.getGroupsForUser(user.id).first;
   }
 

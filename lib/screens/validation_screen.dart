@@ -14,6 +14,9 @@ class ValidationScreen extends StatefulWidget {
   final TaskModel task;
   final String authorId;
   final String themeColor;
+  final SubmissionService? submissionService;
+  final GroupService? groupService;
+  final UserService? userService;
 
   const ValidationScreen({
     super.key,
@@ -21,6 +24,9 @@ class ValidationScreen extends StatefulWidget {
     required this.task,
     required this.authorId,
     this.themeColor = 'Sustainability',
+    this.submissionService,
+    this.groupService,
+    this.userService,
   });
 
   @override
@@ -30,9 +36,9 @@ class ValidationScreen extends StatefulWidget {
 
 class _ValidationScreenState
     extends State<ValidationScreen> {
-  final SubmissionService _submissionService = SubmissionService();
-  final GroupService _groupService = GroupService();
-  final UserService _userService = UserService();
+  late final SubmissionService _submissionService;
+  late final GroupService _groupService;
+  late final UserService _userService;
   bool _isLoading = false;
   String? _errorMessage;
   late Future<SubmissionModel?> _submissionFuture;
@@ -43,6 +49,9 @@ class _ValidationScreenState
   @override
   void initState() {
     super.initState();
+    _submissionService = widget.submissionService ?? SubmissionService();
+    _groupService = widget.groupService ?? GroupService();
+    _userService = widget.userService ?? UserService();
     _task = widget.task;
     _submissionFuture = _submissionService.getSubmissionByUser(groupId: widget.groupId, taskId: _task.id!, userId: widget.authorId);
     _loadMyVote();

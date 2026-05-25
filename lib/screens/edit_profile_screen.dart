@@ -7,9 +7,15 @@ import 'package:projesof/services/user_service.dart';
 import 'package:projesof/app_state.dart';
 
 class EditProfileScreen extends StatefulWidget {
+  final UserService? userService;
+  final GroupService? groupService;
+  final ImageUploadService? imageUploadService;
 
   const EditProfileScreen({
     super.key,
+    this.userService,
+    this.groupService,
+    this.imageUploadService,
   });
 
   @override
@@ -30,9 +36,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   bool _isSaving = false;
 
-  final UserService _userService = UserService();
-  final GroupService _groupService = GroupService();
-  final ImageUploadService _imageUploadService = ImageUploadService();
+  late final UserService _userService;
+  late final GroupService _groupService;
+  late final ImageUploadService _imageUploadService;
 
   File? _selectedImage;
 
@@ -41,7 +47,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-
+    _userService = widget.userService ?? UserService();
+    _groupService = widget.groupService ?? GroupService();
+    _imageUploadService = widget.imageUploadService ?? ImageUploadService();
     _usernameController = TextEditingController(text: user.username);
     _phraseController = TextEditingController(text: user.phrase);
   }
@@ -664,7 +672,6 @@ class _EditProfileField extends StatelessWidget {
   final IconData icon;
   final bool obscureText;
   final int maxLines;
-  final TextInputType? keyboardType;
   final String? helperText;
   final String? Function(String?)? validator;
 
@@ -674,7 +681,6 @@ class _EditProfileField extends StatelessWidget {
     required this.icon,
     this.obscureText = false,
     this.maxLines = 1,
-    this.keyboardType,
     this.helperText,
     this.validator,
   });
@@ -685,7 +691,6 @@ class _EditProfileField extends StatelessWidget {
       controller: controller,
       obscureText: obscureText,
       maxLines: obscureText ? 1 : maxLines,
-      keyboardType: keyboardType,
       validator: validator,
       decoration: InputDecoration(
         labelText: label,

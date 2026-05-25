@@ -10,10 +10,12 @@ import 'homepage_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final AuthService? authService;
+  final UserService? userService;
 
   const LoginScreen({
     super.key,
     this.authService,
+    this.userService,
   });
 
   @override
@@ -34,7 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _userService = UserService();
+    _userService = widget.userService ?? UserService();
     _authService = widget.authService ?? AuthService();
   }
 

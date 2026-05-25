@@ -25,9 +25,9 @@ class TaskModel {
       id: docId,
       title: data['title'] ?? '',
       objective: data['objective'] ?? '',
-      reward: data['reward'] ?? '',
+      reward: data['reward'] ?? 0,
       createdAt: data['createdAt'],
-      isActive: data['isActive']
+      isActive: data['isActive'] ?? false
     );
   }
 

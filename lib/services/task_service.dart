@@ -3,8 +3,14 @@ import 'package:projesof/models/task_model.dart';
 import 'package:projesof/services/submission_service.dart';
 
 class TaskService {
-  final SubmissionService _submissionService = SubmissionService();
-  final _groups = FirebaseFirestore.instance.collection('groups');
+  final SubmissionService _submissionService;
+  final CollectionReference<Map<String, dynamic>> _groups;
+
+  TaskService({FirebaseFirestore? firestore, SubmissionService? submissionService})
+      : _groups =
+            (firestore ?? FirebaseFirestore.instance).collection('groups'),
+        _submissionService =
+            submissionService ?? SubmissionService(firestore: firestore);
 
   Future<String> createTask({
     required String groupId,

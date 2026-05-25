@@ -12,12 +12,14 @@ class TaskDetailScreen extends StatefulWidget {
   final String groupId;
   final TaskModel task;
   final String themeColor;
+  final SubmissionService? submissionService;
 
   const TaskDetailScreen({
     super.key,
     required this.groupId,
     required this.task,
     required this.themeColor,
+    this.submissionService,
   });
 
   @override
@@ -25,9 +27,16 @@ class TaskDetailScreen extends StatefulWidget {
 }
 
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
-  final SubmissionService _submissionService = SubmissionService();
+  late final SubmissionService _submissionService;
   final user = AppState.currentUser!;
-  late final TaskModel _task = widget.task;
+  late final TaskModel _task;
+
+  @override
+  void initState() {
+    super.initState();
+    _submissionService = widget.submissionService ?? SubmissionService();
+    _task = widget.task;
+  }
 
   @override
   Widget build(BuildContext context) {

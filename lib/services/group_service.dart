@@ -7,8 +7,13 @@ import 'package:projesof/services/task_service.dart';
 
 
 class GroupService {
-  final TaskService _taskService = TaskService();
-  final _groups = FirebaseFirestore.instance.collection('groups');
+  final TaskService _taskService;
+  final CollectionReference<Map<String, dynamic>> _groups;
+
+  GroupService({FirebaseFirestore? firestore, TaskService? taskService})
+      : _groups =
+            (firestore ?? FirebaseFirestore.instance).collection('groups'),
+        _taskService = taskService ?? TaskService(firestore: firestore);
 
   static final Map<String, List<TaskModel>> _tasksByTheme = {
     'sustainability': [
@@ -149,10 +154,9 @@ class GroupService {
           role: 'owner',
         ).toFirestore());
 
-    final taskService = TaskService();
     final tasks = _tasksByTheme[group.theme.toLowerCase()] ?? [];
     for (final task in tasks) {
-      await taskService.createTask(groupId: groupRef.id, task: task);
+      await _taskService.createTask(groupId: groupRef.id, task: task);
     }
 
     return groupRef.id;

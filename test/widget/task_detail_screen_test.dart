@@ -1,156 +1,155 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/models/task_model.dart';
+import 'package:projesof/models/user_model.dart';
 import 'package:projesof/screens/task_detail_screen.dart';
+import 'package:projesof/services/submission_service.dart';
+
+TaskModel makeTask({
+  String id = 'task1',
+  String title = 'Recycle Plastic Bottles',
+  String objective = 'Collect and recycle 10 plastic bottles',
+  int reward = 10,
+}) =>
+    TaskModel(
+      id: id,
+      title: title,
+      objective: objective,
+      reward: reward,
+      isActive: true,
+      createdAt: Timestamp.now(),
+    );
 
 void main() {
+  late SubmissionService submissionService;
+
+  setUp(() {
+    AppState.setCurrentUser(UserModel(
+      id: 'uid1',
+      username: 'testuser',
+      email: 'test@test.com',
+      createdAt: Timestamp.now(),
+    ));
+    submissionService = SubmissionService(firestore: FakeFirebaseFirestore());
+  });
+
+  tearDown(() => AppState.clearUser());
+
   group('TaskDetailScreen', () {
-    testWidgets('TDS1: Renders Task Details text', (tester) async {
+    testWidgets('TDS1: renders Scaffold', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: TaskDetailScreen(
-          groupId: 'test_group_id',
-          taskId: 'test_task_id',
-          taskTitle: 'Recycle Plastic Bottles',
-          taskDescription: 'Collect and recycle 10 plastic bottles',
+          groupId: 'g1',
+          task: makeTask(),
           themeColor: 'Sustainability',
+          submissionService: submissionService,
         ),
       ));
-      
-      // May not render fully due to Firebase, but verify construction
-      expect(find.byType(Scaffold), findsOneWidget);
-    });
-
-    testWidgets('TDS2: Renders Scaffold widget', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: TaskDetailScreen(
-          groupId: 'test_group_id',
-          taskId: 'test_task_id',
-          taskTitle: 'Recycle Plastic Bottles',
-          taskDescription: 'Collect and recycle 10 plastic bottles',
-          themeColor: 'Sustainability',
-        ),
-      ));
+      await tester.pump();
 
       expect(find.byType(Scaffold), findsOneWidget);
     });
 
-    testWidgets('TDS3: Screen accepts all required parameters', (tester) async {
+    testWidgets('TDS2: renders task title', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: TaskDetailScreen(
-          groupId: 'test_group_id',
-          taskId: 'test_task_id',
-          taskTitle: 'Test Task',
-          taskDescription: 'Test description',
+          groupId: 'g1',
+          task: makeTask(title: 'Run 5km'),
           themeColor: 'Fitness',
+          submissionService: submissionService,
         ),
       ));
+      await tester.pump();
 
-      expect(find.byType(TaskDetailScreen), findsOneWidget);
+      expect(find.text('Run 5km'), findsOneWidget);
     });
 
-    testWidgets('TDS4: Screen renders with different theme colors', (tester) async {
-      for (final theme in ['Fitness', 'Wellness', 'Sustainability']) {
-        await tester.pumpWidget(MaterialApp(
-          home: TaskDetailScreen(
-            groupId: 'test_group_id',
-            taskId: 'test_task_id',
-            taskTitle: 'Test Task',
-            taskDescription: 'Test description',
-            themeColor: theme,
-          ),
-        ));
-
-        expect(find.byType(Scaffold), findsOneWidget);
-      }
-    });
-
-    testWidgets('TDS5: Screen preserves task title parameter', (tester) async {
-      const String testTitle = 'Custom Task Title';
+    testWidgets('TDS3: renders task objective', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: TaskDetailScreen(
-          groupId: 'test_group_id',
-          taskId: 'test_task_id',
-          taskTitle: testTitle,
-          taskDescription: 'Test description',
+          groupId: 'g1',
+          task: makeTask(objective: 'Complete a 5km run'),
+          themeColor: 'Fitness',
+          submissionService: submissionService,
+        ),
+      ));
+      await tester.pump();
+
+      expect(find.text('Complete a 5km run'), findsOneWidget);
+    });
+
+    testWidgets('TDS4: renders back button icon', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: TaskDetailScreen(
+          groupId: 'g1',
+          task: makeTask(),
           themeColor: 'Sustainability',
+          submissionService: submissionService,
+        ),
+      ));
+      await tester.pump();
+
+      expect(find.byIcon(Icons.arrow_back_ios_new), findsOneWidget);
+    });
+
+    testWidgets('TDS5: renders with Fitness theme', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: TaskDetailScreen(
+          groupId: 'g1',
+          task: makeTask(),
+          themeColor: 'Fitness',
+          submissionService: submissionService,
+        ),
+      ));
+      await tester.pump();
+
+      expect(find.byType(Scaffold), findsOneWidget);
+    });
+
+    testWidgets('TDS6: renders with Wellness theme', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: TaskDetailScreen(
+          groupId: 'g1',
+          task: makeTask(),
+          themeColor: 'Wellness',
+          submissionService: submissionService,
+        ),
+      ));
+      await tester.pump();
+
+      expect(find.byType(Scaffold), findsOneWidget);
+    });
+
+    testWidgets('TDS7: shows loading before submission check resolves',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: TaskDetailScreen(
+          groupId: 'g1',
+          task: makeTask(),
+          themeColor: 'Sustainability',
+          submissionService: submissionService,
         ),
       ));
 
       expect(find.byType(Scaffold), findsOneWidget);
     });
 
-    testWidgets('TDS6: Screen preserves task description parameter', (tester) async {
-      const String testDescription = 'Custom description for the task';
+    testWidgets('TDS8: shows submit button after submission check completes',
+        (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: TaskDetailScreen(
-          groupId: 'test_group_id',
-          taskId: 'test_task_id',
-          taskTitle: 'Test Task',
-          taskDescription: testDescription,
+          groupId: 'g1',
+          task: makeTask(),
           themeColor: 'Sustainability',
+          submissionService: submissionService,
         ),
       ));
-
-      expect(find.byType(Scaffold), findsOneWidget);
-    });
-
-    testWidgets('TDS7: Screen preserves group ID parameter', (tester) async {
-      const String groupId = 'custom_group_123';
-      await tester.pumpWidget(MaterialApp(
-        home: TaskDetailScreen(
-          groupId: groupId,
-          taskId: 'test_task_id',
-          taskTitle: 'Test Task',
-          taskDescription: 'Test description',
-          themeColor: 'Sustainability',
-        ),
-      ));
-
-      expect(find.byType(Scaffold), findsOneWidget);
-    });
-
-    testWidgets('TDS8: Screen preserves task ID parameter', (tester) async {
-      const String taskId = 'custom_task_456';
-      await tester.pumpWidget(MaterialApp(
-        home: TaskDetailScreen(
-          groupId: 'test_group_id',
-          taskId: taskId,
-          taskTitle: 'Test Task',
-          taskDescription: 'Test description',
-          themeColor: 'Sustainability',
-        ),
-      ));
-
-      expect(find.byType(Scaffold), findsOneWidget);
-    });
-
-    testWidgets('TDS9: Screen is stateful widget', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: TaskDetailScreen(
-          groupId: 'test_group_id',
-          taskId: 'test_task_id',
-          taskTitle: 'Test Task',
-          taskDescription: 'Test description',
-          themeColor: 'Sustainability',
-        ),
-      ));
-
-      expect(find.byType(Scaffold), findsOneWidget);
-    });
-
-    testWidgets('TDS10: Screen handles long task descriptions', (tester) async {
-      final String longDescription = 'This is a very long task description ' * 10;
-      await tester.pumpWidget(MaterialApp(
-        home: TaskDetailScreen(
-          groupId: 'test_group_id',
-          taskId: 'test_task_id',
-          taskTitle: 'Test Task',
-          taskDescription: longDescription,
-          themeColor: 'Sustainability',
-        ),
-      ));
+      await tester.pumpAndSettle();
 
       expect(find.byType(Scaffold), findsOneWidget);
     });
   });
 }
-

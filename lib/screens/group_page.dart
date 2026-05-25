@@ -19,10 +19,16 @@ import 'public_profile_screen.dart';
 
 class GroupPageScreen extends StatefulWidget {
   final String groupId;
+  final GroupService? groupService;
+  final TaskService? taskService;
+  final UserService? userService;
 
   const GroupPageScreen({
     super.key,
     required this.groupId,
+    this.groupService,
+    this.taskService,
+    this.userService,
   });
 
   @override
@@ -31,8 +37,9 @@ class GroupPageScreen extends StatefulWidget {
 
 class _GroupPageScreenState extends State<GroupPageScreen> {
   int _selectedTab = 0;
-  final GroupService _groupService = GroupService();
-  final TaskService _taskService = TaskService();
+  late final GroupService _groupService;
+  late final TaskService _taskService;
+  late final UserService _userService;
   GroupModel? _group;
   final user = AppState.currentUser!;
 
@@ -41,7 +48,9 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
   @override
   void initState() {
     super.initState();
-
+    _groupService = widget.groupService ?? GroupService();
+    _taskService = widget.taskService ?? TaskService();
+    _userService = widget.userService ?? UserService();
     _loadData();
   }
 
@@ -224,6 +233,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
                               members: members ?? [],
                               color: color,
                               groupId: _group!.id!,
+                              userService: _userService,
                             ),
                             const SizedBox(height: 24),
                             _TabSelector(
@@ -556,11 +566,13 @@ class _MembersCard extends StatelessWidget {
   final List<MemberModel?> members;
   final Color color;
   final String groupId;
+  final UserService? userService;
 
   _MembersCard({
     required this.members,
     required this.color,
     required this.groupId,
+    this.userService,
   });
 
   final user = AppState.currentUser!;
@@ -632,6 +644,7 @@ class _MembersCard extends StatelessWidget {
                     groupId: groupId,
                     color: color,
                     initials: _initials(user.username),
+                    userService: userService,
                   );
                 },
               ),
@@ -643,13 +656,14 @@ class _MembersCard extends StatelessWidget {
   }
 }
 
-class _MemberAvatar extends StatelessWidget {
+class _MemberAvatar extends StatefulWidget {
   final String userId;
   final String username;
   final String fallbackPhotoUrl;
   final String groupId;
   final Color color;
   final String initials;
+  final UserService? userService;
 
   _MemberAvatar({
     required this.userId,
@@ -658,14 +672,26 @@ class _MemberAvatar extends StatelessWidget {
     required this.groupId,
     required this.color,
     required this.initials,
+    this.userService,
   });
 
-  final UserService _userService = UserService();
+  @override
+  State<_MemberAvatar> createState() => _MemberAvatarState();
+}
+
+class _MemberAvatarState extends State<_MemberAvatar> {
+  late final UserService _userService;
+
+  @override
+  void initState() {
+    super.initState();
+    _userService = widget.userService ?? UserService();
+  }
 
   void _openProfile(BuildContext context) {
     final user = AppState.currentUser!;
 
-    if (user.id == userId) {
+    if (user.id == widget.userId) {
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -679,7 +705,7 @@ class _MemberAvatar extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (_) => PublicProfileScreen(
-          userId: userId,
+          userId: widget.userId,
         ),
       ),
     );
@@ -688,7 +714,7 @@ class _MemberAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<UserModel?>(
-      future: _userService.getUserById(userId),
+      future: _userService.getUserById(widget.userId),
       builder: (context, snapshot) {
         final userData = snapshot.data;
 
@@ -697,8 +723,8 @@ class _MemberAvatar extends StatelessWidget {
             onTap: () => _openProfile(context),
             child: CircleAvatar(
               radius: 21,
-              backgroundColor: color.withValues(alpha: 0.12),
-              child: Text('?', style: TextStyle(color: color, fontWeight: FontWeight.w900)),
+              backgroundColor: widget.color.withValues(alpha: 0.12),
+              child: Text('?', style: TextStyle(color: widget.color, fontWeight: FontWeight.w900)),
             ),
           );
         }
@@ -709,13 +735,13 @@ class _MemberAvatar extends StatelessWidget {
           onTap: () => _openProfile(context),
           child: CircleAvatar(
             radius: 21,
-            backgroundColor: color.withValues(alpha: 0.12),
+            backgroundColor: widget.color.withValues(alpha: 0.12),
             backgroundImage: hasPhoto ? NetworkImage(userData.photoUrl!) : null,
             child: hasPhoto
                 ? null
                 : Text(
                     userData.username.trim().isEmpty ? '?' : userData.username.trim()[0].toUpperCase(),
-                    style: TextStyle(color: color, fontWeight: FontWeight.w900),
+                    style: TextStyle(color: widget.color, fontWeight: FontWeight.w900),
                   ),
           ),
         );

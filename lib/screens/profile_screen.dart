@@ -4,22 +4,24 @@ import 'package:projesof/screens/login_screen.dart';
 import 'package:projesof/services/group_service.dart';
 import 'package:projesof/app_state.dart';
 import 'package:projesof/services/task_service.dart';
-import 'package:projesof/services/user_service.dart';
 import 'package:projesof/widgets/background_circle.dart';
 import 'package:projesof/widgets/bottom_navbar.dart';
 import '../models/group_model.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final GroupService? groupService;
+  final TaskService? taskService;
+
+  const ProfileScreen({super.key, this.groupService, this.taskService});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final GroupService _groupService = GroupService();
-  final TaskService _taskService = TaskService();
+  late final GroupService _groupService;
+  late final TaskService _taskService;
 
   final user = AppState.currentUser!;
   late Future<_ProfileData> _profileFuture;
@@ -28,6 +30,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _groupService = widget.groupService ?? GroupService();
+    _taskService = widget.taskService ?? TaskService();
     _profileFuture = _loadProfileData();
   }
 

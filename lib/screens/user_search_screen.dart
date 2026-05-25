@@ -6,7 +6,9 @@ import '../app_state.dart';
 import 'public_profile_screen.dart';
 
 class UserSearchScreen extends StatefulWidget {
-  const UserSearchScreen({super.key});
+  final UserService? userService;
+
+  const UserSearchScreen({super.key, this.userService});
 
   @override
   State<UserSearchScreen> createState() => _UserSearchScreenState();
@@ -14,9 +16,15 @@ class UserSearchScreen extends StatefulWidget {
 
 class _UserSearchScreenState extends State<UserSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final UserService _userService = UserService();
+  late final UserService _userService;
 
   String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _userService = widget.userService ?? UserService();
+  }
 
   @override
   void dispose() {
