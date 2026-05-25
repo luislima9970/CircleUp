@@ -40,14 +40,7 @@ class UserService {
       ) async {
     final cleanedQuery = query.trim().toLowerCase();
 
-    final snapshot =
-    await _firestore
-        .collection('users')
-        .where('username', isGreaterThanOrEqualTo: query,)
-        .where('username', isLessThan: '$query\uf8ff',)
-        .where('id', isNotEqualTo: userId)
-        .get();
-
+    final snapshot = await _users.get();
 
     final users = snapshot.docs
         .where((doc) => doc.id != userId)
@@ -94,6 +87,26 @@ class UserService {
 
   Future<void> deleteUser(String uid) async {
     await _users.doc(uid).delete();
+  }
+
+  Future<void> updateProfile({
+    required String uid,
+    required String username,
+    required String phrase,
+    String? photoUrl,
+  }) async {
+    final data = <String, dynamic>{
+      'username': username,
+      'usernameLower': username.trim().toLowerCase(),
+      'phrase': phrase,
+      'profilePhrase': phrase,
+    };
+
+    if (photoUrl != null && photoUrl.trim().isNotEmpty) {
+      data['photoUrl'] = photoUrl;
+    }
+
+    await _users.doc(uid).update(data);
   }
 
   Future<void> fixOldUsersWithoutUsernameLower() async {

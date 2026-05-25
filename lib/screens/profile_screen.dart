@@ -6,14 +6,20 @@ import 'package:projesof/app_state.dart';
 import 'package:projesof/services/task_service.dart';
 import 'package:projesof/widgets/background_circle.dart';
 import 'package:projesof/widgets/bottom_navbar.dart';
+
 import '../models/group_model.dart';
+import '../models/user_model.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final GroupService? groupService;
   final TaskService? taskService;
 
-  const ProfileScreen({super.key, this.groupService, this.taskService});
+  const ProfileScreen({
+    super.key,
+    this.groupService,
+    this.taskService,
+  });
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -23,23 +29,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late final GroupService _groupService;
   late final TaskService _taskService;
 
-  final user = AppState.currentUser!;
   late Future<_ProfileData> _profileFuture;
-
 
   @override
   void initState() {
     super.initState();
+
     _groupService = widget.groupService ?? GroupService();
     _taskService = widget.taskService ?? TaskService();
+
     _profileFuture = _loadProfileData();
   }
 
   Future<_ProfileData> _loadProfileData() async {
+    final currentUser = AppState.currentUser;
+
+    if (currentUser == null || currentUser.id == null) {
+      return const _ProfileData(
+        groups: [],
+        completedTasks: 0,
+        activeTasks: 0,
+      );
+    }
+
+    final uid = currentUser.id!;
+
+    final groups = await _groupService.getGroupsForUser(uid).first;
+    final completedTasks =
+        (await _taskService.getCompletedTasksForUser(uid)).length;
+    final activeTasks =
+        (await _taskService.getRemainingTasksForUser(uid)).length;
+
     return _ProfileData(
-      groups: await _groupService.getGroupsForUser(user.id).first,
-      completedTasks: (await _taskService.getCompletedTasksForUser(user.id)).length,
-      activeTasks: (await _taskService.getRemainingTasksForUser(user.id)).length
+      groups: groups,
+      completedTasks: completedTasks,
+      activeTasks: activeTasks,
     );
   }
 
@@ -53,12 +77,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return trimmed[0].toUpperCase();
   }
 
-
   Future<void> _openEditProfile() async {
     final updated = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
-        builder: (_) => EditProfileScreen(),
+        builder: (_) => const EditProfileScreen(),
       ),
     );
 
@@ -68,8 +91,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     }
   }
+
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
+    AppState.clearUser();
 
     if (!mounted) {
       return;
@@ -86,6 +111,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = AppState.currentUser;
+
+    if (user == null || user.id == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFEFFAF3),
+        body: Center(
+          child: Text(
+            'User not authenticated',
+            style: TextStyle(
+              color: Color(0xFF1C2A33),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFEFFAF3),
       body: Container(
@@ -144,7 +186,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                   }
 
-                  final profileData = snapshot.data ?? _ProfileData(groups: [], completedTasks: 0, activeTasks: 0);
+                  final profileData = snapshot.data ??
+                      const _ProfileData(
+                        groups: [],
+                        completedTasks: 0,
+                        activeTasks: 0,
+                      );
 
                   return SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
@@ -153,8 +200,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _ProfileHeaderCard(
+                          user: user,
                           initial: _initial(user.username),
-                          onEdit: () => _openEditProfile(),
+                          onEdit: _openEditProfile,
                         ),
 
                         const SizedBox(height: 22),
@@ -221,8 +269,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
       ),
-      bottomNavigationBar:
-      BottomNavbar(
+      bottomNavigationBar: const BottomNavbar(
         currentIndex: 3,
       ),
     );
@@ -237,23 +284,26 @@ class _ProfileData {
   const _ProfileData({
     required this.groups,
     required this.completedTasks,
-    required this.activeTasks
+    required this.activeTasks,
   });
 }
 
 class _ProfileHeaderCard extends StatelessWidget {
+  final UserModel user;
   final String initial;
   final VoidCallback onEdit;
 
-  _ProfileHeaderCard({
+  const _ProfileHeaderCard({
+    required this.user,
     required this.initial,
     required this.onEdit,
   });
 
-  final user = AppState.currentUser!;
-
   @override
   Widget build(BuildContext context) {
+    final hasPhoto = user.photoUrl != null && user.photoUrl!.trim().isNotEmpty;
+    final phrase = user.phrase.trim();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 26),
@@ -292,17 +342,17 @@ class _ProfileHeaderCard extends StatelessWidget {
             ),
             child: CircleAvatar(
               backgroundColor: Colors.white,
-              backgroundImage: user.photoUrl == null || user.photoUrl!.isEmpty ? null : NetworkImage(user.photoUrl!),
-              child: user.photoUrl == null || user.photoUrl!.isEmpty
-                  ? Text(
+              backgroundImage: hasPhoto ? NetworkImage(user.photoUrl!) : null,
+              child: hasPhoto
+                  ? null
+                  : Text(
                 initial,
                 style: const TextStyle(
                   color: Color(0xFF2A8CFF),
                   fontSize: 40,
                   fontWeight: FontWeight.w900,
                 ),
-              )
-                  : null,
+              ),
             ),
           ),
 
@@ -322,7 +372,7 @@ class _ProfileHeaderCard extends StatelessWidget {
           const SizedBox(height: 18),
 
           Text(
-            user.phrase.isEmpty ? "test phrase, n me lembro da default" : user.phrase,
+            phrase.isEmpty ? 'No profile phrase yet.' : phrase,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xEFFFFFFF),
@@ -337,7 +387,10 @@ class _ProfileHeaderCard extends StatelessWidget {
             height: 46,
             child: ElevatedButton.icon(
               onPressed: onEdit,
-              icon: const Icon(Icons.edit_rounded, size: 18),
+              icon: const Icon(
+                Icons.edit_rounded,
+                size: 18,
+              ),
               label: const Text('Edit Profile'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white.withValues(alpha: 0.22),
@@ -451,25 +504,20 @@ class _ActivityCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _SmallSummaryBox(
-                  value: completedTasks.toString(),
-                  label: 'Tasks completed',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _SmallSummaryBox(
-                  value: activeTasks.toString(),
-                  label: 'Active tasks',
-                ),
-              ),
-            ],
+          Expanded(
+            child: _SmallSummaryBox(
+              value: completedTasks.toString(),
+              label: 'Tasks completed',
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _SmallSummaryBox(
+              value: activeTasks.toString(),
+              label: 'Active tasks',
+            ),
           ),
         ],
       ),

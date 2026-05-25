@@ -1,10 +1,12 @@
 import 'dart:io';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:projesof/app_state.dart';
 import 'package:projesof/services/group_service.dart';
 import 'package:projesof/services/image_upload_service.dart';
 import 'package:projesof/services/user_service.dart';
-import 'package:projesof/app_state.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserService? userService;
@@ -34,24 +36,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _confirmPasswordController =
   TextEditingController();
 
-  bool _isSaving = false;
-
   late final UserService _userService;
   late final GroupService _groupService;
   late final ImageUploadService _imageUploadService;
 
+  bool _isSaving = false;
   File? _selectedImage;
-
-  final user = AppState.currentUser!;
 
   @override
   void initState() {
     super.initState();
+
     _userService = widget.userService ?? UserService();
     _groupService = widget.groupService ?? GroupService();
     _imageUploadService = widget.imageUploadService ?? ImageUploadService();
-    _usernameController = TextEditingController(text: user.username);
-    _phraseController = TextEditingController(text: user.phrase);
+
+    final user = AppState.currentUser;
+
+    _usernameController = TextEditingController(
+      text: user?.username ?? '',
+    );
+
+    _phraseController = TextEditingController(
+      text: user?.phrase ?? '',
+    );
   }
 
   @override
@@ -64,8 +72,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
+  void _showMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  }
+
   String _getInitial() {
-    final username = _usernameController.text.trim();
+    final typedUsername = _usernameController.text.trim();
+    final currentUsername = AppState.currentUser?.username.trim() ?? '';
+
+    final username = typedUsername.isNotEmpty ? typedUsername : currentUsername;
 
     if (username.isEmpty) {
       return '?';
@@ -75,12 +96,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   ImageProvider? _getAvatarImage() {
+    final currentUser = AppState.currentUser;
+
     if (_selectedImage != null) {
       return FileImage(_selectedImage!);
     }
 
-    if (user.photoUrl != null && user.photoUrl!.isNotEmpty) {
-      return NetworkImage(user.photoUrl!);
+    final photoUrl = currentUser?.photoUrl;
+
+    if (photoUrl != null && photoUrl.trim().isNotEmpty) {
+      return NetworkImage(photoUrl);
     }
 
     return null;
@@ -98,10 +123,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
   }
 
-  Future<void> _reauthenticate(User user) async {
+  Future<void> _reauthenticate(User firebaseUser) async {
     final currentPassword = _currentPasswordController.text.trim();
 
-    if (user.email == null || user.email!.isEmpty) {
+    if (firebaseUser.email == null || firebaseUser.email!.trim().isEmpty) {
       throw FirebaseAuthException(
         code: 'no-email',
         message: 'This account has no email.',
@@ -109,35 +134,110 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
 
     final credential = EmailAuthProvider.credential(
-      email: user.email!,
+      email: firebaseUser.email!,
       password: currentPassword,
     );
 
-    await user.reauthenticateWithCredential(credential);
+    await firebaseUser.reauthenticateWithCredential(credential);
   }
 
+  Future<void> _updateUserDocument({
+    required String uid,
+    required String username,
+    required String phrase,
+    required String? photoUrl,
+  }) async {
+    final data = <String, dynamic>{
+      'username': username,
+      'usernameLower': username.trim().toLowerCase(),
+
+      // Uso os dois nomes para não dar problema caso o teu UserModel use um deles.
+      'phrase': phrase,
+      'profilePhrase': phrase,
+    };
+
+    if (photoUrl != null && photoUrl.trim().isNotEmpty) {
+      data['photoUrl'] = photoUrl;
+    }
+
+    await FirebaseFirestore.instance.collection('users').doc(uid).update(data);
+  }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
+    final currentAppUser = AppState.currentUser;
     final firebaseUser = FirebaseAuth.instance.currentUser;
 
-    final username = _usernameController.text.trim();
+    if (currentAppUser == null || currentAppUser.id == null) {
+      _showMessage('User not authenticated.');
+      return;
+    }
+
+    if (firebaseUser == null) {
+      _showMessage('User not authenticated.');
+      return;
+    }
+
+    final uid = currentAppUser.id!;
+
+    final typedUsername = _usernameController.text.trim();
     final phrase = _phraseController.text.trim();
+
     final currentPassword = _currentPasswordController.text.trim();
     final newPassword = _newPasswordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
 
-    final wantsToChangePassword = newPassword.isNotEmpty;
+    final username = typedUsername.isEmpty
+        ? currentAppUser.username.trim()
+        : typedUsername;
 
-    if (wantsToChangePassword && currentPassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Enter your current password to change password.'),
-        ),
-      );
+    final wantsToChangePassword = currentPassword.isNotEmpty ||
+        newPassword.isNotEmpty ||
+        confirmPassword.isNotEmpty;
+
+    if (username.isEmpty) {
+      _showMessage('Username cannot be empty.');
       return;
+    }
+
+    if (username.length < 3) {
+      _showMessage('Username must have at least 3 characters.');
+      return;
+    }
+
+    if (phrase.length > 90) {
+      _showMessage('Phrase must be shorter than 90 characters.');
+      return;
+    }
+
+    if (wantsToChangePassword) {
+      if (currentPassword.isEmpty) {
+        _showMessage('Enter your current password to change password.');
+        return;
+      }
+
+      if (newPassword.isEmpty) {
+        _showMessage('Enter your new password.');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        _showMessage('Password must have at least 6 characters.');
+        return;
+      }
+
+      if (confirmPassword.isEmpty) {
+        _showMessage('Confirm your new password.');
+        return;
+      }
+
+      if (newPassword != confirmPassword) {
+        _showMessage('Passwords do not match.');
+        return;
+      }
     }
 
     setState(() {
@@ -145,49 +245,57 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
+      String? finalPhotoUrl = currentAppUser.photoUrl;
+
       if (wantsToChangePassword) {
-        await _reauthenticate(firebaseUser!);
+        await _reauthenticate(firebaseUser);
         await firebaseUser.updatePassword(newPassword);
       }
 
-      String? uploadedPhotoUrl;
-
       if (_selectedImage != null) {
-        uploadedPhotoUrl = await _imageUploadService.uploadProfileImage(
+        final uploadedPhotoUrl = await _imageUploadService.uploadProfileImage(
           imageFile: _selectedImage!,
-          userId: user.id!,
+          userId: uid,
         );
 
-        if (uploadedPhotoUrl == null) {
+        if (uploadedPhotoUrl == null || uploadedPhotoUrl.trim().isEmpty) {
           throw Exception('Could not upload profile image.');
         }
 
-        await firebaseUser?.updatePhotoURL(uploadedPhotoUrl);
-        await _userService.updatePhotoUrl(uid: user.id!, photoUrl: uploadedPhotoUrl);
+        finalPhotoUrl = uploadedPhotoUrl;
+
+        await firebaseUser.updatePhotoURL(finalPhotoUrl);
       }
 
-      await firebaseUser?.updateDisplayName(username);
+      await firebaseUser.updateDisplayName(username);
 
-      await _userService.updateUsername(uid: user.id!, username: username);
-
+      await _updateUserDocument(
+        uid: uid,
+        username: username,
+        phrase: phrase,
+        photoUrl: finalPhotoUrl,
+      );
 
       await _groupService.updateMemberInfoInGroups(
-          uid: user.id!,
-          username: username,
-          photoUrl: uploadedPhotoUrl,
-          phrase: phrase);
+        uid: uid,
+        username: username,
+        photoUrl: finalPhotoUrl,
+        phrase: phrase,
+      );
 
-      await firebaseUser!.reload();
+      await firebaseUser.reload();
+
+      final updatedUser = await _userService.getUserById(uid);
+
+      if (updatedUser != null) {
+        AppState.setCurrentUser(updatedUser);
+      }
 
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profile updated successfully!'),
-        ),
-      );
+      _showMessage('Profile updated successfully!');
 
       Navigator.pop(context, true);
     } on FirebaseAuthException catch (e) {
@@ -199,27 +307,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         message = 'Please log in again before changing your password.';
       } else if (e.code == 'weak-password') {
         message = 'The new password is too weak.';
+      } else if (e.code == 'network-request-failed') {
+        message = 'Network error. Check your connection.';
       }
 
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-        ),
-      );
+      _showMessage(message);
     } catch (e) {
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error updating profile: $e'),
-        ),
-      );
+      _showMessage('Error updating profile: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -380,12 +474,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 label: 'Username',
                                 icon: Icons.person_outline_rounded,
                                 validator: (value) {
-                                  if (value == null ||
-                                      value.trim().isEmpty) {
-                                    return 'Enter a username';
-                                  }
+                                  final text = value?.trim() ?? '';
 
-                                  if (value.trim().length < 3) {
+                                  if (text.isNotEmpty && text.length < 3) {
                                     return 'Username must have at least 3 characters';
                                   }
 
@@ -401,12 +492,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 icon: Icons.format_quote_rounded,
                                 maxLines: 3,
                                 validator: (value) {
-                                  if (value == null ||
-                                      value.trim().isEmpty) {
-                                    return 'Enter a profile phrase';
-                                  }
+                                  final text = value?.trim() ?? '';
 
-                                  if (value.trim().length > 90) {
+                                  if (text.length > 90) {
                                     return 'Phrase must be shorter than 90 characters';
                                   }
 
@@ -445,15 +533,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 label: 'New password',
                                 icon: Icons.password_rounded,
                                 obscureText: true,
-                                validator: (value) {
-                                  if (value != null &&
-                                      value.trim().isNotEmpty &&
-                                      value.trim().length < 6) {
-                                    return 'Password must have at least 6 characters';
-                                  }
-
-                                  return null;
-                                },
                               ),
 
                               const SizedBox(height: 16),
@@ -463,25 +542,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 label: 'Confirm new password',
                                 icon: Icons.password_rounded,
                                 obscureText: true,
-                                validator: (value) {
-                                  final newPassword =
-                                  _newPasswordController.text.trim();
-
-                                  if (newPassword.isEmpty) {
-                                    return null;
-                                  }
-
-                                  if (value == null ||
-                                      value.trim().isEmpty) {
-                                    return 'Confirm your new password';
-                                  }
-
-                                  if (value.trim() != newPassword) {
-                                    return 'Passwords do not match';
-                                  }
-
-                                  return null;
-                                },
                               ),
                             ],
                           ),
