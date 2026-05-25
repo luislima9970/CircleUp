@@ -52,7 +52,15 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = AppState.currentUser!;
+    final user = AppState.currentUser;
+
+    if (user == null || user.id == null) {
+      return const Scaffold(
+        body: Center(
+          child: Text('User not authenticated'),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFEFFAF3),
@@ -116,7 +124,10 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
                     const SizedBox(height: 22),
 
                     FutureBuilder<List<UserModel>>(
-                      future: _userService.searchOtherUsersByPrefix(_query, user.id!),
+                      future: _userService.searchOtherUsersByPrefix(
+                        _query,
+                        user.id!,
+                      ),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -133,22 +144,16 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
 
                         final users = snapshot.data ?? [];
 
-                        users.sort((a, b) {
-                          final aUsername = a.username.toLowerCase();
-                          final bUsername = b.username.toLowerCase();
-                          return aUsername.compareTo(bUsername);
-                        });
-
-                        if (_query.isEmpty) {
+                        if (users.isEmpty && _query.isEmpty) {
                           return const _EmptyStateCard(
-                            icon: Icons.search_rounded,
-                            title: 'Search for people',
+                            icon: Icons.people_outline_rounded,
+                            title: 'No other users yet',
                             subtitle:
-                            'Type a username to find other users in the app.',
+                            'When more people join the app, they will appear here.',
                           );
                         }
 
-                        if (users.isEmpty) {
+                        if (users.isEmpty && _query.isNotEmpty) {
                           return const _EmptyStateCard(
                             icon: Icons.person_search_rounded,
                             title: 'No users found',
@@ -253,12 +258,16 @@ class _UserResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasPhoto = result.photoUrl != null && result.photoUrl!.isNotEmpty;
+
     return Material(
       color: Colors.white.withValues(alpha: 0.96),
       borderRadius: BorderRadius.circular(24),
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
         onTap: () {
+          if (result.id == null) return;
+
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -289,18 +298,17 @@ class _UserResultCard extends StatelessWidget {
               CircleAvatar(
                 radius: 28,
                 backgroundColor: const Color(0xFFEAF4FF),
-                backgroundImage:
-                result.photoUrl == null || result.photoUrl!.isEmpty ? null : NetworkImage(result.photoUrl!),
-                child: result.photoUrl == null || result.photoUrl!.isEmpty
-                    ? Text(
+                backgroundImage: hasPhoto ? NetworkImage(result.photoUrl!) : null,
+                child: hasPhoto
+                    ? null
+                    : Text(
                   initial,
                   style: const TextStyle(
                     color: Color(0xFF2A8CFF),
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
                   ),
-                )
-                    : null,
+                ),
               ),
 
               const SizedBox(width: 15),
