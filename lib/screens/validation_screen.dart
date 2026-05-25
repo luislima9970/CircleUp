@@ -8,6 +8,7 @@ import 'package:projesof/services/submission_service.dart';
 import 'package:projesof/services/user_service.dart';
 import 'package:projesof/app_state.dart';
 import 'package:projesof/widgets/background_circle.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ValidationScreen extends StatefulWidget {
   final String groupId;
@@ -37,7 +38,6 @@ class ValidationScreen extends StatefulWidget {
 class _ValidationScreenState
     extends State<ValidationScreen> {
   late final SubmissionService _submissionService;
-  late final GroupService _groupService;
   late final UserService _userService;
   bool _isLoading = false;
   String? _errorMessage;
@@ -50,7 +50,6 @@ class _ValidationScreenState
   void initState() {
     super.initState();
     _submissionService = widget.submissionService ?? SubmissionService();
-    _groupService = widget.groupService ?? GroupService();
     _userService = widget.userService ?? UserService();
     _task = widget.task;
     _submissionFuture = _submissionService.getSubmissionByUser(groupId: widget.groupId, taskId: _task.id!, userId: widget.authorId);
@@ -91,6 +90,85 @@ class _ValidationScreenState
     }
   }
 
+  Future<void> _awardTaskPointsIfAccepted() async {
+    final taskId = _task.id;
+
+    if (taskId == null) {
+      return;
+    }
+
+    final reward = _task.reward;
+
+    final firestore = FirebaseFirestore.instance;
+
+    final groupRef = firestore.collection('groups').doc(widget.groupId);
+
+    final submissionRef = groupRef
+        .collection('tasks')
+        .doc(taskId)
+        .collection('submissions')
+        .doc(widget.authorId);
+
+    final memberRef = groupRef
+        .collection('members')
+        .doc(widget.authorId);
+
+    final userRef = firestore
+        .collection('users')
+        .doc(widget.authorId);
+
+    await firestore.runTransaction((transaction) async {
+      final submissionSnapshot = await transaction.get(submissionRef);
+
+      if (!submissionSnapshot.exists) {
+        return;
+      }
+
+      final data = submissionSnapshot.data();
+
+      if (data == null) {
+        return;
+      }
+
+      final status = data['status'] as String? ?? 'PENDING';
+      final pointsAlreadyAwarded = data['pointsAwarded'] == true;
+
+      if (status != 'APPROVED' || pointsAlreadyAwarded) {
+        return;
+      }
+
+      transaction.update(submissionRef, {
+        'pointsAwarded': true,
+        'pointsAwardedAt': FieldValue.serverTimestamp(),
+        'awardedPoints': reward,
+      });
+
+      transaction.set(
+        memberRef,
+        {
+          'points': FieldValue.increment(reward),
+        },
+        SetOptions(merge: true),
+      );
+
+      transaction.set(
+        userRef,
+        {
+          'totalPoints': FieldValue.increment(reward),
+        },
+        SetOptions(merge: true),
+      );
+
+      transaction.set(
+        groupRef,
+        {
+          'totalPoints': FieldValue.increment(reward),
+        },
+        SetOptions(merge: true),
+      );
+    });
+  }
+
   Future<void> _submitVote(String vote) async {
     if (_myVote != null) return;
 
@@ -107,7 +185,10 @@ class _ValidationScreenState
         taskId: _task.id!,
         authorId: widget.authorId,
         voterId: user.id!,
-        vote: VoteModel(voterId: user.id!, vote: vote),
+        vote: VoteModel(
+          voterId: user.id!,
+          vote: vote,
+        ),
       );
 
       await _submissionService.incrementVoteCount(
@@ -117,37 +198,45 @@ class _ValidationScreenState
         isValid: isValid,
       );
 
-      // Author: +3 per upvote, -3 per downvote
-      await _groupService.incrementMemberPoints(
-        groupId: widget.groupId,
-        uid: widget.authorId,
-        delta: isValid ? 3 : -3,
-      );
+      await _awardTaskPointsIfAccepted();
 
-      // Voter: +2 per upvote, +1 per downvote
-      await _groupService.incrementMemberPoints(
-        groupId: widget.groupId,
-        uid: user.id!,
-        delta: isValid ? 2 : 1,
-      );
+      if (widget.authorId == user.id) {
+        final updatedUser = await _userService.getUserById(user.id!);
+
+        if (updatedUser != null) {
+          AppState.setCurrentUser(updatedUser);
+        }
+      }
 
       if (mounted) {
-        setState(() => _myVote = VoteModel(voterId: user.id!, vote: vote));
+        setState(() {
+          _myVote = VoteModel(
+            voterId: user.id!,
+            vote: vote,
+          );
+        });
+
         await _refreshSubmissionData();
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isValid ? 'Vote recorded: Approved' : 'Vote recorded: Rejected'),
+            content: Text(
+              isValid
+                  ? 'Vote recorded: Approved'
+                  : 'Vote recorded: Rejected',
+            ),
             backgroundColor: _getThemeColor(),
           ),
         );
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error voting: ${e.toString()}';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error voting: ${e.toString()}';
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
