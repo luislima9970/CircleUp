@@ -1,34 +1,75 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projesof/models/user_model.dart';
 
 class UserService {
-  final FirebaseFirestore _firestore;
+  final CollectionReference<Map<String, dynamic>> _users;
 
-  UserService({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
+  UserService({FirebaseFirestore? firestore})
+      : _users = (firestore ?? FirebaseFirestore.instance).collection('users');
+
 
   Future<void> createUser({
-    required String uid,
-    required String username,
-    required String email,
-    String? photoUrl,
+    required UserModel user,
   }) async {
-    await _firestore.collection('users').doc(uid).set({
-      'username': username,
-      'email': email,
-      'photoUrl': photoUrl,
-      'createdAt': Timestamp.now(),
-    });
+    final data = user.toFirestore();
+
+    data['usernameLower'] = user.username.trim().toLowerCase();
+
+    await _users.doc(user.id).set(data);
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>> getUserById(String uid) async {
-    return await _firestore.collection('users').doc(uid).get();
+  Future<UserModel?> getUserById(String? userId) async {
+    if (userId == null) return null;
+
+    final doc = await _users.doc(userId).get();
+
+    if (!doc.exists || doc.data() == null) return null;
+
+    return UserModel.fromFirestore(
+      doc.data()!,
+      doc.id,
+    );
+  }
+
+  Future<List<UserModel>> searchOtherUsersByPrefix(
+      String query,
+      String userId,
+      ) async {
+    final cleanedQuery = query.trim().toLowerCase();
+
+    final snapshot = await _users.get();
+
+    final users = snapshot.docs
+        .where((doc) => doc.id != userId)
+        .map(
+          (doc) => UserModel.fromFirestore(
+        doc.data(),
+        doc.id,
+      ),
+    )
+        .where((user) {
+      if (cleanedQuery.isEmpty) return true;
+
+      return user.username.trim().toLowerCase().startsWith(cleanedQuery);
+    })
+        .toList();
+
+    users.sort(
+          (a, b) => a.username.toLowerCase().compareTo(
+        b.username.toLowerCase(),
+      ),
+    );
+
+    return users;
   }
 
   Future<void> updateUsername({
     required String uid,
     required String username,
   }) async {
-    await _firestore.collection('users').doc(uid).update({
+    await _users.doc(uid).update({
       'username': username,
+      'usernameLower': username.trim().toLowerCase(),
     });
   }
 
@@ -36,12 +77,47 @@ class UserService {
     required String uid,
     required String photoUrl,
   }) async {
-    await _firestore.collection('users').doc(uid).update({
+    await _users.doc(uid).update({
       'photoUrl': photoUrl,
     });
   }
 
   Future<void> deleteUser(String uid) async {
-    await _firestore.collection('users').doc(uid).delete();
+    await _users.doc(uid).delete();
+  }
+
+  Future<void> updateProfile({
+    required String uid,
+    required String username,
+    required String phrase,
+    String? photoUrl,
+  }) async {
+    final data = <String, dynamic>{
+      'username': username,
+      'usernameLower': username.trim().toLowerCase(),
+      'phrase': phrase,
+      'profilePhrase': phrase,
+    };
+
+    if (photoUrl != null && photoUrl.trim().isNotEmpty) {
+      data['photoUrl'] = photoUrl;
+    }
+
+    await _users.doc(uid).update(data);
+  }
+
+  Future<void> fixOldUsersWithoutUsernameLower() async {
+    final snapshot = await _users.get();
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final username = data['username'];
+
+      if (username is String && username.trim().isNotEmpty) {
+        await doc.reference.update({
+          'usernameLower': username.trim().toLowerCase(),
+        });
+      }
+    }
   }
 }

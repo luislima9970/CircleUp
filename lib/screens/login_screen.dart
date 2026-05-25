@@ -1,15 +1,21 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'register_screen.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/models/user_model.dart';
+import 'package:projesof/services/user_service.dart';
+import 'package:projesof/widgets/background_circle.dart';
 import 'package:projesof/services/auth_service.dart';
+import 'register_screen.dart';
 import 'homepage_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final AuthService? authService;
+  final UserService? userService;
 
   const LoginScreen({
     super.key,
     this.authService,
+    this.userService,
   });
 
   @override
@@ -18,16 +24,19 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   late final AuthService _authService;
+  late final UserService _userService;
 
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    _userService = widget.userService ?? UserService();
     _authService = widget.authService ?? AuthService();
   }
 
@@ -43,11 +52,17 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    setState(() => _isLoading = true);
+
     try {
       await _authService.signIn(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+
+      final UserModel? user = await _userService.getUserById(_authService.getCurrentUid());
+      if (user == null) throw Exception('User profile not found. Please contact support.');
+      AppState.setCurrentUser(user);
 
       if (!mounted) return;
 
@@ -57,14 +72,17 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
+
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => const HomepageScreen(),
+          builder: (_) => HomepageScreen(),
         ),
       );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
+      setState(() => _isLoading = false);
 
       String message = 'Error logging in.';
 
@@ -85,6 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      setState(() => _isLoading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -116,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const Positioned(
                 top: -80,
                 right: -60,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 190,
                   color: Color(0x332A8CFF),
                 ),
@@ -125,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const Positioned(
                 bottom: -90,
                 left: -70,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 220,
                   color: Color(0x3343D17A),
                 ),
@@ -233,7 +252,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     }
 
                                     final emailRegex = RegExp(
-                                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                      r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$',
                                     );
 
                                     if (!emailRegex.hasMatch(value.trim())) {
@@ -297,38 +316,48 @@ class _LoginScreenState extends State<LoginScreen> {
                                   width: double.infinity,
                                   height: 54,
                                   child: ElevatedButton(
-                                    onPressed: _submit,
+                                    onPressed: _isLoading ? null : _submit,
                                     style: ElevatedButton.styleFrom(
                                       padding: EdgeInsets.zero,
                                       backgroundColor: Colors.transparent,
+                                      disabledBackgroundColor: Colors.transparent,
                                       shadowColor: Colors.transparent,
                                       foregroundColor: Colors.white,
+                                      disabledForegroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
                                       ),
                                       elevation: 0,
                                     ),
                                     child: Ink(
-                                      decoration: const BoxDecoration(
+                                      decoration: BoxDecoration(
                                         gradient: LinearGradient(
-                                          colors: [
-                                            Color(0xFF2A8CFF),
-                                            Color(0xFF43D17A),
-                                          ],
+                                          colors: _isLoading
+                                              ? [const Color(0xFFB7C4CC), const Color(0xFFB7C4CC)]
+                                              : [const Color(0xFF2A8CFF), const Color(0xFF43D17A)],
                                         ),
-                                        borderRadius: BorderRadius.all(
+                                        borderRadius: const BorderRadius.all(
                                           Radius.circular(16),
                                         ),
                                       ),
-                                      child: const Center(
-                                        child: Text(
-                                          'Log In',
-                                          style: TextStyle(
-                                            fontSize: 17,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
+                                      child: Center(
+                                        child: _isLoading
+                                            ? const SizedBox(
+                                                width: 22,
+                                                height: 22,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2.4,
+                                                  color: Colors.white,
+                                                ),
+                                              )
+                                            : const Text(
+                                                'Log In',
+                                                style: TextStyle(
+                                                  fontSize: 17,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
                                       ),
                                     ),
                                   ),
@@ -427,28 +456,6 @@ class _LoginScreenState extends State<LoginScreen> {
           color: Colors.red,
           width: 2,
         ),
-      ),
-    );
-  }
-}
-
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
       ),
     );
   }

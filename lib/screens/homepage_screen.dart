@@ -1,42 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:projesof/screens/tasks_screen.dart';
+import 'package:projesof/main.dart';
 import 'package:projesof/services/group_service.dart';
-
-import 'createcircle_screen.dart';
+import 'package:projesof/services/submission_service.dart';
+import 'package:projesof/app_state.dart';
+import 'package:projesof/models/group_model.dart';
+import 'package:projesof/services/task_service.dart';
+import 'package:projesof/widgets/background_circle.dart';
+import 'package:projesof/widgets/bottom_navbar.dart';
+import 'package:projesof/widgets/loading_card.dart';
 import 'group_page.dart';
+import 'user_search_screen.dart';
 
 class HomepageScreen extends StatelessWidget {
   final GroupService? groupService;
-  const HomepageScreen({super.key, this.groupService});
+  final TaskService? taskService;
+  final SubmissionService? submissionService;
 
-  void _openCirclesPage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const CreateCircleScreen(),
-      ),
-    );
-  }
-
-  void _openTasksPage(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => TasksPageScreen(userId: user!.uid),
-      ),
-    );
-  }
-
-  void _showProfileMessage(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profile page will be available soon.'),
-      ),
-    );
-  }
+  const HomepageScreen({super.key, this.groupService, this.taskService, this.submissionService});
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +42,7 @@ class HomepageScreen extends StatelessWidget {
               const Positioned(
                 top: -90,
                 right: -70,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 210,
                   color: Color(0x332A8CFF),
                 ),
@@ -70,7 +50,7 @@ class HomepageScreen extends StatelessWidget {
               const Positioned(
                 bottom: -100,
                 left: -80,
-                child: _BackgroundCircle(
+                child: BackgroundCircle(
                   size: 230,
                   color: Color(0x3343D17A),
                 ),
@@ -81,11 +61,11 @@ class HomepageScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const _HomeHeader(),
+                    _HomeHeader(),
 
                     const SizedBox(height: 26),
 
-                    _TodayProgressCard(groupService: groupService),
+                    _ProgressCard(groupService: groupService, taskService: taskService, submissionService: submissionService),
 
                     const SizedBox(height: 30),
 
@@ -103,145 +83,70 @@ class HomepageScreen extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar:
+      BottomNavbar(
         currentIndex: 0,
-        selectedItemColor: const Color(0xFF2A8CFF),
-        unselectedItemColor: const Color(0xFF95A39A),
-        showUnselectedLabels: true,
-        selectedFontSize: 12,
-        unselectedFontSize: 12,
-        onTap: (index) {
-          if (index == 0) {
-            return;
-          }
-
-          if (index == 1) {
-            _openCirclesPage(context);
-          }
-
-          if (index == 2) {
-            _openTasksPage(context);
-          }
-
-          if (index == 3) {
-            _showProfileMessage(context);
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_filled),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.groups_outlined),
-            label: 'Circles',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.checklist_rtl),
-            label: 'Tasks',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }
 }
 
-class _HomeHeader extends StatefulWidget {
-  const _HomeHeader();
+class _HomeHeader extends StatelessWidget {
 
-  @override
-  State<_HomeHeader> createState() => _HomeHeaderState();
-}
+  _HomeHeader();
 
-class _HomeHeaderState extends State<_HomeHeader> {
-  late final Future<String> _usernameFuture;
+  final user = AppState.currentUser!;
 
-  @override
-  void initState() {
-    super.initState();
-    _usernameFuture = _getUsername();
-  }
-
-  Future<String> _getUsername() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        return '';
-      }
-
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      final data = doc.data();
-
-      if (data == null) {
-        return '';
-      }
-
-      final username = data['username']?.toString().trim();
-
-      if (username == null || username.isEmpty) {
-        return '';
-      }
-
-      return username;
-    } catch (e) {
-      debugPrint('Error loading username: $e');
-      return '';
-    }
+  void _openUserSearch(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const UserSearchScreen(),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<String>(
-      future: _usernameFuture,
-      builder: (context, snapshot) {
-        final username = snapshot.data ?? '';
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    username.isEmpty ? 'Hello' : 'Hello, $username',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1C2A33),
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Ready for today’s challenges?',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF7A8A94),
-                    ),
-                  ),
-                ],
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                user.username.isEmpty ? 'Hello' : 'Hello, ${user.username}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1C2A33),
+                  height: 1.1,
+                ),
               ),
-            ),
-            const SizedBox(width: 14),
-            Container(
+              const SizedBox(height: 8),
+              const Text(
+                'Ready for today’s challenges?',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Color(0xFF7A8A94),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          child: InkWell(
+            onTap: () => _openUserSearch(context),
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: Colors.white,
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: const [
                   BoxShadow(
@@ -252,277 +157,241 @@ class _HomeHeaderState extends State<_HomeHeader> {
                 ],
               ),
               child: const Icon(
-                Icons.person_rounded,
+                Icons.search_rounded,
                 color: Color(0xFF2A8CFF),
               ),
             ),
-          ],
-        );
-      },
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _TodayProgressCard extends StatefulWidget {
-  final GroupService? groupService; 
-  const _TodayProgressCard({this.groupService});
+class _ProgressCard extends StatefulWidget {
+  final GroupService? groupService;
+  final TaskService? taskService;
+  final SubmissionService? submissionService;
+
+  const _ProgressCard({this.groupService, this.taskService, this.submissionService});
 
   @override
-  State<_TodayProgressCard> createState() => _TodayProgressCardState();
+  State<_ProgressCard> createState() =>
+      _ProgressCardState();
 }
 
-class _TodayProgressCardState extends State<_TodayProgressCard> {
+class _ProgressCardState extends State<_ProgressCard> with RouteAware {
   late final GroupService _groupService;
-  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  late final TaskService _taskService;
+  late final SubmissionService _submissionService;
+  final user = AppState.currentUser!;
 
-  late final Future<_TodayProgressData> _progressFuture;
+  Future<_ProgressData>? _progressFuture;
+  String _lastGroupsKey = '';
 
   @override
   void initState() {
     super.initState();
     _groupService = widget.groupService ?? GroupService();
-    _progressFuture = _loadTodayProgress();
+    _taskService = widget.taskService ?? TaskService();
+    _submissionService = widget.submissionService ?? SubmissionService();
   }
 
-  String _todayKey() {
-    final now = DateTime.now();
-
-    final year = now.year.toString().padLeft(4, '0');
-    final month = now.month.toString().padLeft(2, '0');
-    final day = now.day.toString().padLeft(2, '0');
-
-    return '$year-$month-$day';
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) routeObserver.subscribe(this, route);
   }
 
-  int _parseReward(dynamic reward) {
-    if (reward is int) {
-      return reward;
-    }
-
-    if (reward is num) {
-      return reward.toInt();
-    }
-
-    if (reward is String) {
-      return int.tryParse(reward) ?? 0;
-    }
-
-    return 0;
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
   }
 
-  Future<int> _getActiveTasksCount(String groupId) async {
-    final snapshot = await _firestore
-        .collection('groups')
-        .doc(groupId)
-        .collection('tasks')
-        .where('isActive', isEqualTo: true)
-        .get();
-
-    return snapshot.docs.length;
+  @override
+  void didPopNext() {
+    // Home screen is visible again — force a fresh computation.
+    setState(() => _lastGroupsKey = '');
   }
 
-  Future<int> _getTodayEarnedPoints({
-    required String groupId,
-    required String userId,
-  }) async {
-    final today = _todayKey();
+  Future<_ProgressData> _computeProgress(List<GroupModel> groups) async {
+    int totalPoints = 0;
+    int pendingTasksCount = 0;
 
-    final snapshot = await _firestore
-        .collection('groups')
-        .doc(groupId)
-        .collection('taskCompletions')
-        .where('userId', isEqualTo: userId)
-        .where('completedDate', isEqualTo: today)
-        .get();
-
-    int total = 0;
-
-    for (final doc in snapshot.docs) {
-      final data = doc.data();
-      total += _parseReward(data['reward']);
-    }
-
-    return total;
-  }
-
-  Future<_TodayProgressData> _loadTodayProgress() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user == null) {
-        return const _TodayProgressData(
-          groupsCount: 0,
-          activeTasksCount: 0,
-          todayPoints: 0,
-        );
-      }
-
-      final groups = await _groupService.getGroupsForUser(user.uid);
-
-      int activeTasksCount = 0;
-      int todayPoints = 0;
-
-      for (final group in groups) {
-        activeTasksCount += await _getActiveTasksCount(group.id);
-
-        todayPoints += await _getTodayEarnedPoints(
-          groupId: group.id,
-          userId: user.uid,
-        );
-      }
-
-      return _TodayProgressData(
-        groupsCount: groups.length,
-        activeTasksCount: activeTasksCount,
-        todayPoints: todayPoints,
+    for (final group in groups) {
+      // Sum real-time points from each member document.
+      final member = await _groupService.getMember(
+        groupId: group.id!,
+        userId: user.id!,
       );
-    } catch (_) {
-      return const _TodayProgressData(
-        groupsCount: 0,
-        activeTasksCount: 0,
-        todayPoints: 0,
-      );
+      totalPoints += member?.points ?? 0;
+
+      // Count groups where today's task hasn't been submitted yet.
+      final dailyTask =
+          await _taskService.getDailyTask(groupId: group.id!).first;
+      if (dailyTask != null) {
+        final submission = await _submissionService.getSubmissionByUser(
+          groupId: group.id!,
+          taskId: dailyTask.id!,
+          userId: user.id!,
+        );
+        if (submission == null) pendingTasksCount++;
+      }
     }
+
+    return _ProgressData(
+      groups: groups,
+      totalPoints: totalPoints,
+      pendingTasksCount: pendingTasksCount,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_TodayProgressData>(
-      future: _progressFuture,
-      builder: (context, snapshot) {
-        final isLoading = snapshot.connectionState == ConnectionState.waiting;
+    return StreamBuilder<List<GroupModel>>(
+      stream: _groupService.getGroupsForUser(user.id),
+      builder: (context, groupSnapshot) {
+        final groups = groupSnapshot.data ?? [];
+        final isLoadingGroups =
+            groupSnapshot.connectionState == ConnectionState.waiting;
 
-        final progress = snapshot.data ??
-            const _TodayProgressData(
-              groupsCount: 0,
-              activeTasksCount: 0,
-              todayPoints: 0,
-            );
-
-        String message;
-
-        if (isLoading) {
-          message = 'Loading your progress...';
-        } else if (progress.groupsCount == 0) {
-          message = 'Create or join a group to start completing challenges.';
-        } else if (progress.todayPoints > 0) {
-          message =
-          'You earned ${progress.todayPoints} point${progress.todayPoints == 1 ? '' : 's'} today. Keep going!';
-        } else if (progress.activeTasksCount > 0) {
-          message =
-          'You have ${progress.activeTasksCount} active task${progress.activeTasksCount == 1 ? '' : 's'} waiting for you.';
-        } else {
-          message = 'You are in groups, but there are no active tasks yet.';
+        // Recreate the future only when the group composition changes.
+        final groupsKey = groups.map((g) => g.id).join(',');
+        if (groupsKey != _lastGroupsKey) {
+          _lastGroupsKey = groupsKey;
+          _progressFuture = _computeProgress(groups);
         }
 
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFF2A8CFF),
-                Color(0xFF43D17A),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x242A8CFF),
-                blurRadius: 26,
-                offset: Offset(0, 14),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.local_fire_department_rounded,
-                    color: Colors.white,
-                    size: 30,
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      "Today's Progress",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  if (isLoading)
-                    const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: Colors.white,
-                      ),
-                    ),
-                ],
-              ),
+        return FutureBuilder<_ProgressData>(
+          future: _progressFuture,
+          builder: (context, snapshot) {
+            final isLoading = isLoadingGroups ||
+                snapshot.connectionState == ConnectionState.waiting;
+            final data = snapshot.data;
+            final totalPoints = data?.totalPoints ?? 0;
+            final pendingTasksCount = data?.pendingTasksCount ?? 0;
 
-              const SizedBox(height: 12),
+            String message;
+            if (isLoading) {
+              message = 'Loading your progress...';
+            } else if (groups.isEmpty) {
+              message =
+                  'Create or join a group to start completing challenges.';
+            } else if (totalPoints > 0) {
+              message =
+                  'You earned $totalPoints point${totalPoints == 1 ? '' : 's'} in total. Keep going!';
+            } else if (pendingTasksCount > 0) {
+              message =
+                  'You have $pendingTasksCount task${pendingTasksCount == 1 ? '' : 's'} waiting for you today.';
+            } else {
+              message = 'All done for today! Check back tomorrow.';
+            }
 
-              Text(
-                message,
-                style: const TextStyle(
-                  color: Color(0xEFFFFFFF),
-                  fontSize: 14,
-                  height: 1.4,
+            return Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF2A8CFF), Color(0xFF43D17A)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-              ),
-
-              const SizedBox(height: 18),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _ProgressStatBox(
-                      value: progress.groupsCount.toString(),
-                      label: 'Groups',
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ProgressStatBox(
-                      value: progress.activeTasksCount.toString(),
-                      label: 'Tasks',
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ProgressStatBox(
-                      value: progress.todayPoints.toString(),
-                      label: 'Points',
-                    ),
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x242A8CFF),
+                    blurRadius: 26,
+                    offset: Offset(0, 14),
                   ),
                 ],
               ),
-            ],
-          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.local_fire_department_rounded,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Your Progress',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 21,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      if (isLoading)
+                        const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    message,
+                    style: const TextStyle(
+                      color: Color(0xEFFFFFFF),
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ProgressStatBox(
+                          value: groups.length.toString(),
+                          label: 'Groups',
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ProgressStatBox(
+                          value: pendingTasksCount.toString(),
+                          label: 'Tasks',
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ProgressStatBox(
+                          value: totalPoints.toString(),
+                          label: 'Points',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
   }
 }
 
-class _TodayProgressData {
-  final int groupsCount;
-  final int activeTasksCount;
-  final int todayPoints;
+class _ProgressData {
+  final List<GroupModel> groups;
+  final int totalPoints;
+  final int pendingTasksCount;
 
-  const _TodayProgressData({
-    required this.groupsCount,
-    required this.activeTasksCount,
-    required this.todayPoints,
+  const _ProgressData({
+    required this.groups,
+    required this.totalPoints,
+    required this.pendingTasksCount,
   });
 }
 
@@ -578,6 +447,7 @@ class _ProgressStatBox extends StatelessWidget {
 
 class _UserGroupsList extends StatefulWidget {
   final GroupService? groupService;
+
   const _UserGroupsList({this.groupService});
 
   @override
@@ -587,34 +457,24 @@ class _UserGroupsList extends StatefulWidget {
 class _UserGroupsListState extends State<_UserGroupsList> {
   late final GroupService _groupService;
 
-  late final Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
+  final user = AppState.currentUser!;
+  late final Future<List<GroupModel>>
   _groupsFuture;
 
   @override
   void initState() {
     super.initState();
-    _groupService = widget.groupService ?? GroupService(); 
-    _groupsFuture = _loadUserGroups();
-  }
-
-  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>
-  _loadUserGroups() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return [];
-      return _groupService.getGroupsForUser(user.uid);
-    } catch (_) {
-      return [];
-    }
+    _groupService = widget.groupService ?? GroupService();
+    _groupsFuture = _groupService.getGroupsForUser(user.id).first;
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
+    return FutureBuilder<List<GroupModel>>(
       future: _groupsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const _LoadingCard();
+          return const LoadingCard();
         }
 
         if (snapshot.hasError) {
@@ -638,7 +498,7 @@ class _UserGroupsListState extends State<_UserGroupsList> {
         return Column(
           children: [
             for (int i = 0; i < groups.length; i++) ...[
-              _GroupCard(groupDoc: groups[i]),
+              _GroupCard(group: groups[i]),
               if (i != groups.length - 1) const SizedBox(height: 12),
             ],
           ],
@@ -649,10 +509,10 @@ class _UserGroupsListState extends State<_UserGroupsList> {
 }
 
 class _GroupCard extends StatelessWidget {
-  final QueryDocumentSnapshot<Map<String, dynamic>> groupDoc;
+  final GroupModel group;
 
   const _GroupCard({
-    required this.groupDoc,
+    required this.group,
   });
 
   IconData _themeIcon(String theme) {
@@ -689,14 +549,8 @@ class _GroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final data = groupDoc.data();
-
-    final name = data['name']?.toString() ?? 'Unnamed group';
-    final theme = data['theme']?.toString() ?? '';
-    final description = data['description']?.toString() ?? '';
-
-    final color = _themeColor(theme);
-    final icon = _themeIcon(theme);
+    final color = _themeColor(group.theme);
+    final icon = _themeIcon(group.theme);
 
     return Material(
       color: Colors.white.withValues(alpha: 0.94),
@@ -708,7 +562,7 @@ class _GroupCard extends StatelessWidget {
             context,
             MaterialPageRoute(
               builder: (_) => GroupPageScreen(
-                groupId: groupDoc.id,
+                groupId: group.id!,
               ),
             ),
           );
@@ -750,7 +604,7 @@ class _GroupCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name,
+                      group.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -759,10 +613,10 @@ class _GroupCard extends StatelessWidget {
                         color: Color(0xFF1C2A33),
                       ),
                     ),
-                    if (theme.isNotEmpty) ...[
+                    if (group.theme.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
-                        theme,
+                        group.theme,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -771,10 +625,10 @@ class _GroupCard extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (description.isNotEmpty) ...[
+                    if (group.description.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
-                        description,
+                        group.description,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -890,55 +744,4 @@ class _EmptyStateCard extends StatelessWidget {
   }
 }
 
-class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(26),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: const Color(0xFFE5EEF5),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: const Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF2A8CFF),
-        ),
-      ),
-    );
-  }
-}
-
-class _BackgroundCircle extends StatelessWidget {
-  final double size;
-  final Color color;
-
-  const _BackgroundCircle({
-    required this.size,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-}
