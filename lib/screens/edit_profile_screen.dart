@@ -476,7 +476,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 validator: (value) {
                                   final text = value?.trim() ?? '';
 
-                                  if (text.isNotEmpty && text.length < 3) {
+                                  if (text.isEmpty) {
+                                    return 'Enter a username';
+                                  }
+
+                                  if (text.length < 3) {
                                     return 'Username must have at least 3 characters';
                                   }
 

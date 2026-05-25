@@ -38,7 +38,6 @@ class ValidationScreen extends StatefulWidget {
 class _ValidationScreenState
     extends State<ValidationScreen> {
   late final SubmissionService _submissionService;
-  late final GroupService _groupService;
   late final UserService _userService;
   bool _isLoading = false;
   String? _errorMessage;
@@ -51,7 +50,6 @@ class _ValidationScreenState
   void initState() {
     super.initState();
     _submissionService = widget.submissionService ?? SubmissionService();
-    _groupService = widget.groupService ?? GroupService();
     _userService = widget.userService ?? UserService();
     _task = widget.task;
     _submissionFuture = _submissionService.getSubmissionByUser(groupId: widget.groupId, taskId: _task.id!, userId: widget.authorId);

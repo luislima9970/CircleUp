@@ -3,12 +3,9 @@ import 'package:projesof/models/user_model.dart';
 
 class UserService {
   final CollectionReference<Map<String, dynamic>> _users;
-  final FirebaseFirestore _firestore;
 
   UserService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance,
-        _users =
-            (firestore ?? FirebaseFirestore.instance).collection('users');
+      : _users = (firestore ?? FirebaseFirestore.instance).collection('users');
 
 
   Future<void> createUser({
