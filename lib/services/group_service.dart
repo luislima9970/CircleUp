@@ -250,6 +250,18 @@ class GroupService {
     });
   }
 
+  Future<int> getTotalPoints({
+    required String uid
+  }) async {
+    int points = 0;
+    final groups = await getGroupsForUser(uid).first;
+    for (final group in groups) {
+      final member = await getMember(groupId: group.id!, userId: uid);
+      points += member!.points;
+    }
+    return points;
+  }
+
   Future<void> updateMemberPoints({
     required String groupId,
     required String uid,
