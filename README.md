@@ -405,6 +405,46 @@ You can find below information and references related with the project managemen
 
 ### Sprint 3
 
+- **Profile Page**
+
+    The Profile Page allows users to view their account information, including their personal details and profile description. It also includes a logout button so users can safely sign out of the application.
+
+- **Edit Profile Page**
+  
+    The Edit Profile Page allows users to update their personal information, such as their username, profile phrase, profile image and password. The changes are saved in the database and reflected across the application, keeping the user's profile up to date.
+
+- **See Other's Profile Page**
+
+  The See Other's Profile Page allows users to view another user's public profile. It displays that user's information, including their personal details and profile description, as well as the groups they belong to.
+
+- **Search for Users Page**
+
+  The Search for Users Page allows users to search for other registered users by username. The search updates based on the text entered, making it easier to find and access other users' public profiles.
+
+- **Group themes**
+
+  Each group is assigned a theme that determines its 7 tasks — one per day of the week. The pointing system works as follows: submitting a task immediately earns the user points. As group members vote on the submission, positive votes add further points while negative votes deduct them. Casting a vote also rewards the voter with points, incentivising active participation in the validation process. All points accumulate on the group leaderboard, allowing members to compete and track their progress throughout the week.
+
+- **Create Model**
+
+  All code was refactored so that screens no longer access the database directly. Instead, data is first processed through model classes, which act as a structured layer between the Firestore documents and the UI. This ensures a cleaner separation of concerns, makes the codebase easier to maintain, and aligns the implementation with the planned logical architecture.
+
+- **Bugs**
+
+  - **Search for Users**
+
+      The Search for Users page had a bug where it showed that there were no users in the application. Because of this, it was not possible to search for other users. This bug has been fixed, and the page now correctly shows and filters existing users.
+
+  - **Edit Profile**
+
+      The Edit Profile page had a bug where changes were not saved after clicking the save button. The profile information stayed the same as before. This bug has been fixed, and the updated information is now saved correctly.
+
+  - **Profile error**
+
+      The Profile page was displaying an all-time progress section that duplicated information already visible on the Home page. Since the data was redundant, the fix was to remove it from the Profile page entirely, keeping a single source of truth on the Home page.
+
+
+
 - **Sprint planning and retrospectives:**  
   * **Plans:** 
     - In this sprint is espected to implement the profile, tasks&points mechanism of the app and refactor the code so the database info is stored in models.
@@ -413,14 +453,13 @@ You can find below information and references related with the project managemen
 
     - In this sprint everything was implemented as expected.
 
-      ![alt text](assets/Retro-Sprint2.png)
+      ![alt text](assets/Retro-Sprint3_1.png)
+      ![alt text](assets/Retro-Sprint3_2.png)
   
   * **Retrospectives:** Meeting notes were recorded in a document in the repository, addressing the following questions:  
     - **Did well:** The workflow was smooth and effective. Everything was completed on time and without unresolved bugs.
-    - **Do differently:** In Sprint 2, some tasks should be done by diferent people who have acess to the Firebase.  
-    - **Puzzles:** The database was fully implemented, and now the user, authentication, groups, tasks and submission features are currently in use. With testing, we can confirm that everything, is fully functional.  
-    - **List of a few improvements to implement in the next Sprint:** We will be able to the our profile and others aswell. We will only be able to submit a task image once.
-
-### Sprint 4
+    - **Do differently:** In Sprint 3, everything worked perfectly, however some work was dependent on other people which caused some delay.  
+    - **Puzzles:** The profile was fully implemented, and now the user can see his/her profile, as well as others. The pointing system is also working perfectly. With testing, we can confirm that everything, is fully functional.  
+    - **List of a few improvements to implement if we had a next Sprint:** We will be able to implement a groupchat for each group, cosmetics for the profile and the user would login instantly when opening the app without login.
 
 ### Final Release
