@@ -6,7 +6,6 @@ class MemberModel {
   final String? photoUrl;
   final String phrase;
   final int points;
-  final int streak;
   final String role;
   final Timestamp joinedAt;
 
@@ -16,7 +15,6 @@ class MemberModel {
     this.photoUrl,
     this.phrase = '',
     this.points = 0,
-    this.streak = 0,
     this.role = 'member',
     Timestamp? joinedAt,
   }) : joinedAt = joinedAt ?? Timestamp.now();
@@ -31,7 +29,6 @@ class MemberModel {
         photoUrl: data['photoUrl'] ?? '',
         phrase: data['phrase'] ?? '',
         points: data['points'] ?? 0,
-        streak: data['streak'] ?? 0,
         role: data['role'] ?? '',
         joinedAt: data['joinedAt']
     );
@@ -43,7 +40,6 @@ class MemberModel {
       'photoUrl': photoUrl,
       'phrase': phrase,
       'points': points,
-      'streak': streak,
       'role': role,
       'joinedAt': joinedAt
     };

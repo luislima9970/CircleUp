@@ -289,20 +289,6 @@ class GroupService {
     });
   }
 
-  Future<void> updateMemberStreak({
-    required String groupId,
-    required String uid,
-    required int streak,
-  }) async {
-    await _groups
-        .doc(groupId)
-        .collection('members')
-        .doc(uid)
-        .update({
-      'streak': streak,
-    });
-  }
-
   Future<void> updateMemberInfoInGroups({
     required String uid,
     String? username,

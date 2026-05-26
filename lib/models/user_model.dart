@@ -6,8 +6,6 @@ class UserModel {
   final String email;
   final String? photoUrl;
   final String phrase;
-  final int totalPoints;
-  final int maxStreak;
   final Timestamp createdAt;
 
 
@@ -17,8 +15,6 @@ class UserModel {
     required this.email,
     this.photoUrl,
     this.phrase = '',
-    this.totalPoints = 0,
-    this.maxStreak = 0,
     Timestamp? createdAt,
   }) : createdAt = createdAt ?? Timestamp.now();
 
@@ -32,8 +28,6 @@ class UserModel {
       email: data['email'] ?? '',
       photoUrl: data['photoUrl'] ?? '',
       phrase: data['phrase'] ?? '',
-      totalPoints: data['totalPoints'] ?? 0,
-      maxStreak: data['maxStreak'] ?? 0,
       createdAt: data['createdAt'],
     );
   }
@@ -44,8 +38,6 @@ class UserModel {
       'email': email,
       'photoUrl': photoUrl,
       'phrase': phrase,
-      'totalPoints': totalPoints,
-      'maxStreak': maxStreak,
       'createdAt': createdAt,
     };
   }

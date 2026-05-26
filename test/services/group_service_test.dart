@@ -80,7 +80,6 @@ void main() {
       expect(member, isNotNull);
       expect(member!.username, 'bob');
       expect(member.points, 0);
-      expect(member.streak, 0);
       expect(member.role, 'member');
     });
 
@@ -147,18 +146,6 @@ void main() {
       expect(leaderboard.last.points, 30);
     });
 
-    test('GS10: updateMemberStreak stores the streak value', () async {
-      final groupId =
-          await groupService.createGroup(group: makeGroup(theme: 'Wellness'));
-      await groupService.addMemberToGroup(
-          groupId: groupId, user: makeUser());
-
-      await groupService.updateMemberStreak(
-          groupId: groupId, uid: 'uid1', streak: 7);
-
-      final member =
-          await groupService.getMember(groupId: groupId, userId: 'uid1');
-      expect(member!.streak, 7);
-    });
   });
+
 }

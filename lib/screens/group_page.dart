@@ -1194,14 +1194,6 @@ class _LeaderboardRow extends StatelessWidget {
                   color: Color(0xFF1C2A33),
                 ),
               ),
-              const SizedBox(height: 3),
-              Text(
-                '${member.streak} day streak',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF7A8A94),
-                ),
-              ),
             ],
           ),
         ),
