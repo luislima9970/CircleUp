@@ -90,82 +90,25 @@ class _ValidationScreenState
     }
   }
 
-  Future<void> _awardTaskPointsIfAccepted() async {
-    final taskId = _task.id;
-
-    if (taskId == null) {
-      return;
-    }
-
-    final reward = _task.reward;
+  Future<void> _applyVotePoints({required bool isValid}) async {
+    const authorDelta = 2;
+    const voterReward = 1;
 
     final firestore = FirebaseFirestore.instance;
-
     final groupRef = firestore.collection('groups').doc(widget.groupId);
 
-    final submissionRef = groupRef
-        .collection('tasks')
-        .doc(taskId)
-        .collection('submissions')
-        .doc(widget.authorId);
+    final authorMemberRef = groupRef.collection('members').doc(widget.authorId);
+    final authorUserRef = firestore.collection('users').doc(widget.authorId);
+    final voterMemberRef = groupRef.collection('members').doc(user.id!);
+    final voterUserRef = firestore.collection('users').doc(user.id!);
 
-    final memberRef = groupRef
-        .collection('members')
-        .doc(widget.authorId);
-
-    final userRef = firestore
-        .collection('users')
-        .doc(widget.authorId);
+    final int authorPoints = isValid ? authorDelta : -authorDelta;
 
     await firestore.runTransaction((transaction) async {
-      final submissionSnapshot = await transaction.get(submissionRef);
-
-      if (!submissionSnapshot.exists) {
-        return;
-      }
-
-      final data = submissionSnapshot.data();
-
-      if (data == null) {
-        return;
-      }
-
-      final status = data['status'] as String? ?? 'PENDING';
-      final pointsAlreadyAwarded = data['pointsAwarded'] == true;
-
-      if (status != 'APPROVED' || pointsAlreadyAwarded) {
-        return;
-      }
-
-      transaction.update(submissionRef, {
-        'pointsAwarded': true,
-        'pointsAwardedAt': FieldValue.serverTimestamp(),
-        'awardedPoints': reward,
-      });
-
-      transaction.set(
-        memberRef,
-        {
-          'points': FieldValue.increment(reward),
-        },
-        SetOptions(merge: true),
-      );
-
-      transaction.set(
-        userRef,
-        {
-          'totalPoints': FieldValue.increment(reward),
-        },
-        SetOptions(merge: true),
-      );
-
-      transaction.set(
-        groupRef,
-        {
-          'totalPoints': FieldValue.increment(reward),
-        },
-        SetOptions(merge: true),
-      );
+      transaction.set(authorMemberRef, {'points': FieldValue.increment(authorPoints)}, SetOptions(merge: true));
+      transaction.set(authorUserRef, {'totalPoints': FieldValue.increment(authorPoints)}, SetOptions(merge: true));
+      transaction.set(voterMemberRef, {'points': FieldValue.increment(voterReward)}, SetOptions(merge: true));
+      transaction.set(voterUserRef, {'totalPoints': FieldValue.increment(voterReward)}, SetOptions(merge: true));
     });
   }
 
@@ -198,14 +141,11 @@ class _ValidationScreenState
         isValid: isValid,
       );
 
-      await _awardTaskPointsIfAccepted();
+      await _applyVotePoints(isValid: isValid);
 
-      if (widget.authorId == user.id) {
-        final updatedUser = await _userService.getUserById(user.id!);
-
-        if (updatedUser != null) {
-          AppState.setCurrentUser(updatedUser);
-        }
+      final updatedUser = await _userService.getUserById(user.id!);
+      if (updatedUser != null) {
+        AppState.setCurrentUser(updatedUser);
       }
 
       if (mounted) {

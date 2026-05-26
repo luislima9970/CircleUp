@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:projesof/models/submission_model.dart';
 import 'package:projesof/services/image_upload_service.dart';
 import 'package:projesof/services/submission_service.dart';
+import 'package:projesof/services/user_service.dart';
 import 'package:projesof/app_state.dart';
 import 'package:projesof/models/task_model.dart';
 import 'package:projesof/widgets/background_circle.dart';
@@ -130,12 +132,27 @@ class _SubmissionScreenState
         throw Exception('Failed to upload image. Please check your internet connection and try again.');
       }
 
-      // Create submission
       await _submissionService.createSubmission(
         groupId: widget.groupId,
         taskId: _task.id!,
         submission: SubmissionModel(userId: user.id!, photoUrl: imageUrl),
       );
+
+      final firestore = FirebaseFirestore.instance;
+      final memberRef = firestore
+          .collection('groups')
+          .doc(widget.groupId)
+          .collection('members')
+          .doc(user.id!);
+      final userRef = firestore.collection('users').doc(user.id!);
+
+      await firestore.runTransaction((transaction) async {
+        transaction.set(memberRef, {'points': FieldValue.increment(_task.reward)}, SetOptions(merge: true));
+        transaction.set(userRef, {'totalPoints': FieldValue.increment(_task.reward)}, SetOptions(merge: true));
+      });
+
+      final updatedUser = await UserService().getUserById(user.id!);
+      if (updatedUser != null) AppState.setCurrentUser(updatedUser);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
