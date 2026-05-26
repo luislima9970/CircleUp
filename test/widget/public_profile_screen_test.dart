@@ -7,20 +7,17 @@ import 'package:projesof/models/group_model.dart';
 import 'package:projesof/models/user_model.dart';
 import 'package:projesof/screens/public_profile_screen.dart';
 import 'package:projesof/services/group_service.dart';
-import 'package:projesof/services/task_service.dart';
 import 'package:projesof/services/user_service.dart';
 
 void main() {
   late FakeFirebaseFirestore fakeFirestore;
   late UserService userService;
   late GroupService groupService;
-  late TaskService taskService;
 
   setUp(() async {
     fakeFirestore = FakeFirebaseFirestore();
     userService = UserService(firestore: fakeFirestore);
     groupService = GroupService(firestore: fakeFirestore);
-    taskService = TaskService(firestore: fakeFirestore);
 
     AppState.setCurrentUser(UserModel(
       id: 'viewer_uid',
@@ -51,7 +48,6 @@ void main() {
           userId: 'target_uid',
           userService: userService,
           groupService: groupService,
-          taskService: taskService,
         ),
       ));
       await tester.pump();
@@ -65,7 +61,6 @@ void main() {
           userId: 'target_uid',
           userService: userService,
           groupService: groupService,
-          taskService: taskService,
         ),
       ));
       await tester.pumpAndSettle();
@@ -79,7 +74,6 @@ void main() {
           userId: 'target_uid',
           userService: userService,
           groupService: groupService,
-          taskService: taskService,
         ),
       ));
       await tester.pumpAndSettle();
@@ -93,7 +87,6 @@ void main() {
           userId: 'target_uid',
           userService: userService,
           groupService: groupService,
-          taskService: taskService,
         ),
       ));
       await tester.pumpAndSettle();
@@ -101,41 +94,12 @@ void main() {
       expect(find.text('Stay active'), findsOneWidget);
     });
 
-    testWidgets('PPS5: renders Points stat', (tester) async {
+    testWidgets('PPS5: renders back button', (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: PublicProfileScreen(
           userId: 'target_uid',
           userService: userService,
           groupService: groupService,
-          taskService: taskService,
-        ),
-      ));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Points'), findsOneWidget);
-    });
-
-    testWidgets('PPS6: renders Streak stat', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: PublicProfileScreen(
-          userId: 'target_uid',
-          userService: userService,
-          groupService: groupService,
-          taskService: taskService,
-        ),
-      ));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Streak'), findsOneWidget);
-    });
-
-    testWidgets('PPS7: renders back button', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: PublicProfileScreen(
-          userId: 'target_uid',
-          userService: userService,
-          groupService: groupService,
-          taskService: taskService,
         ),
       ));
       await tester.pumpAndSettle();
@@ -143,14 +107,13 @@ void main() {
       expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
     });
 
-    testWidgets('PPS8: shows empty circles card when user has no groups',
+    testWidgets('PPS6: shows empty circles card when user has no groups',
         (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: PublicProfileScreen(
           userId: 'target_uid',
           userService: userService,
           groupService: groupService,
-          taskService: taskService,
         ),
       ));
       await tester.pumpAndSettle();
@@ -158,7 +121,7 @@ void main() {
       expect(find.text('No visible circles'), findsOneWidget);
     });
 
-    testWidgets('PPS9: shows groups when user is member', (tester) async {
+    testWidgets('PPS7: shows groups when user is member', (tester) async {
       final groupId = await groupService.createGroup(
         group: GroupModel(
           name: 'Runners',
@@ -182,7 +145,6 @@ void main() {
           userId: 'target_uid',
           userService: userService,
           groupService: groupService,
-          taskService: taskService,
         ),
       ));
       await tester.pumpAndSettle();
