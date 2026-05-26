@@ -142,17 +142,18 @@ At the end, it is good to add a rough indication of the value of the user story 
 
 ### Domain model
 
-<img width="1459" height="1487" alt="Domain Model" src="https://github.com/user-attachments/assets/3793283d-f5df-4a9d-9807-d88663d0fdd7" />
+<img width="1138" height="1435" alt="Domain Model" src="https://github.com/user-attachments/assets/5b5d31c4-fd30-44a7-a78f-c0457d66a338" />
 
 
 
-**User:** Represents a platform participant with authentication and scoring data. A user has credentials (username, email, password), a streak and accumulates total points. A user can author submissions, validate others’ submissions, and belong to a groups.
 
-**Group:** Represents a collection of users organized under a common identity. A group has a name, description, and theme and owns multiple tasks. Users may belong to at most 10 groups.
+**User:** Represents a platform participant with authentication and scoring data. A user has credentials (username, email, password), and other profile elements such as a profile picture and phrase. A user can author submissions, validate others’ submissions, and belong to a groups.
+
+**Group:** Represents a collection of users organized under a common identity. A group has a name, description, and theme and owns its members and multiple tasks.
 
 **Task:** Defines a challenge or activity within a group. Each task has a title, objective, and a reward (points). Tasks belong to exactly one group and can have multiple submissions from users.
 
-**Submission:** Represents a user’s attempt to complete a task. It includes proof (e.g., image), a timestamp, and a status (pending, approved, rejected). Each submission is authored by one user and belongs to one task. It can receive multiple validation votes.
+**Submission:** Represents a user’s attempt to complete a task. It includes proof (image), a timestamp, and a status (pending, approved, rejected). Each submission is authored by one user and belongs to one task. It can receive multiple validation votes.
 
 **ValidationVote:** Represents a validation decision on a submission. A vote is either valid or invalid. It is cast by a user (validator) on a submission, with the constraint that the validator cannot be the submission’s author.
 
