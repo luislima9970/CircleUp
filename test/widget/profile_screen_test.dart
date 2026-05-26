@@ -49,7 +49,7 @@ void main() {
           taskService: taskService,
         ),
       ));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('alice'), findsWidgets);
     });
@@ -61,7 +61,7 @@ void main() {
           taskService: taskService,
         ),
       ));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('Hello world'), findsOneWidget);
     });
@@ -73,7 +73,7 @@ void main() {
           taskService: taskService,
         ),
       ));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('Points'), findsOneWidget);
     });
@@ -85,7 +85,7 @@ void main() {
           taskService: taskService,
         ),
       ));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('Streak'), findsOneWidget);
     });
@@ -97,7 +97,7 @@ void main() {
           taskService: taskService,
         ),
       ));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text('Edit Profile'), findsOneWidget);
     });

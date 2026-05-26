@@ -15,6 +15,7 @@ import 'package:projesof/widgets/background_circle.dart';
 import 'package:projesof/widgets/bottom_navbar.dart';
 import 'package:projesof/widgets/loading_card.dart';
 import 'package:projesof/models/user_model.dart';
+import 'homepage_screen.dart';
 import 'public_profile_screen.dart';
 
 class GroupPageScreen extends StatefulWidget {
@@ -99,21 +100,23 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
   }
 
   Future<void> _leaveGroup() async {
-    _groupService.removeMemberFromGroup(groupId: _group!.id!, uid: user.id!);
+    await _groupService.removeMemberFromGroup(
+      groupId: _group!.id!,
+      uid: user.id!,
+    );
 
     if (!mounted) {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('You left the group.'),
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => HomepageScreen(),
       ),
+          (route) => false,
     );
-
-    Navigator.pop(context);
   }
-
   Color _themeColor(String theme) {
     if (theme == 'Fitness') {
       return const Color(0xFF2A8CFF);
@@ -665,7 +668,7 @@ class _MemberAvatar extends StatefulWidget {
   final String initials;
   final UserService? userService;
 
-  _MemberAvatar({
+  const _MemberAvatar({
     required this.userId,
     required this.username,
     required this.fallbackPhotoUrl,

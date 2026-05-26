@@ -11,8 +11,7 @@ class GroupService {
   final CollectionReference<Map<String, dynamic>> _groups;
 
   GroupService({FirebaseFirestore? firestore, TaskService? taskService})
-      : _groups =
-            (firestore ?? FirebaseFirestore.instance).collection('groups'),
+      : _groups = (firestore ?? FirebaseFirestore.instance).collection('groups'),
         _taskService = taskService ?? TaskService(firestore: firestore);
 
   static final Map<String, List<TaskModel>> _tasksByTheme = {
@@ -250,6 +249,18 @@ class GroupService {
     });
   }
 
+  Future<int> getTotalPoints({
+    required String uid
+  }) async {
+    int points = 0;
+    final groups = await getGroupsForUser(uid).first;
+    for (final group in groups) {
+      final member = await getMember(groupId: group.id!, userId: uid);
+      points += member!.points;
+    }
+    return points;
+  }
+
   Future<void> updateMemberPoints({
     required String groupId,
     required String uid,
@@ -378,7 +389,7 @@ class GroupService {
     );
   }
 
-  Future<void> joinGroupByCode({
+  Future<String> joinGroupByCode({
     required String code,
     required UserModel user,
   }) async {
@@ -396,6 +407,7 @@ class GroupService {
     final groupDoc = query.docs.first;
     final groupId = groupDoc.id;
 
-    addMemberToGroup(groupId: groupId, user: user);
+    await addMemberToGroup(groupId: groupId, user: user);
+    return groupId;
   }
 }
