@@ -405,6 +405,30 @@ You can find below information and references related with the project managemen
 
 ### Sprint 3
 
-### Sprint 4
+- **Profile Page**
+
+    The Profile Page allows users to view their account information, including their personal details and profile description. It also includes a logout button so users can safely sign out of the application.
+
+- **Edit Profile Page**
+  
+    The Edit Profile Page allows users to update their personal information, such as their username, profile phrase, profile image and password. The changes are saved in the database and reflected across the application, keeping the user's profile up to date.
+
+- **See Other's Profile Page**
+
+  The See Other's Profile Page allows users to view another user's public profile. It displays that user's information, including their personal details and profile description, as well as the groups they belong to.
+
+- **Search for Users Page**
+
+  The Search for Users Page allows users to search for other registered users by username. The search updates based on the text entered, making it easier to find and access other users' public profiles.
+
+- **Bugs**
+
+  - **Search for Users**
+
+      The Search for Users page had a bug where it showed that there were no users in the application. Because of this, it was not possible to search for other users. This bug has been fixed, and the page now correctly shows and filters existing users.
+
+  - **Edit Profile**
+
+      The Edit Profile page had a bug where changes were not saved after clicking the save button. The profile information stayed the same as before. This bug has been fixed, and the updated information is now saved correctly.
 
 ### Final Release
