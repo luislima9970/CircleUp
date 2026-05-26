@@ -92,16 +92,12 @@ void main() {
         username: 'bob',
         email: 'bob@email.com',
         phrase: 'Hello world',
-        totalPoints: 100,
-        maxStreak: 5,
         createdAt: Timestamp.now(),
       );
       await userService.createUser(user: user);
 
       final result = await userService.getUserById('uid2');
       expect(result!.phrase, 'Hello world');
-      expect(result.totalPoints, 100);
-      expect(result.maxStreak, 5);
     });
   });
 }
