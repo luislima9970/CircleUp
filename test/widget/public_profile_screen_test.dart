@@ -32,8 +32,6 @@ void main() {
         username: 'bob',
         email: 'bob@test.com',
         phrase: 'Stay active',
-        totalPoints: 100,
-        maxStreak: 7,
         createdAt: Timestamp.now(),
       ),
     );

@@ -12,8 +12,6 @@ void main() {
       username: 'alice',
       email: 'alice@test.com',
       phrase: 'Hello world',
-      totalPoints: 42,
-      maxStreak: 3,
       createdAt: Timestamp.now(),
     ));
   });

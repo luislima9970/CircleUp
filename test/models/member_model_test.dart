@@ -13,7 +13,6 @@ void main() {
         photoUrl: 'https://photo.jpg',
         phrase: 'Hello',
         points: 50,
-        streak: 5,
         role: 'owner',
         joinedAt: now,
       );
@@ -21,7 +20,6 @@ void main() {
       expect(member.userId, 'uid1');
       expect(member.username, 'alice');
       expect(member.points, 50);
-      expect(member.streak, 5);
       expect(member.role, 'owner');
     });
 
@@ -30,7 +28,6 @@ void main() {
           MemberModel(userId: 'uid1', username: 'bob', joinedAt: now);
 
       expect(member.points, 0);
-      expect(member.streak, 0);
       expect(member.role, 'member');
       expect(member.phrase, '');
     });
@@ -40,7 +37,6 @@ void main() {
         userId: 'uid1',
         username: 'alice',
         points: 30,
-        streak: 3,
         role: 'owner',
         joinedAt: now,
       );
@@ -48,7 +44,6 @@ void main() {
 
       expect(map['username'], 'alice');
       expect(map['points'], 30);
-      expect(map['streak'], 3);
       expect(map['role'], 'owner');
     });
 
@@ -58,7 +53,6 @@ void main() {
         'photoUrl': '',
         'phrase': 'Stay fit',
         'points': 20,
-        'streak': 4,
         'role': 'member',
         'joinedAt': now,
       };
@@ -74,7 +68,6 @@ void main() {
 
       expect(member.username, 'User');
       expect(member.points, 0);
-      expect(member.streak, 0);
     });
   });
 }
