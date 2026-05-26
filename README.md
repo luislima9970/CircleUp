@@ -434,11 +434,15 @@ You can find below information and references related with the project managemen
   - **Search for Users**
 
       The Search for Users page had a bug where it showed that there were no users in the application. Because of this, it was not possible to search for other users. This bug has been fixed, and the page now correctly shows and filters existing users.
+    
+    **Solutions**: The user search logic was updated so that the page correctly retrieves the existing users from Firestore. The filtering system was also adjusted so that users are displayed initially and then filtered according to the text written in the search bar.
 
   - **Edit Profile**
 
       The Edit Profile page had a bug where changes were not saved after clicking the save button. The profile information stayed the same as before. This bug has been fixed, and the updated information is now saved correctly.
 
+    **Solutions**: The profile update logic was corrected so that the edited data is properly sent to Firestore and saved in the user document. After saving, the updated profile information is now displayed correctly.
+  
   - **Profile error**
 
       The Profile page was displaying an all-time progress section that duplicated information already visible on the Home page. 
