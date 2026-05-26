@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projesof/models/group_model.dart';
 import 'package:projesof/services/group_service.dart';
-import 'package:projesof/services/task_service.dart';
 import 'package:projesof/models/user_model.dart';
 import 'package:projesof/services/user_service.dart';
 
@@ -9,14 +8,12 @@ class PublicProfileScreen extends StatefulWidget {
   final String userId;
   final UserService? userService;
   final GroupService? groupService;
-  final TaskService? taskService;
 
   const PublicProfileScreen({
     super.key,
     required this.userId,
     this.userService,
     this.groupService,
-    this.taskService,
   });
 
   @override
@@ -27,24 +24,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   late Future<_PublicProfileData> _profileFuture;
   late final UserService _userService;
   late final GroupService _groupService;
-  late final TaskService _taskService;
 
   @override
   void initState() {
     super.initState();
     _userService = widget.userService ?? UserService();
     _groupService = widget.groupService ?? GroupService();
-    _taskService = widget.taskService ?? TaskService();
     _profileFuture = _loadProfile();
   }
 
   String _initial(String username) {
     final trimmed = username.trim();
-
-    if (trimmed.isEmpty) {
-      return '?';
-    }
-
+    if (trimmed.isEmpty) return '?';
     return trimmed[0].toUpperCase();
   }
 
@@ -52,7 +43,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     return _PublicProfileData(
       profile: (await _userService.getUserById(widget.userId))!,
       groups: await _groupService.getGroupsForUser(widget.userId).first,
-      completedTasks: (await _taskService.getCompletedTasksForUser(widget.userId)).length,
     );
   }
 
@@ -60,7 +50,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     if (theme == 'Fitness') return const Color(0xFF2A8CFF);
     if (theme == 'Wellness') return const Color(0xFFFFB84D);
     if (theme == 'Sustainability') return const Color(0xFF43D17A);
-
     return const Color(0xFF2A8CFF);
   }
 
@@ -68,7 +57,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     if (theme == 'Fitness') return Icons.fitness_center_rounded;
     if (theme == 'Wellness') return Icons.self_improvement_rounded;
     if (theme == 'Sustainability') return Icons.eco_rounded;
-
     return Icons.groups_rounded;
   }
 
@@ -96,33 +84,24 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               const Positioned(
                 top: -90,
                 right: -70,
-                child: _BackgroundCircle(
-                  size: 210,
-                  color: Color(0x332A8CFF),
-                ),
+                child: _BackgroundCircle(size: 210, color: Color(0x332A8CFF)),
               ),
               const Positioned(
                 bottom: -100,
                 left: -80,
-                child: _BackgroundCircle(
-                  size: 230,
-                  color: Color(0x3343D17A),
-                ),
+                child: _BackgroundCircle(size: 230, color: Color(0x3343D17A)),
               ),
               FutureBuilder<_PublicProfileData>(
                 future: _profileFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF2A8CFF),
-                      ),
+                      child: CircularProgressIndicator(color: Color(0xFF2A8CFF)),
                     );
                   }
 
                   if (snapshot.hasError || !snapshot.hasData) {
                     debugPrint('Public profile error: ${snapshot.error}');
-
                     return const Center(
                       child: Text(
                         'Could not load profile.',
@@ -156,44 +135,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
                         const SizedBox(height: 22),
 
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _ProfileStatCard(
-                                icon: Icons.stars_rounded,
-                                value: profileData.profile.totalPoints.toString(),
-                                label: 'Points',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _ProfileStatCard(
-                                icon: Icons.local_fire_department_rounded,
-                                value: profileData.profile.maxStreak == 1
-                                    ? '1 day'
-                                    : '${profileData.profile.maxStreak} days',
-                                label: 'Streak',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _ProfileStatCard(
-                                icon: Icons.groups_rounded,
-                                value: profileData.groups.length.toString(),
-                                label: 'Groups',
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 22),
-
-                        _CompletedChallengesCard(
-                          completedTasks: profileData.completedTasks,
-                        ),
-
-                        const SizedBox(height: 22),
-
                         _GroupsCard(
                           groups: profileData.groups,
                           themeColor: _themeColor,
@@ -215,12 +156,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 class _PublicProfileData {
   final UserModel profile;
   final List<GroupModel> groups;
-  final int completedTasks;
 
   const _PublicProfileData({
     required this.profile,
     required this.groups,
-    required this.completedTasks,
   });
 }
 
@@ -228,10 +167,7 @@ class _TopBar extends StatelessWidget {
   final String title;
   final VoidCallback onBack;
 
-  const _TopBar({
-    required this.title,
-    required this.onBack,
-  });
+  const _TopBar({required this.title, required this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -253,10 +189,7 @@ class _TopBar extends StatelessWidget {
           ),
           child: IconButton(
             onPressed: onBack,
-            icon: const Icon(
-              Icons.arrow_back_rounded,
-              color: Color(0xFF1C2A33),
-            ),
+            icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1C2A33)),
           ),
         ),
         const SizedBox(width: 16),
@@ -281,20 +214,20 @@ class _PublicProfileHeaderCard extends StatelessWidget {
 
   const _PublicProfileHeaderCard({
     required this.profile,
-    required this.initial
+    required this.initial,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasPhoto = profile.photoUrl != null && profile.photoUrl!.isNotEmpty;
+    final phrase = profile.phrase.trim();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Color(0xFF2A8CFF),
-            Color(0xFF43D17A),
-          ],
+          colors: [Color(0xFF2A8CFF), Color(0xFF43D17A)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -324,17 +257,17 @@ class _PublicProfileHeaderCard extends StatelessWidget {
             ),
             child: CircleAvatar(
               backgroundColor: Colors.white,
-              backgroundImage: profile.photoUrl == null || profile.photoUrl!.isEmpty ? null : NetworkImage(profile.photoUrl!),
-              child: profile.photoUrl == null || profile.photoUrl!.isEmpty
-                  ? Text(
-                initial,
-                style: const TextStyle(
-                  color: Color(0xFF2A8CFF),
-                  fontSize: 40,
-                  fontWeight: FontWeight.w900,
-                ),
-              )
-                  : null,
+              backgroundImage: hasPhoto ? NetworkImage(profile.photoUrl!) : null,
+              child: hasPhoto
+                  ? null
+                  : Text(
+                      initial,
+                      style: const TextStyle(
+                        color: Color(0xFF2A8CFF),
+                        fontSize: 40,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
             ),
           ),
 
@@ -354,87 +287,13 @@ class _PublicProfileHeaderCard extends StatelessWidget {
           const SizedBox(height: 16),
 
           Text(
-            profile.phrase,
+            phrase.isEmpty ? 'No profile phrase yet.' : phrase,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xEFFFFFFF),
               fontSize: 16,
               height: 1.4,
               fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CompletedChallengesCard extends StatelessWidget {
-  final int completedTasks;
-
-  const _CompletedChallengesCard({
-    required this.completedTasks,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: const Color(0xFFE5EEF5),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: const Color(0xFF43D17A).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Icon(
-              Icons.check_circle_rounded,
-              color: Color(0xFF43D17A),
-              size: 28,
-            ),
-          ),
-
-          const SizedBox(width: 14),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Completed challenges',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF7A8A94),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  completedTasks.toString(),
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Color(0xFF1C2A33),
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
             ),
           ),
         ],
@@ -466,15 +325,9 @@ class _GroupsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: const Color(0xFFE5EEF5),
-        ),
+        border: Border.all(color: const Color(0xFFE5EEF5)),
         boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
+          BoxShadow(color: Color(0x0D000000), blurRadius: 16, offset: Offset(0, 8)),
         ],
       ),
       child: Column(
@@ -489,11 +342,7 @@ class _GroupsCard extends StatelessWidget {
                   color: const Color(0xFFEAF4FF),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(
-                  Icons.groups_rounded,
-                  color: Color(0xFF2A8CFF),
-                  size: 25,
-                ),
+                child: const Icon(Icons.groups_rounded, color: Color(0xFF2A8CFF), size: 25),
               ),
 
               const SizedBox(width: 14),
@@ -524,10 +373,7 @@ class _GroupsCard extends StatelessWidget {
               ),
 
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 7,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
                   color: const Color(0xFFEAF4FF),
                   borderRadius: BorderRadius.circular(999),
@@ -582,9 +428,7 @@ class _GroupMiniRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF7FBF8),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: const Color(0xFFE8F0EA),
-        ),
+        border: Border.all(color: const Color(0xFFE8F0EA)),
       ),
       child: Row(
         children: [
@@ -595,11 +439,7 @@ class _GroupMiniRow extends StatelessWidget {
               color: color.withValues(alpha: 0.13),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 27,
-            ),
+            child: Icon(icon, color: color, size: 27),
           ),
 
           const SizedBox(width: 14),
@@ -626,14 +466,9 @@ class _GroupMiniRow extends StatelessWidget {
                     Container(
                       width: 7,
                       height: 7,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                      ),
+                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                     ),
-
                     const SizedBox(width: 7),
-
                     Text(
                       group.theme.isEmpty ? 'Circle' : group.theme,
                       style: const TextStyle(
@@ -664,15 +499,9 @@ class _EmptyGroupsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.96),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: const Color(0xFFE5EEF5),
-        ),
+        border: Border.all(color: const Color(0xFFE5EEF5)),
         boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
+          BoxShadow(color: Color(0x0D000000), blurRadius: 16, offset: Offset(0, 8)),
         ],
       ),
       child: Row(
@@ -684,11 +513,7 @@ class _EmptyGroupsCard extends StatelessWidget {
               color: const Color(0xFFEAF4FF),
               borderRadius: BorderRadius.circular(18),
             ),
-            child: const Icon(
-              Icons.groups_outlined,
-              color: Color(0xFF2A8CFF),
-              size: 28,
-            ),
+            child: const Icon(Icons.groups_outlined, color: Color(0xFF2A8CFF), size: 28),
           ),
 
           const SizedBox(width: 14),
@@ -708,77 +533,9 @@ class _EmptyGroupsCard extends StatelessWidget {
                 SizedBox(height: 4),
                 Text(
                   'This user is not currently in any visible circles.',
-                  style: TextStyle(
-                    color: Color(0xFF7A8A94),
-                    fontSize: 13,
-                    height: 1.35,
-                  ),
+                  style: TextStyle(color: Color(0xFF7A8A94), fontSize: 13, height: 1.35),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProfileStatCard extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-
-  const _ProfileStatCard({
-    required this.icon,
-    required this.value,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 124,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: const Color(0xFFE5EEF5),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: const Color(0xFF43D17A),
-            size: 28,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Color(0xFF1C2A33),
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF7A8A94),
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -791,20 +548,14 @@ class _BackgroundCircle extends StatelessWidget {
   final double size;
   final Color color;
 
-  const _BackgroundCircle({
-    required this.size,
-    required this.color,
-  });
+  const _BackgroundCircle({required this.size, required this.color});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

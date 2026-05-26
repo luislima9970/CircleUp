@@ -109,7 +109,7 @@ class WelcomeScreen extends StatelessWidget {
                             Expanded(
                               child: _FeatureCard(
                                 icon: Icons.local_fire_department_rounded,
-                                title: 'Streaks',
+                                title: 'Points',
                               ),
                             ),
                             SizedBox(width: 12),
