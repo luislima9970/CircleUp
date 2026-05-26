@@ -441,9 +441,21 @@ You can find below information and references related with the project managemen
 
   - **Profile error**
 
-      The Profile page was displaying an all-time progress section that duplicated information already visible on the Home page. Since the data was redundant, the fix was to remove it from the Profile page entirely, keeping a single source of truth on the Home page.
+      The Profile page was displaying an all-time progress section that duplicated information already visible on the Home page. 
 
+      **Solution:** Since the data was redundant, the fix was to remove it from the Profile page entirely, keeping a single source of truth on the Home page.
 
+  - **Group appears after deleted**
+
+      After deleting a group, the group was still visible in the list instead of disappearing immediately. This happened because the page was not being refreshed after the deletion. 
+      
+      **Solution:** The fix was to redirect the user after deleting, which forces a full page reload and clears the stale entry from the list.
+
+  - **Join not redirecting to group**
+
+      After joining a group using an invite code, the user was not being taken to the corresponding group page. 
+      
+      **Solution:** The fix was to add a redirect to the group that generated that code, so the user lands directly on the group page after joining.
 
 - **Sprint planning and retrospectives:**  
   * **Plans:** 
