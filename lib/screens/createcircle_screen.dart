@@ -141,23 +141,14 @@ class _CreateCircleScreenState extends State<CreateCircleScreen> {
         user: user,
       );
 
-      debugPrint('Circle created with id: $createdGroupId');
-
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Circle created successfully!'),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => GroupPageScreen(groupId: createdGroupId),
         ),
       );
-
-      _circleNameController.clear();
-      _descriptionController.clear();
-
-      setState(() {
-        _selectedTheme = 'Sustainability';
-        _showCreateForm = false;
-      });
     } catch (e) {
       debugPrint('Error creating circle: $e');
 

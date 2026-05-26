@@ -458,20 +458,17 @@ class _UserGroupsListState extends State<_UserGroupsList> {
   late final GroupService _groupService;
 
   final user = AppState.currentUser!;
-  late final Future<List<GroupModel>>
-  _groupsFuture;
 
   @override
   void initState() {
     super.initState();
     _groupService = widget.groupService ?? GroupService();
-    _groupsFuture = _groupService.getGroupsForUser(user.id).first;
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<GroupModel>>(
-      future: _groupsFuture,
+    return StreamBuilder<List<GroupModel>>(
+      stream: _groupService.getGroupsForUser(user.id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const LoadingCard();

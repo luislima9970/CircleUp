@@ -7,6 +7,7 @@ import 'package:projesof/models/group_model.dart';
 import 'package:projesof/models/user_model.dart';
 import 'package:projesof/screens/group_page.dart';
 import 'package:projesof/services/group_service.dart';
+import 'package:projesof/services/submission_service.dart';
 import 'package:projesof/services/task_service.dart';
 import 'package:projesof/services/user_service.dart';
 
@@ -15,6 +16,7 @@ void main() {
   late GroupService groupService;
   late TaskService taskService;
   late UserService userService;
+  late SubmissionService submissionService;
   late String groupId;
 
   setUp(() async {
@@ -29,6 +31,7 @@ void main() {
     groupService = GroupService(firestore: fakeFirestore);
     taskService = TaskService(firestore: fakeFirestore);
     userService = UserService(firestore: fakeFirestore);
+    submissionService = SubmissionService(firestore: fakeFirestore);
 
     groupId = await groupService.createGroup(
       group: GroupModel(
@@ -55,6 +58,7 @@ void main() {
           groupService: groupService,
           taskService: taskService,
           userService: userService,
+          submissionService: submissionService,
         ),
       ));
       await tester.pump();
@@ -69,6 +73,7 @@ void main() {
           groupService: groupService,
           taskService: taskService,
           userService: userService,
+          submissionService: submissionService,
         ),
       ));
       await tester.pumpAndSettle();
@@ -83,6 +88,7 @@ void main() {
           groupService: groupService,
           taskService: taskService,
           userService: userService,
+          submissionService: submissionService,
         ),
       ));
       await tester.pump();
@@ -97,6 +103,7 @@ void main() {
           groupService: groupService,
           taskService: taskService,
           userService: userService,
+          submissionService: submissionService,
         ),
       ));
       await tester.pumpAndSettle();
@@ -111,6 +118,7 @@ void main() {
           groupService: groupService,
           taskService: taskService,
           userService: userService,
+          submissionService: submissionService,
         ),
       ));
       await tester.pumpAndSettle();

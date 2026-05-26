@@ -23,6 +23,7 @@ class GroupPageScreen extends StatefulWidget {
   final GroupService? groupService;
   final TaskService? taskService;
   final UserService? userService;
+  final SubmissionService? submissionService;
 
   const GroupPageScreen({
     super.key,
@@ -30,6 +31,7 @@ class GroupPageScreen extends StatefulWidget {
     this.groupService,
     this.taskService,
     this.userService,
+    this.submissionService,
   });
 
   @override
@@ -41,6 +43,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
   late final GroupService _groupService;
   late final TaskService _taskService;
   late final UserService _userService;
+  late final SubmissionService _submissionService;
   GroupModel? _group;
   final user = AppState.currentUser!;
 
@@ -52,7 +55,22 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
     _groupService = widget.groupService ?? GroupService();
     _taskService = widget.taskService ?? TaskService();
     _userService = widget.userService ?? UserService();
+    _submissionService = widget.submissionService ?? SubmissionService();
     _loadData();
+  }
+
+  Future<int> _getPendingCount(List<MemberModel> members, TaskModel? task) async {
+    if (task == null || members.isEmpty) return 0;
+    int pending = 0;
+    for (final member in members) {
+      final submission = await _submissionService.getSubmissionByUser(
+        groupId: _group!.id!,
+        taskId: task.id!,
+        userId: member.userId,
+      );
+      if (submission == null) pending++;
+    }
+    return pending;
   }
 
   Future<void> _loadData() async {
@@ -174,7 +192,11 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
             builder: (context, tasksSnapshot) {
               final dailyTask = tasksSnapshot.data;
 
-              return Container(
+              return FutureBuilder<int>(
+                future: _getPendingCount(members ?? [], dailyTask),
+                builder: (context, pendingSnapshot) {
+                  final pendingCount = pendingSnapshot.data ?? 0;
+                  return Container(
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
@@ -220,8 +242,7 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
                             _GroupSummaryCard(
                               group: _group!,
                               memberCount: members?.length ?? 0,
-                              taskCount: dailyTask != null ? 1 : 0,
-                              pendingCount: 0,
+                              pendingCount: pendingCount,
                               color: color,
                               icon: icon,
                             ),
@@ -267,6 +288,8 @@ class _GroupPageScreenState extends State<GroupPageScreen> {
                     ],
                   ),
                 ),
+                  );
+                },
               );
             },
           );
@@ -361,7 +384,6 @@ class _TopBar extends StatelessWidget {
 class _GroupSummaryCard extends StatelessWidget {
   final GroupModel group;
   final int memberCount;
-  final int taskCount;
   final int pendingCount;
   final Color color;
   final IconData icon;
@@ -369,7 +391,6 @@ class _GroupSummaryCard extends StatelessWidget {
   const _GroupSummaryCard({
     required this.group,
     required this.memberCount,
-    required this.taskCount,
     required this.pendingCount,
     required this.color,
     required this.icon,
@@ -479,19 +500,6 @@ class _GroupSummaryCard extends StatelessWidget {
                     value: memberCount.toString(),
                     label: 'Members',
                     icon: Icons.people_alt_rounded,
-                    color: color,
-                  ),
-                ),
-                Container(
-                  width: 1,
-                  height: 34,
-                  color: color.withValues(alpha: 0.18),
-                ),
-                Expanded(
-                  child: _InlineStat(
-                    value: taskCount.toString(),
-                    label: 'Tasks',
-                    icon: Icons.checklist_rounded,
                     color: color,
                   ),
                 ),
