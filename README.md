@@ -41,7 +41,7 @@ Thank you!
 
 - **In order to run the project you should have [Flutter SDK](https://flutter.dev/) and [Dart SDK](https://dart.dev/) installed**
 - **It is also advised to have an editor such as [VSCode](https://code.visualstudio.com/) or [AndroidStudio](https://developer.android.com/studio)**
-- **After that you need to have a mobile phone emulator or one connected to your computer**
+- **After that you need to have a mobile phone emulator or one connected to your computer, with internet connection**
 - **If you have everything ready, just open the emulator and run the following in your console:**
 
     - `flutter pub get`
