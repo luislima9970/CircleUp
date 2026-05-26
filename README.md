@@ -405,6 +405,22 @@ You can find below information and references related with the project managemen
 
 ### Sprint 3
 
+- **Sprint planning and retrospectives:**  
+  * **Plans:** 
+    - In this sprint is espected to implement the profile, tasks&points mechanism of the app and refactor the code so the database info is stored in models.
+    
+      ![alt text](assets/Plan-Sprint3.png)
+
+    - In this sprint everything was implemented as expected.
+
+      ![alt text](assets/Retro-Sprint2.png)
+  
+  * **Retrospectives:** Meeting notes were recorded in a document in the repository, addressing the following questions:  
+    - **Did well:** The workflow was smooth and effective. Everything was completed on time and without unresolved bugs.
+    - **Do differently:** In Sprint 2, some tasks should be done by diferent people who have acess to the Firebase.  
+    - **Puzzles:** The database was fully implemented, and now the user, authentication, groups, tasks and submission features are currently in use. With testing, we can confirm that everything, is fully functional.  
+    - **List of a few improvements to implement in the next Sprint:** We will be able to the our profile and others aswell. We will only be able to submit a task image once.
+
 ### Sprint 4
 
 ### Final Release
