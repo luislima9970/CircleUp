@@ -37,3 +37,9 @@
 - Now each group has a daily task which switches every day according to UTC time.
 
 - There are also 3 group themes with different tasks.
+
+# Final Realease
+
+- We added "integration_test" to show them running in the mobile phoe, only for demo presentation
+
+- Added Pitch text in the end of `README.md`
