@@ -485,25 +485,25 @@ You can find below information and references related with the project managemen
 
 - **Pitch**
 
-What if the habits that make you healthier, fitter, and more conscious of the world around you could also make you win?
+    What if the habits that make you healthier, fitter, and more conscious of the world around you could also make you win?
 
-That is the idea behind **CircleUP**. We built an app where you join groups centred around themes that matter - your fitness, your well-being, your impact on the environment. Every day there is a new challenge waiting for you: go for a run, eat a plant-based meal, pick up litter on your way to class. You complete it, you submit your proof, and your community validates it. Simple.
+    That is the idea behind **CircleUP**. We built an app where you join groups centred around themes that matter - your fitness, your well-being, your impact on the environment. Every day there is a new challenge waiting for you: go for a run, eat a plant-based meal, pick up litter on your way to class. You complete it, you submit your proof, and your community validates it. Simple.
 
-But here is what makes it more than just a habit tracker. Every action has weight. Submitting a task earns you points. Your friends vote on your proof - positive votes push you higher, negative ones keep you honest. And voting itself is rewarded, because an engaged community is what makes the whole thing work. All of that feeds into a **leaderboard** where you can see exactly where you stand against your friends, your group, your rivals.
+    But here is what makes it more than just a habit tracker. Every action has weight. Submitting a task earns you points. Your friends vote on your proof - positive votes push you higher, negative ones keep you honest. And voting itself is rewarded, because an engaged community is what makes the whole thing work. All of that feeds into a **leaderboard** where you can see exactly where you stand against your friends, your group, your rivals.
 
-CircleUP is not just about personal growth in isolation. It is about competing with the people around you to become better - physically, mentally, and as someone who gives back to the planet. Three pillars, one app: **sustainability, well-being, and fitness**, all driven by the oldest motivator there is: not wanting to lose to your friends.
+    CircleUP is not just about personal growth in isolation. It is about competing with the people around you to become better - physically, mentally, and as someone who gives back to the planet. Three pillars, one app: **sustainability, well-being, and fitness**, all driven by the oldest motivator there is: not wanting to lose to your friends.
 
 
 - **Last Survey Considerations**
 
-After collecting and analysing the responses to the **CircleUP** evaluation questionnaire, it was possible to conclude that the app received very positive feedback from the participants. Overall, users understood the purpose of the application clearly and showed interest in the concept, describing it as appealing, easy to understand, and motivating.
+    After collecting and analysing the responses to the **CircleUP** evaluation questionnaire, it was possible to conclude that the app received very positive feedback from the participants. Overall, users understood the purpose of the application clearly and showed interest in the concept, describing it as appealing, easy to understand, and motivating.
 
-The most appreciated features were the **group challenges**, the **points system**, the **leaderboard**, and the possibility of **validating completed challenges through friends’ voting**. These elements were considered important because they increase motivation, encourage healthy competition, and make the user experience more interactive and engaging.
+    The most appreciated features were the **group challenges**, the **points system**, the **leaderboard**, and the possibility of **validating completed challenges through friends’ voting**. These elements were considered important because they increase motivation, encourage healthy competition, and make the user experience more interactive and engaging.
 
-The social component of the app was also seen as one of its strongest aspects, as it allows users to complete challenges with friends and follow each other’s progress. This makes the experience more collaborative and encourages users to stay active and involved.
+    The social component of the app was also seen as one of its strongest aspects, as it allows users to complete challenges with friends and follow each other’s progress. This makes the experience more collaborative and encourages users to stay active and involved.
 
-Another positive aspect identified was the connection between the app and more sustainable habits. Participants showed interest in sustainability-related challenges and considered that **CircleUP** could help encourage more responsible behaviours in everyday life. At the same time, users valued the possibility of combining both fitness and sustainability challenges, making the app more flexible and attractive to different types of users.
+    Another positive aspect identified was the connection between the app and more sustainable habits. Participants showed interest in sustainability-related challenges and considered that **CircleUP** could help encourage more responsible behaviours in everyday life. At the same time, users valued the possibility of combining both fitness and sustainability challenges, making the app more flexible and attractive to different types of users.
 
-In general, the feedback suggests that **CircleUP** successfully matches its original concept and has strong potential as a motivational and social platform. The app’s strongest points are its gamification system, user interaction, and the way it transforms challenges into a fun and collaborative experience.
+    In general, the feedback suggests that **CircleUP** successfully matches its original concept and has strong potential as a motivational and social platform. The app’s strongest points are its gamification system, user interaction, and the way it transforms challenges into a fun and collaborative experience.
 
-Although some improvements could still be made in the future, the overall evaluation was very positive, showing that **CircleUP** is a promising application with potential for further development.
+    Although some improvements could still be made in the future, the overall evaluation was very positive, showing that **CircleUP** is a promising application with potential for further development.
