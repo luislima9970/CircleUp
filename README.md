@@ -487,11 +487,11 @@ You can find below information and references related with the project managemen
 
 What if the habits that make you healthier, fitter, and more conscious of the world around you could also make you win?
 
-That is the idea behind **CircleUP**. We built an app where you join groups centred around themes that matter — your fitness, your well-being, your impact on the environment. Every day there is a new challenge waiting for you: go for a run, eat a plant-based meal, pick up litter on your way to class. You complete it, you submit your proof, and your community validates it. Simple.
+That is the idea behind **CircleUP**. We built an app where you join groups centred around themes that matter - your fitness, your well-being, your impact on the environment. Every day there is a new challenge waiting for you: go for a run, eat a plant-based meal, pick up litter on your way to class. You complete it, you submit your proof, and your community validates it. Simple.
 
-But here is what makes it more than just a habit tracker. Every action has weight. Submitting a task earns you points. Your friends vote on your proof — positive votes push you higher, negative ones keep you honest. And voting itself is rewarded, because an engaged community is what makes the whole thing work. All of that feeds into a **leaderboard** where you can see exactly where you stand against your friends, your group, your rivals.
+But here is what makes it more than just a habit tracker. Every action has weight. Submitting a task earns you points. Your friends vote on your proof - positive votes push you higher, negative ones keep you honest. And voting itself is rewarded, because an engaged community is what makes the whole thing work. All of that feeds into a **leaderboard** where you can see exactly where you stand against your friends, your group, your rivals.
 
-CircleUP is not just about personal growth in isolation. It is about competing with the people around you to become better — physically, mentally, and as someone who gives back to the planet. Three pillars, one app: **sustainability, well-being, and fitness**, all driven by the oldest motivator there is: not wanting to lose to your friends.
+CircleUP is not just about personal growth in isolation. It is about competing with the people around you to become better - physically, mentally, and as someone who gives back to the planet. Three pillars, one app: **sustainability, well-being, and fitness**, all driven by the oldest motivator there is: not wanting to lose to your friends.
 
 
 - **Last Survey Considerations**
